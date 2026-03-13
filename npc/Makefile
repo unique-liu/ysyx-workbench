@@ -12,6 +12,8 @@ else
 endif
 VERILATOR_CFLAGS += -MMD --build -cc  \
 				-O3 --x-assign fast --x-initial fast --noassert
+#  if you want to enable tracing, add the following line
+VERILATOR_CFLAGS += --trace --trace-fst
 
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
