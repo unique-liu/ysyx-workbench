@@ -17,7 +17,7 @@ static TOP_NAME dut;
 void nvboard_bind_all_pins(TOP_NAME* top);
 
 int main() {
-    int time = 0;
+    int time = 0,stoptime = 0;
 
     
     Verilated::traceEverOn(true);
@@ -27,11 +27,12 @@ int main() {
     VerilatedFstC* tfp = new VerilatedFstC;
     dut.trace(tfp, 99);
     tfp->open("dump.fst");
-    while (time <= 100000) {
+    while (stoptime <= 100000) {
         nvboard_update();
         if(dut.a == 1 && dut.b == 1){
-            time++;
+            stoptime++;
         }
+        time++;
         dut.eval();
         tfp->dump(time);
         
