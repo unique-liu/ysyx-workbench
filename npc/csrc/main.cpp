@@ -15,31 +15,38 @@
 
 static TOP_NAME dut;
 void nvboard_bind_all_pins(TOP_NAME* top);
+void single_cycle() {
+  dut.clk = 0; dut.eval();
+  dut.clk = 1; dut.eval();
+}
 
+void reset(int n) {
+  dut.rst = 1;
+  while (n -- > 0) single_cycle();
+  dut.rst = 0;
+}
 int main() {
-    int time = 0,stoptime = 0;
+    // int time = 0,stoptime = 0;
 
     
-    Verilated::traceEverOn(true);
+    // Verilated::traceEverOn(true);
     nvboard_bind_all_pins(&dut);
     nvboard_init();
     
-    VerilatedFstC* tfp = new VerilatedFstC;
-    dut.trace(tfp, 99);
-    tfp->open("dump.fst");
-    while (stoptime <= 100000) {
+    // VerilatedFstC* tfp = new VerilatedFstC;
+    // dut.trace(tfp, 99);
+    // tfp->open("dump.fst");
+    reset(10);
+    while (1) {
         nvboard_update();
-        if(dut.a == 1 && dut.b == 1){
-            stoptime++;
-        }
-        time++;
+        single_cycle();
         dut.eval();
-        tfp->dump(time);
+        // tfp->dump(time);
         
     }
 
     // Final model cleanup
-    tfp->close();  
+    // tfp->close();  
     dut.final();
 
     // Return good completion status
