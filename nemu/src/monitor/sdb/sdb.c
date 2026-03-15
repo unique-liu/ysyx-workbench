@@ -18,6 +18,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
+#include <memory/vaddr.h>
 
 static int is_batch_mode = false;
 
@@ -53,6 +54,9 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_help(char *args);
+static int cmd_si(char *args);
+static int cmd_info(char *args);
+static int cmd_x(char *args);
 
 static struct {
   const char *name;
@@ -62,6 +66,9 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  { "si", "Step into instruction(s)", cmd_si },
+  { "info", "Display register or watchpoint information", cmd_info },
+  { "x", "Examine memory: x N EXPR", cmd_x },
 
   /* TODO: Add more commands */
 
@@ -88,6 +95,54 @@ static int cmd_help(char *args) {
       }
     }
     printf("Unknown command '%s'\n", arg);
+  }
+  return 0;
+}
+
+static int cmd_si(char *args){
+  char *arg = strtok(NULL, " ");
+  int steps = 1;
+  if(arg != NULL){
+    steps = atoi(arg);
+  }
+  cpu_exec(steps);
+  return 0;
+}
+
+static int cmd_info(char *args){
+  char *arg = strtok(NULL, " ");
+  if(arg == NULL){
+    printf("Usage: info [r|w]\n");
+    return 0;
+  }
+  if(strcmp(arg, "r") == 0){
+    isa_reg_display();
+  }
+  else if(strcmp(arg, "w") == 0){
+    printf("Watchpoint info is not implemented yet.\n");
+  }
+  else{
+    printf("Unknown argument '%s'\n", arg);
+  }
+  return 0;
+}
+
+static int cmd_x(char *args){
+  char *arg = strtok(NULL, " ");
+  if(arg == NULL){
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  int N = atoi(arg);
+  arg = strtok(NULL, " ");
+  if(arg == NULL){
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+  vaddr_t addr = isa_reg_str2val(arg, NULL);
+  for(int i = 0; i < N; i++){
+    word_t data = vaddr_read(addr + i * sizeof(word_t), sizeof(word_t));
+    printf("0x%08x: 0x%08x\n", (unsigned int)(addr + i * sizeof(word_t)), data);
   }
   return 0;
 }
