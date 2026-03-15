@@ -151,6 +151,7 @@ static int cmd_x(char *args){
   vaddr_t end_addr = addr + N * sizeof(word_t);
   if (addr >= 0x87ffffff || addr < 0x80000000 || end_addr > 0x87ffffff || end_addr < 0x80000000) {
     printf("Invalid memory address: 0x%08x ~ 0x%08x\n", (unsigned int)addr, (unsigned int)end_addr);
+    printf("valid memory address: [0x80000000, 0x87ffffff]\n");
     return 0;
   }
 
