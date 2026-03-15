@@ -141,14 +141,21 @@ static int cmd_x(char *args){
     return 0;
   }
 
-  //translate address to print
+  //translate address to print and check if it is valid
   char *endptr = NULL;
   vaddr_t addr = strtoul(arg, &endptr, 16);
   if (*endptr != '\0') {
     printf("Invalid address: %s\n", arg);
     return 0;
   }
-  printf("----- check mem: 0x%08x ~ 0x%08x -----\n", (unsigned int)addr, (unsigned int)(addr + N * sizeof(word_t)));
+  vaddr_t end_addr = addr + N * sizeof(word_t);
+  if (addr >= 0x87ffffff || addr < 0x80000000 || end_addr > 0x87ffffff || end_addr < 0x80000000) {
+    printf("Invalid memory address: 0x%08x ~ 0x%08x\n", (unsigned int)addr, (unsigned int)end_addr);
+    return 0;
+  }
+
+  //print memory content
+  printf("----- check mem: 0x%08x ~ 0x%08x -----\n", (unsigned int)addr, (unsigned int)end_addr);
   for(int i = 0; i < N; i++){
     word_t data = vaddr_read(addr + i * sizeof(word_t), sizeof(word_t));
     printf("0x%08x: 0x%08x\n", (unsigned int)(addr + i * sizeof(word_t)), data);
