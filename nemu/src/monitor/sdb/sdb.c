@@ -134,12 +134,14 @@ static int cmd_x(char *args){
     return 0;
   }
   int N = atoi(arg);
+  printf("check num: %d\n", N);
   arg = strtok(NULL, " ");
   if(arg == NULL){
     printf("Usage: x N EXPR\n");
     return 0;
   }
   vaddr_t addr = isa_reg_str2val(arg, NULL);
+  printf("check addr: 0x%08x\n", (unsigned int)addr);
   for(int i = 0; i < N; i++){
     word_t data = vaddr_read(addr + i * sizeof(word_t), sizeof(word_t));
     printf("0x%08x: 0x%08x\n", (unsigned int)(addr + i * sizeof(word_t)), data);
