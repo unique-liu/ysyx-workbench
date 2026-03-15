@@ -133,6 +133,7 @@ static int cmd_x(char *args){
     printf("Usage: x N EXPR\n");
     return 0;
   }
+  //translate num of units to print
   int N = atoi(arg);
   printf("check num: %d\n", N);
   arg = strtok(NULL, " ");
@@ -140,7 +141,14 @@ static int cmd_x(char *args){
     printf("Usage: x N EXPR\n");
     return 0;
   }
-  vaddr_t addr = isa_reg_str2val(arg, NULL);
+
+  //translate address to print
+  char *endptr = NULL;
+  vaddr_t addr = strtoul(arg, &endptr, 16);
+  if (*endptr != '\0') {
+    printf("Invalid address: %s\n", arg);
+    return 0;
+  }
   printf("check addr: 0x%08x\n", (unsigned int)addr);
   for(int i = 0; i < N; i++){
     word_t data = vaddr_read(addr + i * sizeof(word_t), sizeof(word_t));
