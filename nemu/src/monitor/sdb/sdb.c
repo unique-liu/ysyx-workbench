@@ -130,15 +130,14 @@ static int cmd_info(char *args){
 static int cmd_x(char *args){
   char *arg = strtok(NULL, " ");
   if(arg == NULL){
-    printf("Usage: x N EXPR\n");
+    printf("Error: No number of units specified.\n");
     return 0;
   }
   //translate num of units to print
   int N = atoi(arg);
-  printf("check num: %d\n", N);
   arg = strtok(NULL, " ");
   if(arg == NULL){
-    printf("Usage: x N EXPR\n");
+    printf("Error: No address specified.\n");
     return 0;
   }
 
@@ -149,11 +148,12 @@ static int cmd_x(char *args){
     printf("Invalid address: %s\n", arg);
     return 0;
   }
-  printf("check addr: 0x%08x\n", (unsigned int)addr);
+  printf("----- check mem: 0x%08x ~ 0x%08x -----\n", (unsigned int)addr, (unsigned int)(addr + N * sizeof(word_t)));
   for(int i = 0; i < N; i++){
     word_t data = vaddr_read(addr + i * sizeof(word_t), sizeof(word_t));
     printf("0x%08x: 0x%08x\n", (unsigned int)(addr + i * sizeof(word_t)), data);
   }
+  printf("----- check mem end -----\n");
   return 0;
 }
 
