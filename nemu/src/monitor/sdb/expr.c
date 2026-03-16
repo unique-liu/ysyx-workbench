@@ -222,7 +222,7 @@ word_t eval(int p, int q, bool *error) {
   //----- for debug
   if (p <= q) {
     tokens_to_string(p, q, debug_buf, sizeof(debug_buf));
-    SDB_Flog("[eval-info]", "token[%d,%d] evaluating expression: %s", p, q, debug_buf);
+    SDB_Flog("eval-info", "token[%d,%d] evaluating expression: %s", p, q, debug_buf);
   }
   //----- end debug
 
@@ -230,7 +230,7 @@ word_t eval(int p, int q, bool *error) {
   if (p > q) {
     /* Bad expression */
     printf("unkown error cases p > q.\n");
-    SDB_Flog("[eval-info]", "token[%d,%d] eval error: p>q", p, q);
+    SDB_Flog("eval-info", "token[%d,%d] eval error: p>q", p, q);
     *error = true;
     return 0;
   }

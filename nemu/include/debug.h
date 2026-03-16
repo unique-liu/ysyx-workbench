@@ -48,7 +48,7 @@
 #define Flog(name,format, ...)
 #endif
 
-#define USE_SDB_Flog
+// #define USE_SDB_Flog
 #ifdef USE_SDB_Flog
 #define SDB_Flog Flog
 #else
