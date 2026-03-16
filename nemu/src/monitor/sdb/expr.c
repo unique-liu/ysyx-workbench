@@ -64,10 +64,10 @@ static struct rule {
   // {"<", '<'},           // less than
   {"==", TK_EQ},        // equal
   {"!=", TK_NEQ},       // not equal
-  {">", TK_GT},         // greater than
   {">=", TK_GE},        // greater than or equal to
-  {"<", TK_LT},         // less than
+  {">", TK_GT},         // greater than
   {"<=", TK_LE},        // less than or equal to
+  {"<", TK_LT},         // less than
   {"&&", TK_AND},       // logical and
   {"\\|\\|", TK_OR},    // logical or
   {"\\$[a-zA-Z_][a-zA-Z0-9_]*", TK_REG} , // register
