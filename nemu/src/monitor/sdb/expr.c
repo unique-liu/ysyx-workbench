@@ -282,7 +282,7 @@ void test_expr() {
   bool success;
   char e[65536];
   char c;
-  FILE *fd = fopen("/home/liu/ysyx-workbench/nemu/tools/gen-expr/build/input", "r");
+  FILE *fd = fopen("/home/liu/ysyx-workbench/nemu/tools/gen-expr/input", "r");
   assert(fd != NULL);
   while ((c=getc(fd)) != EOF) {
     if (c == '&') {

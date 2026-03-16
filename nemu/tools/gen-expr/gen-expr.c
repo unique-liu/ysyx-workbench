@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
     int result;
     ret = fscanf(fp, "%d", &result);
     pclose(fp);
-
+    
     printf("&%u|%s\n", result, buf);
   }
   return 0;
