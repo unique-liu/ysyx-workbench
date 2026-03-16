@@ -305,5 +305,5 @@ void test_expr() {
     }
   
   }
-  printf("test end, run %d, pass: %d, failed: %d",runs,passed,failed);
+  printf("test end, run %d, pass: %d, failed: %d\n",runs,passed,failed);
 }
