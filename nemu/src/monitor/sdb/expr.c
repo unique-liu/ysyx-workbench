@@ -196,7 +196,18 @@ int find_main_operator(int p, int q) {
 void tokens_to_string(int p, int q, char *buf, int buf_size) {
   int pos = 0;
   for (int i = p; i <= q; i++) {
-    pos += snprintf(buf + pos, buf_size - pos, "[%d:'%s'] ", tokens[i].type, tokens[i].str);
+    // pos += snprintf(buf + pos, buf_size - pos, "[%d:'%s'] ", tokens[i].type, tokens[i].str);
+    switch (tokens[i].type) {
+      case TK_DECIMAL: case TK_HEX:
+        pos += snprintf(buf + pos, buf_size - pos, "[%s] ", tokens[i].str);
+        break;
+      case '+': case '-': case '*': case '/': case '(': case ')':
+        pos += snprintf(buf + pos, buf_size - pos, "[%c] ", tokens[i].type);
+        break;
+      default:
+        pos += snprintf(buf + pos, buf_size - pos, "unkown_token_type_%d ", tokens[i].type);
+        break;
+    }
   }
   buf[pos] = '\0';
 }
