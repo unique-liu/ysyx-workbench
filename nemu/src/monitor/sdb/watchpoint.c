@@ -90,7 +90,7 @@ void display_wp() {
   printf("NO\tENABLED\tLAST\tEXPR\n");
   
   while (cur!=NULL) {
-    printf("%d\t%s\t%u\t%s\n", cur->NO, cur->enabled?"true":"false", cur->last_value, cur->expr);
+    printf("%d\t%s\t%08x\t%s\n", cur->NO, cur->enabled?"true":"false", cur->last_value, cur->expr);
     cur = cur->next;
   }
   printf("----- watchpoint list end -----\n");
