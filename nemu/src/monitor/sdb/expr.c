@@ -70,7 +70,7 @@ static struct rule {
   {"<", TK_LT},         // less than
   {"&&", TK_AND},       // logical and
   {"\\|\\|", TK_OR},    // logical or
-  {"\\$[a-zA-Z_][a-zA-Z0-9_]*", TK_REG} , // register
+  {"\\$[0a-zA-Z_][a-zA-Z0-9_]*", TK_REG} , // register
 };
 
 #define NR_REGEX ARRLEN(rules)
