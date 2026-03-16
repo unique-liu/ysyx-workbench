@@ -25,6 +25,7 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 
+
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
   static char *line_read = NULL;
@@ -59,6 +60,8 @@ static int cmd_si(char *args);
 static int cmd_info(char *args);
 static int cmd_x(char *args);
 static int cmd_p(char *args);
+static int cmd_w(char *args);
+static int cmd_d(char *args);
 
 static struct {
   const char *name;
@@ -66,6 +69,7 @@ static struct {
   int (*handler) (char *);
 } cmd_table [] = {
   { "help", "Display information about all supported commands", cmd_help },
+  /* TODO: Add more commands */
   { "test", "Run the test cases for sdb", cmd_test },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
@@ -73,7 +77,8 @@ static struct {
   { "info", "Display register or watchpoint information", cmd_info },
   { "x", "Examine memory: x N EXPR", cmd_x },
   { "p", "Evaluate expression EXPR and print the result", cmd_p },
-  /* TODO: Add more commands */
+  { "w", "Set a watchpoint for an expression", cmd_w },
+  { "d", "Delete a watchpoint", cmd_d },
 
 };
 
@@ -127,7 +132,7 @@ static int cmd_info(char *args){
     isa_reg_display();
   }
   else if(strcmp(arg, "w") == 0){
-    printf("Watchpoint info is not implemented yet.\n");
+    display_wp();
   }
   else{
     printf("Unknown argument '%s'\n", arg);
@@ -185,6 +190,41 @@ static int cmd_p(char *args) {
   }else {
     printf("command p failed.\n");
   }
+  return 0;
+}
+
+static int cmd_w(char *args) {
+  if (args == NULL) {
+    printf("Usage: w EXPR\n");
+    return 0;
+  }
+  WP *wp = new_wp();
+  strncpy(wp->expr, args, sizeof(wp->expr) - 1);
+  wp->enabled = true;
+  wp->last_value = expr(args, &(wp->enabled));
+  wp->expr[sizeof(wp->expr) - 1] = '\0';
+  
+  if (!wp->enabled) {
+    printf("failed to set watchpoint for expression %s.\n", args);
+    free_wp(wp);
+  } else {
+    printf("watchpoint %d: %s\n", wp->NO, wp->expr);
+  }
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  if (args == NULL) {
+    printf("Usage: d N\n");
+    return 0;
+  }
+  int NO = atoi(args);
+  WP *wp = find_wp(NO);
+  if (wp == NULL) {
+    printf("No watchpoint number %d.\n", NO);
+    return 0;
+  }
+  free_wp(wp);
   return 0;
 }
 

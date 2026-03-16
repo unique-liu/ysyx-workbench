@@ -19,12 +19,23 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
+#include <memory/vaddr.h>
 #include <mydebug.h>
 enum {
-  TK_NOTYPE = 256, TK_EQ,TK_DECIMAL,TK_HEX
-
+  TK_NOTYPE = 256, 
   /* TODO: Add more token types */
-
+  TK_HEX,
+  TK_DECIMAL,
+  TK_EQ,
+  TK_NEQ, // not equal
+  TK_GT,  // greater than
+  TK_GE,  // greater than or equal to
+  TK_LT,  // less than
+  TK_LE,  // less than or equal to
+  TK_AND, // logical and
+  TK_OR,  // logical or
+  TK_REG, // register
+  TK_DEREF, // dereference operator
 };
 
 static struct rule {
@@ -52,6 +63,14 @@ static struct rule {
   // {">", '>'},           // greater than
   // {"<", '<'},           // less than
   {"==", TK_EQ},        // equal
+  {"!=", TK_NEQ},       // not equal
+  {">=", TK_GE},        // greater than or equal to
+  {">", TK_GT},         // greater than
+  {"<=", TK_LE},        // less than or equal to
+  {"<", TK_LT},         // less than
+  {"&&", TK_AND},       // logical and
+  {"\\|\\|", TK_OR},    // logical or
+  {"\\$[0a-zA-Z_][a-zA-Z0-9_]*", TK_REG} , // register
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -80,7 +99,7 @@ typedef struct token {
   char str[32];
 } Token;
 
-static Token tokens[10000] __attribute__((used)) = {};
+static Token tokens[256] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
 static bool make_token(char *e) {
@@ -110,10 +129,13 @@ static bool make_token(char *e) {
         switch (rules[i].token_type) {
           case TK_NOTYPE: break; // do nothing for notype
           case '+': case '-': case '*': case '/': case '(': case ')':
+          case TK_EQ: case TK_NEQ: case TK_GT: case TK_GE:
+          case TK_LT: case TK_LE: case TK_AND: case TK_OR:
+            
             tokens[nr_token].type = rules[i].token_type;
             nr_token++;
             break;
-          case TK_DECIMAL: case TK_HEX:
+          case TK_DECIMAL: case TK_HEX: case TK_REG:
             if(substr_len >= sizeof(tokens[nr_token].str)) {
               printf("number too long at position %d\n%s\n%*.s^\n", position, e, position, "");
               return false;
@@ -184,8 +206,14 @@ int find_main_operator(int p, int q) {
     if (parentheses_count == 0) { // only consider operators outside parentheses
       int precedence;
       switch (tokens[i].type) {
-        case '+': case '-': precedence = 1; break;
-        case '*': case '/': precedence = 2; break;
+        case TK_DEREF: precedence = 50; break; // dereference operator has the highest precedence
+        case '*': case '/': precedence = 49; break;
+        case '+': case '-': precedence = 48; break;
+        case TK_GE: case TK_GT: case TK_LE: case TK_LT: precedence = 47; break;
+        case TK_EQ: case TK_NEQ: precedence = 46; break;
+        case TK_AND: precedence = 45; break;
+        case TK_OR: precedence = 44; break;
+
         default: continue; // skip non-operator tokens
       }
       if (precedence <= min_precedence) { // right associative
@@ -203,12 +231,21 @@ void tokens_to_string(int p, int q, char *buf, int buf_size) {
   for (int i = p; i <= q; i++) {
     // pos += snprintf(buf + pos, buf_size - pos, "[%d:'%s'] ", tokens[i].type, tokens[i].str);
     switch (tokens[i].type) {
-      case TK_DECIMAL: case TK_HEX:
-        pos += snprintf(buf + pos, buf_size - pos, "[%c:%s] ", tokens[i].type==TK_DECIMAL ? 'D' : 'H', tokens[i].str);
+      case TK_DECIMAL: case TK_HEX: case TK_REG:
+        pos += snprintf(buf + pos, buf_size - pos, "[%c:%s] ", (tokens[i].type==TK_REG)?'R':(tokens[i].type==TK_DECIMAL?'D':'H'), tokens[i].str);
         break;
       case '+': case '-': case '*': case '/': case '(': case ')':
         pos += snprintf(buf + pos, buf_size - pos, "[%c] ",  tokens[i].type);
         break;
+      case TK_EQ: pos += snprintf(buf + pos, buf_size - pos, "[==] ");break;
+      case TK_NEQ: pos += snprintf(buf + pos, buf_size - pos, "[!=] ");break;
+      case TK_GT: pos += snprintf(buf + pos, buf_size - pos, "[>] ");break;
+      case TK_GE: pos += snprintf(buf + pos, buf_size - pos, "[>=] ");break;
+      case TK_LT: pos += snprintf(buf + pos, buf_size - pos, "[<] ");break;
+      case TK_LE: pos += snprintf(buf + pos, buf_size - pos, "[<=] ");break;
+      case TK_AND: pos += snprintf(buf + pos, buf_size - pos, "[&&] ");break;
+      case TK_OR: pos += snprintf(buf + pos, buf_size - pos, "[||] ");break;
+      case TK_DEREF:pos += snprintf(buf + pos, buf_size - pos, "[DER:*] ");break;
       default:
         pos += snprintf(buf + pos, buf_size - pos, "unkown_token_type_%d ", tokens[i].type);
         break;
@@ -243,7 +280,16 @@ word_t eval(int p, int q, bool *error) {
       return atoi(tokens[p].str);
     } else if (tokens[p].type == TK_HEX) {
       return strtol(tokens[p].str, NULL, 16);
-    } else {
+    } else if (tokens[p].type == TK_REG) {
+      bool success = false;
+      word_t val = isa_reg_str2val(tokens[p].str+1, &success);// skip the leading '$' when converting register name to value
+      if (!success) {
+        printf("failed to evaluate register %s.\n", tokens[p].str+1);
+        *error = true;
+        return 0;
+      }
+      return val;
+    }else{
       printf("unkown error cases single token not a number.\n");
       *error = true;
       return 0;
@@ -266,6 +312,20 @@ word_t eval(int p, int q, bool *error) {
       *error = true;
       return 0;
     }
+
+    if (tokens[op].type == TK_DEREF) {
+      int addr = eval(op + 1, q, &suberror);
+      if (suberror == true) {
+        *error = true;
+        return 0;
+      }
+      *error = false;
+      if (addr % 4 != 0) {
+        printf("warning: misaligned address 0x%08x.\n", addr);
+      }
+      return vaddr_read(addr, sizeof(word_t));
+    }
+
     int val1 = eval(p, op - 1,&suberror);
     if (suberror == true) {
       *error = true;
@@ -289,6 +349,14 @@ word_t eval(int p, int q, bool *error) {
           return 0; 
         }
         return val1 / val2;
+      case TK_EQ: return val1 == val2;
+      case TK_NEQ: return val1 != val2;
+      case TK_GT: return val1 > val2;
+      case TK_GE: return val1 >= val2;
+      case TK_LT: return val1 < val2;
+      case TK_LE: return val1 <= val2;
+      case TK_AND: return val1 && val2;
+      case TK_OR: return val1 || val2;
       default: 
         printf("unkown operator at position %d\n", op);
         *error = true;
@@ -304,6 +372,12 @@ word_t expr(char *e, bool *success) {
   }
 
   /* TODO: Insert codes to evaluate the expression. */
+  for (int i = 0; i < nr_token; i ++) {
+    if (tokens[i].type == '*' && (i == 0 || !(tokens[i-1].type==TK_DECIMAL||tokens[i-1].type==TK_HEX||tokens[i-1].type==TK_REG||tokens[i-1].type==')') ) ) {
+      tokens[i].type = TK_DEREF;
+    }
+  }
+
   bool error = false;
   word_t result = eval(0, nr_token - 1, &error);
   if (error) {
