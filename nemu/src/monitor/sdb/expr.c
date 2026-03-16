@@ -144,16 +144,21 @@ static bool make_token(char *e) {
 
 bool check_parentheses(int p, int q, bool *error) {
   int count = 0;
+  int surrounded_parentheses = 1;//judge whether the parentheses at position p and q are a pair of parentheses that can surround the whole expression
+  //scan all the parentheses in the expression
   for (int i = p; i <= q; i++) {
     if (tokens[i].type == '(') {
       count++;
     } else if (tokens[i].type == ')') {
       count--;
     }
+    if (count == 0) {
+      surrounded_parentheses = 0;
+    }
   }
   if (count == 0) {
     *error = false;
-    if (tokens[p].type=='(' && tokens[q].type==')') {
+    if (surrounded_parentheses == 1) {
       return true;
     }else {
       return false;
