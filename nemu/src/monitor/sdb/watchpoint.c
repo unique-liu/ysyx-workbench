@@ -87,10 +87,10 @@ void display_wp() {
     return;
   }
   printf("----- watchpoint list -----\n");
-  printf("NO\tENABLED\tLAST\tEXPR\n");
+  printf("NO\tENABLED\tLAST\t\tEXPR\n");
   
   while (cur!=NULL) {
-    printf("%d\t%s\t%08x\t%s\n", cur->NO, cur->enabled?"true":"false", cur->last_value, cur->expr);
+    printf("%d\t%s\t0x%08x\t\t%s\n", cur->NO, cur->enabled?"true":"false", cur->last_value, cur->expr);
     cur = cur->next;
   }
   printf("----- watchpoint list end -----\n");
@@ -105,7 +105,7 @@ int check_wp() {
       if (!success) {
         printf("failed to evaluate watchpoint %d expression %s.\n", cur->NO, cur->expr);
       } else if (val != cur->last_value) {
-        printf("Hit watchpoint %d: %s = %u (last: %u)\n", cur->NO, cur->expr, val, cur->last_value);
+        printf("Hit watchpoint %d: (%s) = 0x%08x (last: 0x%08x)\n", cur->NO, cur->expr, val, cur->last_value);
         cur->last_value = val;
         triggered++;
       }
