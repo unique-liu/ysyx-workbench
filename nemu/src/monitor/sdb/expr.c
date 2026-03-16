@@ -231,12 +231,21 @@ void tokens_to_string(int p, int q, char *buf, int buf_size) {
   for (int i = p; i <= q; i++) {
     // pos += snprintf(buf + pos, buf_size - pos, "[%d:'%s'] ", tokens[i].type, tokens[i].str);
     switch (tokens[i].type) {
-      case TK_DECIMAL: case TK_HEX:
-        pos += snprintf(buf + pos, buf_size - pos, "[%c:%s] ", tokens[i].type==TK_DECIMAL ? 'D' : 'H', tokens[i].str);
+      case TK_DECIMAL: case TK_HEX: case TK_REG:
+        pos += snprintf(buf + pos, buf_size - pos, "[%c:%s] ", (tokens[i].type==TK_REG)?'R':(tokens[i].type==TK_DECIMAL?'D':'H'), tokens[i].str);
         break;
       case '+': case '-': case '*': case '/': case '(': case ')':
         pos += snprintf(buf + pos, buf_size - pos, "[%c] ",  tokens[i].type);
         break;
+      case TK_EQ: pos += snprintf(buf + pos, buf_size - pos, "[==] ");break;
+      case TK_NEQ: pos += snprintf(buf + pos, buf_size - pos, "[!=] ");break;
+      case TK_GT: pos += snprintf(buf + pos, buf_size - pos, "[>] ");break;
+      case TK_GE: pos += snprintf(buf + pos, buf_size - pos, "[>=] ");break;
+      case TK_LT: pos += snprintf(buf + pos, buf_size - pos, "[<] ");break;
+      case TK_LE: pos += snprintf(buf + pos, buf_size - pos, "[<=] ");break;
+      case TK_AND: pos += snprintf(buf + pos, buf_size - pos, "[&&] ");break;
+      case TK_OR: pos += snprintf(buf + pos, buf_size - pos, "[||] ");break;
+      case TK_DEREF:pos += snprintf(buf + pos, buf_size - pos, "[DER:*] ");break;
       default:
         pos += snprintf(buf + pos, buf_size - pos, "unkown_token_type_%d ", tokens[i].type);
         break;
