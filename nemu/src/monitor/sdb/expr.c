@@ -260,6 +260,11 @@ word_t eval(int p, int q, bool *error) {
       return 0;
     }
     int op = find_main_operator(p, q); //the position of the main operator 
+    if (op == -1) {
+      printf("no operator found in expression.\n");
+      *error = true;
+      return 0;
+    }
     int val1 = eval(p, op - 1,&suberror);
     if (suberror == true) {
       *error = true;
