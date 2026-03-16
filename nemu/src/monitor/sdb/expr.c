@@ -204,10 +204,10 @@ void tokens_to_string(int p, int q, char *buf, int buf_size) {
     // pos += snprintf(buf + pos, buf_size - pos, "[%d:'%s'] ", tokens[i].type, tokens[i].str);
     switch (tokens[i].type) {
       case TK_DECIMAL: case TK_HEX:
-        pos += snprintf(buf + pos, buf_size - pos, "[%s] ", tokens[i].str);
+        pos += snprintf(buf + pos, buf_size - pos, "[%c:%s] ", tokens[i].type==TK_DECIMAL ? 'D' : 'H', tokens[i].str);
         break;
       case '+': case '-': case '*': case '/': case '(': case ')':
-        pos += snprintf(buf + pos, buf_size - pos, "[%c] ", tokens[i].type);
+        pos += snprintf(buf + pos, buf_size - pos, "[%c] ",  tokens[i].type);
         break;
       default:
         pos += snprintf(buf + pos, buf_size - pos, "unkown_token_type_%d ", tokens[i].type);
@@ -244,6 +244,7 @@ word_t eval(int p, int q, bool *error) {
     } else if (tokens[p].type == TK_HEX) {
       return strtol(tokens[p].str, NULL, 16);
     } else {
+      printf("unkown error cases single token not a number.\n");
       *error = true;
       return 0;
     }
