@@ -152,7 +152,7 @@ bool check_parentheses(int p, int q, bool *error) {
     } else if (tokens[i].type == ')') {
       count--;
     }
-    if (count == 0) {
+    if (count == 0 && i < q) {
       surrounded_parentheses = 0;
     }
   }
