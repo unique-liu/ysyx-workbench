@@ -243,7 +243,13 @@ word_t eval(int p, int q, bool *error) {
       case '+': return val1 + val2;
       case '-': return val1 - val2;
       case '*': return val1 * val2;
-      case '/': return val1 / val2;
+      case '/': 
+        if (val2 == 0) {
+          printf("division by zero.\n");
+          *error = true;
+          return 0; 
+        }
+        return val1 / val2;
       default: 
         printf("unkown operator at position %d\n", op);
         *error = true;
