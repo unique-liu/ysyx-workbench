@@ -50,13 +50,15 @@ static int cmd_c(char *args) {
 
 
 static int cmd_q(char *args) {
-  return -1;
+  exit(0);
 }
 
 static int cmd_help(char *args);
+static int cmd_test(char *args);
 static int cmd_si(char *args);
 static int cmd_info(char *args);
 static int cmd_x(char *args);
+static int cmd_p(char *args);
 
 static struct {
   const char *name;
@@ -64,12 +66,13 @@ static struct {
   int (*handler) (char *);
 } cmd_table [] = {
   { "help", "Display information about all supported commands", cmd_help },
+  { "test", "Run the test cases for sdb", cmd_test },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   { "si", "Step into instruction(s)", cmd_si },
   { "info", "Display register or watchpoint information", cmd_info },
   { "x", "Examine memory: x N EXPR", cmd_x },
-
+  { "p", "Evaluate expression EXPR and print the result", cmd_p },
   /* TODO: Add more commands */
 
 };
@@ -96,6 +99,11 @@ static int cmd_help(char *args) {
     }
     printf("Unknown command '%s'\n", arg);
   }
+  return 0;
+}
+static int cmd_test(char *args) {
+  extern void test_expr();
+  test_expr();
   return 0;
 }
 
@@ -162,6 +170,21 @@ static int cmd_x(char *args){
     printf("0x%08x: 0x%08x\n", (unsigned int)(addr + i * sizeof(word_t)), data);
   }
   printf("----- check mem end -----\n");
+  return 0;
+}
+
+static int cmd_p(char *args) {
+  if (args == NULL) {
+    printf("Usage: p EXPR\n");
+    return 0;
+  }
+  bool success;
+  word_t result = expr(args, &success);
+  if (success) {
+    printf("0x%08x\n", result);
+  }else {
+    printf("command p failed.\n");
+  }
   return 0;
 }
 
