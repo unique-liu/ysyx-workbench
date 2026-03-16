@@ -292,14 +292,14 @@ void test_expr() {
       runs++;
       if (success) {
         if (eval_result != result) {
-          printf("test failed: %s should be %u but got %u\n", e, result, eval_result);
+          printf("\trun %d failed\n", runs);
           failed++;
         } else {
-          printf("test passed: %s = %u\n", e, result);
+          printf("\trun %d passed\n", runs);
           passed++;
         }
       } else {
-        printf("failed to evaluate expression: %s\n", e);
+        printf("\trun %d error\n", runs);
         failed++;
       }
     }
