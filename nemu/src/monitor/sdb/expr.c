@@ -320,6 +320,9 @@ word_t eval(int p, int q, bool *error) {
         return 0;
       }
       *error = false;
+      if (addr % 4 != 0) {
+        printf("warning: misaligned address 0x%08x.\n", addr);
+      }
       return vaddr_read(addr, sizeof(word_t));
     }
 
