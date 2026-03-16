@@ -286,7 +286,7 @@ void test_expr() {
   assert(fd != NULL);
   while ((c=getc(fd)) != EOF) {
     if (c == '&') {
-      assert(fscanf(fd, "%u|%s\n", &result, e)==2);
+      assert(fscanf(fd, "%u|%[^\n]\n", &result, e)==2);
       success = false;
       word_t eval_result = expr(e, &success);
       runs++;
