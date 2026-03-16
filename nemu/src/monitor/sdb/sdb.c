@@ -54,6 +54,7 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_help(char *args);
+static int cmd_test(char *args);
 static int cmd_si(char *args);
 static int cmd_info(char *args);
 static int cmd_x(char *args);
@@ -65,6 +66,7 @@ static struct {
   int (*handler) (char *);
 } cmd_table [] = {
   { "help", "Display information about all supported commands", cmd_help },
+  { "test", "Run the test cases for sdb", cmd_test },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   { "si", "Step into instruction(s)", cmd_si },
@@ -97,6 +99,11 @@ static int cmd_help(char *args) {
     }
     printf("Unknown command '%s'\n", arg);
   }
+  return 0;
+}
+static int cmd_test(char *args) {
+  extern void test_expr();
+  test_expr();
   return 0;
 }
 

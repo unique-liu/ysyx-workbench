@@ -276,3 +276,34 @@ word_t expr(char *e, bool *success) {
   return result;
 }
 
+void test_expr() {
+  int runs =0, passed = 0, failed = 0;
+  word_t result;
+  bool success;
+  char e[65536];
+  char c;
+  FILE *fd = fopen("/home/liu/ysyx-workbench/nemu/tools/gen-expr/build/input", "r");
+  assert(fd != NULL);
+  while ((c=getc(fd)) != EOF) {
+    if (c == '&') {
+      assert(fscanf(fd, "%u|%s\n", &result, e)==2);
+      success = false;
+      word_t eval_result = expr(e, &success);
+      runs++;
+      if (success) {
+        if (eval_result != result) {
+          printf("test failed: %s should be %u but got %u\n", e, result, eval_result);
+          failed++;
+        } else {
+          printf("test passed: %s = %u\n", e, result);
+          passed++;
+        }
+      } else {
+        printf("failed to evaluate expression: %s\n", e);
+        failed++;
+      }
+    }
+  
+  }
+  printf("test end, run %d, pass: %d, failed: %d",runs,passed,failed);
+}
