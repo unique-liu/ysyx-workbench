@@ -22,6 +22,7 @@
 
 // this should be enough
 static char buf[65536] = {};
+static int buflen = 0;
 static char code_buf[65536 + 128] = {}; // a little larger than `buf`
 static char *code_format =
 "#include <stdio.h>\n"
@@ -30,11 +31,50 @@ static char *code_format =
 "  printf(\"%%u\", result); "
 "  return 0; "
 "}";
-
-static void gen_rand_expr() {
-  buf[0] = '\0';
+int choose(int n) {
+  return rand() % n;
 }
-
+void gen_num() {
+  int num = rand() % 10000;
+  char format[32]= {0};
+  if (choose(2) == 0) {
+    sprintf(format, "%d", num);
+  } else {
+    sprintf(format, "0x%x", num);
+  }
+  strcat(buf, format);
+  buflen += strlen(format);
+}
+void gen(char c) {
+  char format[2] = {c, '\0'};
+  strcat(buf, format);
+  buflen += strlen(format);
+}
+void gen_rand_op() {
+  char ops[] = "+-*/";
+  char op = ops[choose(4)];
+  gen(op);
+}
+void gen_space() {
+  int num = choose(5) + 1; // generate 1 to 5 spaces
+  char format[6] = {0};
+  memset(format, ' ', num);
+  format[num] = '\0';
+  strcat(buf, format);
+  buflen += num;
+}
+void gen_rand_expr() {
+  int choice = choose(3);
+  if (buflen>30000) {
+    choice = 3; // generate a number to avoid buffer overflow
+  }
+  switch (choice) {
+    case 0: gen_space(); gen_num();gen_space(); break;
+    case 1: gen('('); gen_rand_expr(); gen(')'); break;
+    case 2: gen_rand_expr(); gen_rand_op(); gen_rand_expr(); break;
+    case 3: gen_num(); break;
+  }
+}
 int main(int argc, char *argv[]) {
   int seed = time(0);
   srand(seed);
@@ -44,6 +84,8 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
+    buf[0] = '\0';
+    buflen = 0;
     gen_rand_expr();
 
     sprintf(code_buf, code_format, buf);
