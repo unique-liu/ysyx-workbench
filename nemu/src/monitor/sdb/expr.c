@@ -21,7 +21,7 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,
+  TK_NOTYPE = 256, TK_EQ,TK_DECIMAL,TK_HEX
 
   /* TODO: Add more token types */
 
@@ -38,6 +38,19 @@ static struct rule {
 
   {" +", TK_NOTYPE},    // spaces
   {"\\+", '+'},         // plus
+  {"-", '-'},           // minus
+  {"\\*", '*'},         // multiply
+  {"/", '/'},           // divide
+  {"\\(", '('},         // left parenthesis
+  {"\\)", ')'},         // right parenthesis
+  {"0x[0-9a-fA-F]+", TK_HEX},      // hexadecimal number
+  {"[0-9]+", TK_DECIMAL},      // decimal number
+  // {"[a-zA-Z_][a-zA-Z0-9_]*", '1'}, // identifier (variable name)
+  // {"!=", TK_EQ + 1},    // not equal
+  // {">=", TK_EQ + 2},    // greater than or equal to
+  // {"<=", TK_EQ + 3},    // less than or equal to
+  // {">", '>'},           // greater than
+  // {"<", '<'},           // less than
   {"==", TK_EQ},        // equal
 };
 
@@ -95,7 +108,25 @@ static bool make_token(char *e) {
          */
 
         switch (rules[i].token_type) {
-          default: TODO();
+          case TK_NOTYPE: break; // do nothing for notype
+          case '+': case '-': case '*': case '/': case '(': case ')':
+            tokens[nr_token].type = rules[i].token_type;
+            nr_token++;
+            break;
+          case TK_DECIMAL: case TK_HEX:
+            if(substr_len >= sizeof(tokens[nr_token].str)) {
+              printf("number too long at position %d\n%s\n%*.s^\n", position, e, position, "");
+              return false;
+            }
+            tokens[nr_token].type = rules[i].token_type;
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0'; // null-terminate
+            nr_token++;
+            break;
+          default: 
+            printf("unkown token type at position %d\n%s\n%*.s^\n", position, e, position, "");
+            return false;
+            break;
         }
 
         break;
@@ -111,6 +142,115 @@ static bool make_token(char *e) {
   return true;
 }
 
+bool check_parentheses(int p, int q, bool *error) {
+  int count = 0;
+  for (int i = p; i <= q; i++) {
+    if (tokens[i].type == '(') {
+      count++;
+    } else if (tokens[i].type == ')') {
+      count--;
+    }
+  }
+  if (count == 0) {
+    *error = false;
+    if (tokens[p].type=='(' && tokens[q].type==')') {
+      return true;
+    }else {
+      return false;
+    }
+  }else {
+    printf("unmatched parentheses.\n");
+    *error = true;
+    return false;
+  }
+}
+
+int find_main_operator(int p, int q) {
+  int main_op = -1;
+  int min_precedence = 100; // a large number
+  int parentheses_count = 0;
+
+  for (int i = p; i <= q; i++) {
+    if (tokens[i].type == '(') {
+      parentheses_count++;
+    } else if (tokens[i].type == ')') {
+      parentheses_count--;
+    } 
+    if (parentheses_count == 0) { // only consider operators outside parentheses
+      int precedence;
+      switch (tokens[i].type) {
+        case '+': case '-': precedence = 1; break;
+        case '*': case '/': precedence = 2; break;
+        default: continue; // skip non-operator tokens
+      }
+      if (precedence <= min_precedence) { // right associative
+        min_precedence = precedence;
+        main_op = i;
+      }
+    }
+  }
+
+  return main_op;
+}
+
+word_t eval(int p, int q, bool *error) {
+  bool suberror;
+  if (p > q) {
+    /* Bad expression */
+    printf("unkown error cases p > q.\n");
+    *error = true;
+    return 0;
+  }
+  else if (p == q) {
+    /* Single token.
+     * For now this token should be a number.
+     * Return the value of the number.
+     */
+    if (tokens[p].type == TK_DECIMAL) {
+      return atoi(tokens[p].str);
+    } else if (tokens[p].type == TK_HEX) {
+      return strtol(tokens[p].str, NULL, 16);
+    } else {
+      *error = true;
+      return 0;
+    }
+  }
+  else if (check_parentheses(p, q, &suberror) == true) {
+    /* The expression is surrounded by a matched pair of parentheses.
+     * If that is the case, just throw away the parentheses.
+     */
+    return eval(p + 1, q - 1, error);
+  }
+  else {
+    if (suberror == true) {
+      *error = true;
+      return 0;
+    }
+    int op = find_main_operator(p, q); //the position of the main operator 
+    int val1 = eval(p, op - 1,&suberror);
+    if (suberror == true) {
+      *error = true;
+      return 0;
+    }
+    int val2 = eval(op + 1, q,&suberror);
+    if (suberror == true) {
+      *error = true;
+      return 0;
+    }
+
+    *error = false;
+    switch (tokens[op].type) {
+      case '+': return val1 + val2;
+      case '-': return val1 - val2;
+      case '*': return val1 * val2;
+      case '/': return val1 / val2;
+      default: 
+        printf("unkown operator at position %d\n", op);
+        *error = true;
+        return 0;
+    }
+  }
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
@@ -119,7 +259,14 @@ word_t expr(char *e, bool *success) {
   }
 
   /* TODO: Insert codes to evaluate the expression. */
-  TODO();
-
-  return 0;
+  bool error;
+  word_t result = eval(0, nr_token - 1, &error);
+  if (error) {
+    *success = false;
+    printf("failed to evaluate expression.\n");
+  } else {
+    *success = true;
+  }
+  return result;
 }
+
