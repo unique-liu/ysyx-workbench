@@ -40,4 +40,7 @@
 
 #define TODO() panic("please implement me")
 
+#define Flog(name,format, ...)\
+    log_write(ANSI_FMT("[%s:%d %s][%s] " format,ANSI_FG_BLUE) "\n",__FILE__, __LINE__, __func__, name, ## __VA_ARGS__)
+
 #endif

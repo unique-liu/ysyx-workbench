@@ -19,7 +19,7 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
-
+#include <debug.h>
 enum {
   TK_NOTYPE = 256, TK_EQ,TK_DECIMAL,TK_HEX
 
@@ -193,11 +193,28 @@ int find_main_operator(int p, int q) {
   return main_op;
 }
 
+void tokens_to_string(int p, int q, char *buf, int buf_size) {
+  int pos = 0;
+  for (int i = p; i <= q; i++) {
+    pos += snprintf(buf + pos, buf_size - pos, "[%d:'%s'] ", tokens[i].type, tokens[i].str);
+  }
+  buf[pos] = '\0';
+}
+char debug_buf[65536];
 word_t eval(int p, int q, bool *error) {
+
+  //----- for debug
+  if (p <= q) {
+    tokens_to_string(p, q, debug_buf, sizeof(debug_buf));
+    Flog("[eval-info]", "token[%d,%d] evaluating expression: %s", p, q, debug_buf);
+  }
+  //----- end debug
+
   bool suberror;
   if (p > q) {
     /* Bad expression */
     printf("unkown error cases p > q.\n");
+    Flog("[eval-info]", "token[%d,%d] eval error: p>q", p, q);
     *error = true;
     return 0;
   }
