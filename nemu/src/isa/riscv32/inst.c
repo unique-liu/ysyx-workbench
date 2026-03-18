@@ -58,6 +58,7 @@ static int decode_exec(Decode *s) {
   word_t src1 = 0, src2 = 0, imm = 0; \
   decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \
   __VA_ARGS__ ; \
+  printf("src1=r%d,src2=%d,rd=%d,imm=0x%08x",src1,src2,rd,imm);\
 }
 
   INSTPAT_START();
@@ -72,7 +73,7 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
   
   INSTPAT_END();
-
+  
   R(0) = 0; // reset $zero to 0
 
   return 0;
