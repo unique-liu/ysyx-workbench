@@ -51,7 +51,9 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
     case TYPE_N: break;
     default: panic("unsupported type = %d", type);
   }
-    printf("src1(r%02d)=0x%08x  src2(r%02d)= 0x%08x  rd(r%02d)  imm=\t0x%08x\n",rs1,*src1,rs2,*src2,*rd,*imm);
+  //debug log
+  // printf("src1(r%02d)=0x%08x  src2(r%02d)= 0x%08x  rd(r%02d)  imm=\t0x%08x\n",rs1,*src1,rs2,*src2,*rd,*imm);
+  //debug log end
 }
 
 static int decode_exec(Decode *s) {
