@@ -22,6 +22,11 @@
 #define Mr vaddr_read
 #define Mw vaddr_write
 
+#define DEBUG_INST
+#ifdef DEBUG_INST
+unsigned int inst_count = 0;
+#endif
+
 enum {
   TYPE_I, TYPE_U, TYPE_S,TYPE_J,TYPE_R,TYPE_B,
   TYPE_N, // none
@@ -51,9 +56,14 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
     case TYPE_N: break;
     default: panic("unsupported type = %d", type);
   }
-  //debug log
-  // printf("src1(r%02d)=0x%08x  src2(r%02d)= 0x%08x  rd(r%02d)  imm=\t0x%08x\n",rs1,*src1,rs2,*src2,*rd,*imm);
-  //debug log end
+  
+  #ifdef DEBUG_INST
+  inst_count ++;
+  if (inst_count % 10000) {
+    printf("instruction %08d:  pc=0x%08x\n",inst_count,s->pc);
+    printf("src1(r%02d)=0x%08x  src2(r%02d)= 0x%08x  rd(r%02d)  imm=\t0x%08x\n",rs1,*src1,rs2,*src2,*rd,*imm);
+  }
+  #endif
 }
 
 static int decode_exec(Decode *s) {
@@ -76,7 +86,7 @@ static int decode_exec(Decode *s) {
   //INSTPAT("??????? ????? ????? 100 ????? 11000 11", blt    , B, s->dnpc = (int)src1 < (int)src2   ? s->pc + imm : s->snpc);
   INSTPAT("??????? ????? ????? 101 ????? 11000 11", bge    , B, s->dnpc = (int)src1 >= (int)src2  ? s->pc + imm : s->snpc);
   //INSTPAT("??????? ????? ????? 110 ????? 11000 11", bltu   , B, s->dnpc = src1 < src2             ? s->pc + imm : s->snpc);
-  //INSTPAT("??????? ????? ????? 111 ????? 11000 11", bgeu   , B, s->dnpc = src1 >= src2            ? s->pc + imm : s->snpc);
+  INSTPAT("??????? ????? ????? 111 ????? 11000 11", bgeu   , B, s->dnpc = src1 >= src2            ? s->pc + imm : s->snpc);
   
   INSTPAT("??????? ????? ????? 000 ????? 00100 11", addi   , I, R(rd) = src1 + imm);
   //INSTPAT("??????? ????? ????? 010 ????? 00100 11", slti   , I, R(rd) = (int)src1 < (int)imm);
