@@ -23,7 +23,7 @@
 #define Mw vaddr_write
 
 #define DEBUG_INST
-#define DEBUG_INST_RATIO 1000
+#define DEBUG_INST_RATIO 1
 #ifdef DEBUG_INST
 static uint64_t inst_count = 0;
 #endif
