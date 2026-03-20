@@ -60,7 +60,7 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
   #ifdef DEBUG_INST
   inst_count ++;
   if (inst_count % DEBUG_INST_RATIO == 0) {
-    printf("instruction %08lu:  pc=0x%08x\n",inst_count,s->pc);
+    printf("instruction %08lu:  pc=0x%08x  type=%d\n",inst_count,s->pc,type);
     printf("src1(r%02d)=0x%08x  src2(r%02d)= 0x%08x  rd(r%02d)  imm=\t0x%08x\n",rs1,*src1,rs2,*src2,*rd,*imm);
   }
   #endif
