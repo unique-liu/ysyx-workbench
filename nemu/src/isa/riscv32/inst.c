@@ -42,7 +42,7 @@ enum {
 #define immR() do { *imm = BITS(i, 24, 20); } while(0)
 #define immB() do { *imm = SEXT(BITS(i, 11, 8) << 1 | BITS(i, 30, 25) << 5 | BITS(i, 7, 7) << 11 | BITS(i, 31, 31) << 12 , 13); } while(0)
 
-static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_t *imm, int type) {
+static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_t *imm, int type,char *inst_name) {
   uint32_t i = s->isa.inst;
   int rs1 = BITS(i, 19, 15);
   int rs2 = BITS(i, 24, 20);
@@ -60,7 +60,7 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
   #ifdef DEBUG_INST
   inst_count ++;
   if (inst_count % DEBUG_INST_RATIO == 0) {
-    printf("instruction %08lu:  pc=0x%08x  type=%d\n",inst_count,s->pc,type);
+    printf("instruction %08lu:  pc=0x%08x  type=%d  name=%s\n",inst_count,s->pc,type,inst_name);
     printf("src1(r%02d)=0x%08x  src2(r%02d)= 0x%08x  rd(r%02d)  imm=\t0x%08x\n",rs1,*src1,rs2,*src2,*rd,*imm);
   }
   #endif
@@ -73,7 +73,7 @@ static int decode_exec(Decode *s) {
 #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
   int rd = 0; \
   word_t src1 = 0, src2 = 0, imm = 0; \
-  decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \
+  decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type),"name"); \
   __VA_ARGS__ ; \
 }
 
