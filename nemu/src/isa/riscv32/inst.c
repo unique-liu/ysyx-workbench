@@ -59,7 +59,7 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
   
   #ifdef DEBUG_INST
   inst_count ++;
-  if (inst_count % 10000) {
+  if (inst_count % 10000 == 0) {
     printf("instruction %08d:  pc=0x%08x\n",inst_count,s->pc);
     printf("src1(r%02d)=0x%08x  src2(r%02d)= 0x%08x  rd(r%02d)  imm=\t0x%08x\n",rs1,*src1,rs2,*src2,*rd,*imm);
   }
@@ -107,7 +107,7 @@ static int decode_exec(Decode *s) {
   
   INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, s->dnpc = s->pc + imm, R(rd) = s->pc + 4);
   
-  //INSTPAT("0000000 ????? ????? 001 ????? 00100 11", slli   , R, R(rd) = src1 << imm);
+  INSTPAT("0000000 ????? ????? 001 ????? 00100 11", slli   , R, R(rd) = src1 << imm);
   INSTPAT("0000000 ????? ????? 101 ????? 00100 11", srli   , R, R(rd) = src1 >> imm);
   INSTPAT("0100000 ????? ????? 101 ????? 00100 11", srai    , R, R(rd) = (src1 >> imm) | ((src1 & 0x80000000) ? ~(~0U >> imm) : 0));
   INSTPAT("0000000 ????? ????? 000 ????? 01100 11", add    , R, R(rd) = src1 + src2);
