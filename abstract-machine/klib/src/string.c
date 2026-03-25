@@ -100,4 +100,26 @@ int memcmp(const void *s1, const void *s2, size_t n) {
   return 0;
 }
 
+void *numtodecimal(void *dst, int num) {
+  char temp[20];
+  int i = 0;
+  if (num == 0) {
+    temp[i++] = '0';
+  } else {
+    if (num < 0) {
+      temp[i++] = '-';
+      num = -num;
+    }
+    while (num > 0) {
+      temp[i++] = (num % 10) + '0';
+      num /= 10;
+    }
+  }
+  for (int j = 0; j < i; j++) {
+    ((char *)dst)[j] = temp[i - j - 1];
+  }
+  ((char *)dst)[i] = '\0';
+  return dst;
+}
+
 #endif

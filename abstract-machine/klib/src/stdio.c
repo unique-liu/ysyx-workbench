@@ -14,7 +14,37 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
 }
 
 int sprintf(char *out, const char *fmt, ...) {
-  panic("Not implemented");
+  va_list ap;
+  va_start(ap, fmt);
+  int i = 0,j=0;
+
+  int num;
+  char *str;
+  while (1) {
+    if (fmt[i]!='%') {
+      out[j]=fmt[i];
+      i++;
+      j++;
+    }
+    i++;
+    switch (fmt[i]) {
+      case 'd':
+        num=va_arg(ap,int);
+        j+=strlen(numtodecimal(out+j,num));
+        i++;
+        break;
+
+      case 's':
+        str=va_arg(ap,char *);
+        strcpy(out+j,str);
+        j+=strlen(str);
+        i++;
+        break;
+
+      default:
+        panic("sprintf:unkown type\n");
+    }
+  }
 }
 
 int snprintf(char *out, size_t n, const char *fmt, ...) {
