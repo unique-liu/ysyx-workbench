@@ -169,6 +169,8 @@ class inst_decoder extends Module{
   io.src1_op                    := decoded(start + Srcop.op_width - 1, start)
   start                         = start + Srcop.op_width
   io.src2_op                    := decoded(start + Srcop.op_width - 1, start)
+  start                         = start + Srcop.op_width
+  io.special_op                 := decoded(start + Specialop.op_width - 1, start) 
 }
 
 class imm_gen extends Module{
