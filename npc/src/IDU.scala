@@ -33,6 +33,7 @@ class IDU extends Module{
     })
     //dclarations
     val branch_taken            = Wire(Bool())
+    val will_halt               = Wire(Bool())
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
     val will_out                = Wire(Bool())
@@ -110,7 +111,7 @@ class IDU extends Module{
 
     //terminater
     val special_op               = inst_decoder.io.special_op
-    val will_halt                = special_op === Specialop.halt_error || special_op === Specialop.halt_normal
+    will_halt                    := special_op === Specialop.halt_error || special_op === Specialop.halt_normal
     val is_error_halt            = special_op === Specialop.halt_error
     val halt_counter             = RegInit(10.U(32.W))
     when(will_halt){
