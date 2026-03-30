@@ -2,6 +2,10 @@ import chisel3._
 
 class IFU (initPC:Int=0)extends Module{
     val io = IO(new Bundle{
+        val before = new Bundle{
+            val valid           = Input (Bool())
+            val ready           = Output(Bool())
+        }
         val next = new Bundle{
             val valid           = Output(Bool())
             val ready           = Input (Bool())
@@ -11,25 +15,50 @@ class IFU (initPC:Int=0)extends Module{
             val branchPC        = Input (UInt(32.W))
             val ifbranch        = Input (Bool())
         }
-        val mem = new Bundle{
-            val PC              = Output(UInt(32.W))
-            val inst            = Input (UInt(32.W))
+        val memio = new Bundle{
+            val ren             = Output(Bool())
+            val raddr           = Output(UInt(32.W))
+            val rdata           = Input (UInt(32.W))
+
+            val wen             = Output(Bool())
+            val waddr           = Output(UInt(32.W))
+            val wdata           = Output(UInt(32.W))
+            val wmask           = Output(UInt(4.W))
         }
     })
-    val valid                   = RegInit(1.U(1.W))
-    val will_out                = Bool()
+    //fluiding control signals
+    val valid                   = RegInit(0.U(1.W))
+    val will_out                = Wire(Bool())
+    val will_in                 = Wire(Bool())
+    when(will_in){
+        valid                   := 1.U(1.W)
+    }.elsewhen(will_out){
+        valid                   := 0.U(1.W)
+    }
     will_out                    := io.next.ready & io.next.valid
+    will_in                     := io.before.valid & io.before.ready
+    io.before.ready             := !valid | will_out
+    io.next.valid               := valid
 
     val regPC                   = RegInit(initPC.U(32.W))
-
+    val nextPC                  = Wire(UInt(32.W))
     when(io.next.ifbranch){
-        regPC                   := io.next.branchPC
+        nextPC                  := io.next.branchPC
     }.otherwise{
-        regPC                   := regPC + 4.U
+        nextPC                  := regPC + 4.U
+    }
+    when(will_in){
+        regPC                   := nextPC
     }
 
     io.next.PC                  := regPC
-    io.mem.PC                   := regPC
-    io.mem.inst                 := io.mem.inst
+    io.next.inst                := io.memio.rdata
+    
+    io.memio.ren                := will_in
+    io.memio.raddr              := nextPC
+    io.memio.wen                := 0.B
+    io.memio.waddr              := 0.U
+    io.memio.wdata              := 0.U
+    io.memio.wmask              := 0.U
 
 }

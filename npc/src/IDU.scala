@@ -20,6 +20,7 @@ class IDU extends Module{
             val alu_src2        = Output(UInt(32.W))
             val alu_op          = Output(UInt(ALUop.op_width.W))
             val reg_op          = Output(UInt(Regop.op_width.W))
+            val reg_rd          = Output(UInt(5.W))
             val mem_op          = Output(UInt(Memop.op_width.W))
             val mem_src         = Output(UInt(32.W))
         }
@@ -30,10 +31,13 @@ class IDU extends Module{
             val rdata2          = Input (UInt(32.W))
         }
     })
+    //dclarations
+    val branch_taken            = Wire(Bool())
+    val will_halt               = Wire(Bool())
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
-    val will_out                = Bool()
-    val will_in                 = Bool()
+    val will_out                = Wire(Bool())
+    val will_in                 = Wire(Bool())
     when(will_in){
         valid                   := Mux(branch_taken,0.U(1.W),1.U(1.W))
     }.elsewhen(will_out){
@@ -41,8 +45,8 @@ class IDU extends Module{
     }
     will_out                    := io.next.ready & io.next.valid
     will_in                     := io.before.valid & io.before.ready
-    io.before.ready             := !valid | will_out
-    io.next.valid               := valid
+    io.before.ready             := (!valid | will_out) & !will_halt
+    io.next.valid               := valid & !will_halt
 
     //latching signals
     val regPC                   = RegInit(0.U(32.W))
@@ -63,6 +67,7 @@ class IDU extends Module{
     inst_decoder.io.inst        := regInst
     io.next.alu_op              := inst_decoder.io.alu_op
     io.next.reg_op              := inst_decoder.io.reg_op
+    io.next.reg_rd              := regInst(11, 7)
     io.next.mem_op              := inst_decoder.io.mem_op
 
     //imm generation
@@ -74,7 +79,7 @@ class IDU extends Module{
 
     //branch control
     val branch_ctrl              = Module(new branch_ctrl)
-    val branch_taken             = branch_ctrl.io.take_branch//there have some problem, fix in the future
+    branch_taken                 := branch_ctrl.io.take_branch//there have some problem, fix in the future
     branch_ctrl.io.src1          := io.regfile.rdata1
     branch_ctrl.io.src2          := io.regfile.rdata2
     branch_ctrl.io.pc            := regPC
@@ -103,6 +108,18 @@ class IDU extends Module{
         is(Srcop.use_four){io.next.alu_src2 := 4.U}
     }
     io.next.mem_src              := io.regfile.rdata2
+
+    //terminater
+    val special_op               = inst_decoder.io.special_op
+    will_halt                    := special_op === Specialop.halt_error || special_op === Specialop.halt_normal
+    val is_error_halt            = special_op === Specialop.halt_error
+    val halt_counter             = RegInit(10.U(32.W))
+    when(will_halt){
+        halt_counter              := halt_counter - 1.U
+    }
+    val u_specialio                = Module(new SpecialIO)
+    u_specialio.io.halt           := halt_counter === 0.U
+    u_specialio.io.error          := is_error_halt
 }
 
 class inst_decoder extends Module{
@@ -115,6 +132,7 @@ class inst_decoder extends Module{
         val branch_op           = Output(UInt(Branchop.op_width.W))
         val src1_op             = Output(UInt(Srcop.op_width.W))
         val src2_op             = Output(UInt(Srcop.op_width.W))
+        val special_op          = Output(UInt(Specialop.op_width.W))
     })
     def concatBitPat(bps: BitPat*): BitPat = {
         val bits = bps.map(_.rawString.stripPrefix("b").replace("?", "_")).mkString
@@ -122,16 +140,17 @@ class inst_decoder extends Module{
     }
     val table = TruthTable(
         Map(
-            InstCode.add     -> concatBitPat(InstType.b_R, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_reg),
-            InstCode.jalr    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_jalr, Srcop.b_use_pc , Srcop.b_use_four),
-            InstCode.addi    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
-            InstCode.lbu     -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_byte_u , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
-            InstCode.lw      -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_word   , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
-            InstCode.sb      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_byte   , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
-            InstCode.sw      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_word   , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
-            InstCode.lui     -> concatBitPat(InstType.b_U, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_imm, Srcop.b_use_zero)
+            InstCode.add     -> concatBitPat(InstType.b_R, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_reg ,Specialop.b_noop),
+            InstCode.jalr    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_jalr, Srcop.b_use_pc   , Srcop.b_use_four,Specialop.b_noop),
+            InstCode.addi    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            InstCode.lbu     -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_byte_u , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            InstCode.lw      -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_word   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            InstCode.ebreak  -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_noop , Memop.b_noop     , Branchop.b_noop, Srcop.b_use_zero , Srcop.b_use_zero,Specialop.b_halt_normal),
+            InstCode.sb      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_byte   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            InstCode.sw      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_word   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            InstCode.lui     -> concatBitPat(InstType.b_U, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_imm  , Srcop.b_use_zero,Specialop.b_noop)
         ),
-        concatBitPat(InstType.b_Invalid, ALUop.b_add, Regop.b_noop, Memop.b_noop, Branchop.b_noop, Srcop.b_use_zero, Srcop.b_use_zero)
+        concatBitPat(InstType.b_Invalid, ALUop.b_add, Regop.b_noop, Memop.b_noop, Branchop.b_noop, Srcop.b_use_zero, Srcop.b_use_zero, Specialop.b_halt_error)
     )
 
   val decoded = decoder(io.inst, table)
@@ -150,6 +169,8 @@ class inst_decoder extends Module{
   io.src1_op                    := decoded(start + Srcop.op_width - 1, start)
   start                         = start + Srcop.op_width
   io.src2_op                    := decoded(start + Srcop.op_width - 1, start)
+  start                         = start + Srcop.op_width
+  io.special_op                 := decoded(start + Specialop.op_width - 1, start) 
 }
 
 class imm_gen extends Module{

@@ -9,6 +9,7 @@ class EXU extends Module{
             val alu_src2        = Input (UInt(32.W))
             val alu_op          = Input (UInt(ALUop.op_width.W))
             val reg_op          = Input (UInt(Regop.op_width.W))
+            val reg_rd          = Input (UInt(5.W))
             val mem_op          = Input (UInt(Memop.op_width.W))
             val mem_src         = Input (UInt(32.W))
         }
@@ -17,14 +18,15 @@ class EXU extends Module{
             val ready           = Input (Bool())
             val alu_result      = Output(UInt(32.W))
             val reg_op          = Output(UInt(Regop.op_width.W))
+            val reg_rd          = Output(UInt(5.W))
             val mem_op          = Output(UInt(Memop.op_width.W))
             val mem_src         = Output(UInt(32.W))
         }
     })
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
-    val will_out                = Bool()
-    val will_in                 = Bool()
+    val will_out                = Wire(Bool())
+    val will_in                 = Wire(Bool())
     when(will_in){
         valid                   := 1.U(1.W)
     }.elsewhen(will_out){
@@ -40,6 +42,7 @@ class EXU extends Module{
     val reg_alu_src2            = Reg(UInt(32.W))
     val reg_alu_op              = Reg(UInt(ALUop.op_width.W))
     val reg_reg_op              = Reg(UInt(Regop.op_width.W))
+    val reg_reg_rd              = Reg(UInt(5.W))
     val reg_mem_op              = Reg(UInt(Memop.op_width.W))
     val reg_mem_src             = Reg(UInt(32.W))
     when(will_in){
@@ -47,6 +50,7 @@ class EXU extends Module{
         reg_alu_src2            := io.before.alu_src2
         reg_alu_op              := io.before.alu_op  
         reg_reg_op              := io.before.reg_op  
+        reg_reg_rd              := io.before.reg_rd
         reg_mem_op              := io.before.mem_op  
         reg_mem_src             := io.before.mem_src
     }
@@ -62,6 +66,7 @@ class EXU extends Module{
     //output
     io.next.alu_result          := alu_out
     io.next.reg_op              := reg_reg_op
+    io.next.reg_rd              := reg_reg_rd
     io.next.mem_op              := reg_mem_op
     io.next.mem_src             := reg_mem_src
 }
