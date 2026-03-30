@@ -31,6 +31,8 @@ class IDU extends Module{
             val rdata2          = Input (UInt(32.W))
         }
     })
+    //dclarations
+    val branch_taken            = Wire(Bool())
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
     val will_out                = Wire(Bool())
@@ -76,7 +78,7 @@ class IDU extends Module{
 
     //branch control
     val branch_ctrl              = Module(new branch_ctrl)
-    val branch_taken             = branch_ctrl.io.take_branch//there have some problem, fix in the future
+    branch_taken                 := branch_ctrl.io.take_branch//there have some problem, fix in the future
     branch_ctrl.io.src1          := io.regfile.rdata1
     branch_ctrl.io.src2          := io.regfile.rdata2
     branch_ctrl.io.pc            := regPC

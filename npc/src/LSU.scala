@@ -32,6 +32,8 @@ class LSU extends Module{
             val wmask           = Output(UInt(4.W))
         }
     })
+    //dclarations
+    val mem_mask                = Wire(UInt(4.W))
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
     val will_out                = Wire(Bool())
@@ -61,7 +63,6 @@ class LSU extends Module{
     }
 
     //memio
-    val mem_mask                = Wire(UInt(4.W))
     mem_mask                    := 0.U
     switch(io.before.mem_op(Memop.half_bit,Memop.load_bit)){
         is("b01".U){mem_mask := "b0001".U}
