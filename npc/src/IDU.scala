@@ -21,6 +21,7 @@ class IDU extends Module{
             val alu_op          = Output(UInt(ALUop.op_width.W))
             val reg_op          = Output(UInt(Regop.op_width.W))
             val mem_op          = Output(UInt(Memop.op_width.W))
+            val mem_src         = Output(UInt(32.W))
         }
         val regfile = new Bundle{
             val raddr1          = Output(UInt(5.W))
@@ -81,6 +82,27 @@ class IDU extends Module{
     branch_ctrl.io.branch_op     := inst_decoder.io.branch_op
     io.before.branchPC           := branch_ctrl.io.branch_target
     io.before.ifbranch           := branch_taken
+
+    //ALU source selection
+    val src1_op                  = inst_decoder.io.src1_op
+    val src2_op                  = inst_decoder.io.src2_op
+    io.next.alu_src1             := 0.U
+    io.next.alu_src2             := 0.U
+    switch(src1_op){
+        is(Srcop.use_zero){io.next.alu_src1 := 0.U}
+        is(Srcop.use_reg){io.next.alu_src1 := io.regfile.rdata1}
+        is(Srcop.use_imm){io.next.alu_src1 := imm}
+        is(Srcop.use_pc){io.next.alu_src1 := regPC}
+        is(Srcop.use_four){io.next.alu_src1 := 4.U}
+    }
+    switch(src2_op){
+        is(Srcop.use_zero){io.next.alu_src2 := 0.U}
+        is(Srcop.use_reg){io.next.alu_src2 := io.regfile.rdata2}
+        is(Srcop.use_imm){io.next.alu_src2 := imm}
+        is(Srcop.use_pc){io.next.alu_src2 := regPC}
+        is(Srcop.use_four){io.next.alu_src2 := 4.U}
+    }
+    io.next.mem_src              := io.regfile.rdata2
 }
 
 class inst_decoder extends Module{
@@ -91,6 +113,8 @@ class inst_decoder extends Module{
         val reg_op              = Output(UInt(Regop.op_width.W))
         val mem_op              = Output(UInt(Memop.op_width.W))
         val branch_op           = Output(UInt(Branchop.op_width.W))
+        val src1_op             = Output(UInt(Srcop.op_width.W))
+        val src2_op             = Output(UInt(Srcop.op_width.W))
     })
     def concatBitPat(bps: BitPat*): BitPat = {
         val bits = bps.map(_.rawString.stripPrefix("b").replace("?", "_")).mkString
@@ -98,9 +122,16 @@ class inst_decoder extends Module{
     }
     val table = TruthTable(
         Map(
-            InstCode.add     -> concatBitPat(InstType.b_R, ALUop.b_add, Regop.b_w_alu, Memop.b_noop, Branchop.b_noop),
+            InstCode.add     -> concatBitPat(InstType.b_R, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_reg),
+            InstCode.jalr    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_jalr, Srcop.b_use_pc , Srcop.b_use_four),
+            InstCode.addi    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
+            InstCode.lbu     -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_byte_u , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
+            InstCode.lw      -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_word   , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
+            InstCode.sb      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_byte   , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
+            InstCode.sw      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_word   , Branchop.b_noop, Srcop.b_use_reg, Srcop.b_use_imm),
+            InstCode.lui     -> concatBitPat(InstType.b_U, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_imm, Srcop.b_use_zero)
         ),
-        concatBitPat(InstType.b_Invalid, ALUop.b_add, Regop.b_noop, Memop.b_noop, Branchop.b_noop)
+        concatBitPat(InstType.b_Invalid, ALUop.b_add, Regop.b_noop, Memop.b_noop, Branchop.b_noop, Srcop.b_use_zero, Srcop.b_use_zero)
     )
 
   val decoded = decoder(io.inst, table)
@@ -115,6 +146,10 @@ class inst_decoder extends Module{
   io.mem_op                     := decoded(start + Memop.op_width - 1, start)
   start                         = start + Memop.op_width
   io.branch_op                  := decoded(start + Branchop.op_width - 1, start)
+  start                         = start + Branchop.op_width
+  io.src1_op                    := decoded(start + Srcop.op_width - 1, start)
+  start                         = start + Srcop.op_width
+  io.src2_op                    := decoded(start + Srcop.op_width - 1, start)
 }
 
 class imm_gen extends Module{

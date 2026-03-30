@@ -105,6 +105,24 @@ object Branchop{
     val b_jal       = BitPat(jal)
     val b_jalr      = BitPat(jalr)
 }
+object Srcop{
+    val op_width    = 4
+    val reg_bit     = 0
+    val imm_bit     = 1
+    val pc_bit      = 2
+    val four_bit    = 3
+    val use_zero    = "b0000".U(op_width.W)
+    val use_reg     = "b0001".U(op_width.W)
+    val use_imm     = "b0010".U(op_width.W)
+    val use_pc      = "b0100".U(op_width.W)
+    val use_four    = "b1000".U(op_width.W)
+    //following the the bitpattern of above
+    val b_use_zero  = BitPat(use_zero)
+    val b_use_reg   = BitPat(use_reg)
+    val b_use_imm   = BitPat(use_imm)
+    val b_use_pc    = BitPat(use_pc)
+    val b_use_four  = BitPat(use_four)
+}
 object InstCode{
     //R-type: func7|rs2|rs1|func3|rd|opcode
     val add         = BitPat("b0000000_?????_?????_000_?????_0110011")
