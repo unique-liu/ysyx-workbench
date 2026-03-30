@@ -17,9 +17,9 @@ class WBU extends Module{
             val ready           = Input (Bool())
         }
         val regfile = new Bundle{
-            val waddr   = Input(UInt(5.W))
-            val wdata   = Input(UInt(32.W))
-            val wen     = Input(Bool())
+            val waddr           = Output(UInt(5.W))
+            val wdata           = Output(UInt(32.W))
+            val wen             = Output(Bool())
         }
     })
     //fluiding control signals
