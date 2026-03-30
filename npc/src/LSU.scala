@@ -64,7 +64,7 @@ class LSU extends Module{
 
     //memio
     mem_mask                    := 0.U
-    switch(io.before.mem_op(Memop.half_bit,Memop.load_bit)){
+    switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
         is("b01".U){mem_mask := "b0001".U}
         is("b10".U){mem_mask := "b0011".U}
         is("b11".U){mem_mask := "b1111".U}
