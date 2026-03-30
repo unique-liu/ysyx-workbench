@@ -33,8 +33,8 @@ class IDU extends Module{
     })
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
-    val will_out                = Bool()
-    val will_in                 = Bool()
+    val will_out                = Wire(Bool())
+    val will_in                 = Wire(Bool())
     when(will_in){
         valid                   := Mux(branch_taken,0.U(1.W),1.U(1.W))
     }.elsewhen(will_out){
