@@ -1,4 +1,36 @@
 BUILD_DIR = ./build
+CPP_DIRS = csrc
+VERILOG_DIRS = $(BUILD_DIR) vsrc
+
+# 顶层模块名
+TOP_MODULE = CPUtop
+TARGET = Vtop
+
+# Verilator 可执行文件
+VERILATOR = verilator
+
+# 收集所有.v .sv .cpp 文件
+VERILOG_SRC = $(shell find $(VERILOG_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
+CPP_SRC = $(shell find $(CPP_DIRS) -type f -name "*.cpp" 2>/dev/null)
+
+ifeq ($(strip $(VERILOG_SRC)),)
+$(error No Verilog/SystemVerilog files found in $(VERILOG_DIRS))
+endif
+
+ifeq ($(strip $(CPP_SRC)),)
+$(warning No C++ source files found, assuming pure Verilog simulation)
+endif
+
+# 编译选项
+VERILATOR_FLAGS = --cc --build --exe -j --top-module $(TOP_MODULE)
+# 如需波形跟踪，添加：
+VERILATOR_FLAGS += --trace --trace-fst
+# 目标：构建可执行文件
+verilator: $(TARGET)
+
+$(TARGET): $(VERILOG_SRC) $(CPP_SRC)
+	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILOG_SRC) $(CPP_SRC) -o $@
+
 
 test:
 	mill -i test
