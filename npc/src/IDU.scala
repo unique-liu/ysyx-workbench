@@ -139,63 +139,63 @@ class inst_decoder extends Module{
     //     BitPat("b" + bits)
     // }
 
-    // def concatBitPat(parts: UInt*): BitPat = {
-    //     if (parts.isEmpty) BitPat("b")
-    //     else {
-    //         val bitStrs = parts.map { p =>
-    //             p.litOption match {
-    //                 case Some(v) =>
-    //                 val w = p.getWidth
-    //                 val s = v.bigInteger.toString(2)
-    //                 "0" * (w - s.length) + s
-    //                 case None =>
-    //                 throw new Exception(s"concatBitPat: non-literal part (width=${p.getWidth}), ensure you pass literal UInts")
-    //             }
-    //         }
-    //         BitPat("b" + bitStrs.mkString)
-    //     }
-    // }
-
-    def concatBitPat(parts: BitPat*): BitPat = {
-        // 核心：提取纯 01 串，去掉 BitPat() 包装
-        val bitStrs = parts.map { bp =>
-            bp.toString
-            .replace("BitPat(", "")  // 去掉前缀
-            .replace(")", "")        // 去掉后缀
-            .replace("_", "")        // 去掉分隔符
+    def concatBitPat(parts: UInt*): BitPat = {
+        if (parts.isEmpty) BitPat("b")
+        else {
+            val bitStrs = parts.map { p =>
+                p.litOption match {
+                    case Some(v) =>
+                    val w = p.getWidth
+                    val s = v.bigInteger.toString(2)
+                    "0" * (w - s.length) + s
+                    case None =>
+                    throw new Exception(s"concatBitPat: non-literal part (width=${p.getWidth}), ensure you pass literal UInts")
+                }
+            }
+            BitPat("b" + bitStrs.mkString)
         }
-        
-        val fullBits = bitStrs.mkString
-        
-        // 打印最终拼接结果（你要的功能）
-        println("[concatBitPat 最终位串] => b" + fullBits)
-        
-        // 生成合法 BitPat
-        BitPat("b" + fullBits)
     }
+
+    // def concatBitPat(parts: BitPat*): BitPat = {
+    //     // 核心：提取纯 01 串，去掉 BitPat() 包装
+    //     val bitStrs = parts.map { bp =>
+    //         bp.toString
+    //         .replace("BitPat(", "")  // 去掉前缀
+    //         .replace(")", "")        // 去掉后缀
+    //         .replace("_", "")        // 去掉分隔符
+    //     }
+        
+    //     val fullBits = bitStrs.mkString
+        
+    //     // 打印最终拼接结果（你要的功能）
+    //     println("[concatBitPat 最终位串] => b" + fullBits)
+        
+    //     // 生成合法 BitPat
+    //     BitPat("b" + fullBits)
+    // }
     val table = TruthTable(
         Map(
-            InstCode.add     -> concatBitPat(InstType.b_R, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_reg ,Specialop.b_noop),
-            InstCode.jalr    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_jalr, Srcop.b_use_pc   , Srcop.b_use_four,Specialop.b_noop),
-            InstCode.addi    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
-            InstCode.lbu     -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_byte_u , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
-            InstCode.lw      -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_word   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
-            InstCode.ebreak  -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_noop , Memop.b_noop     , Branchop.b_noop, Srcop.b_use_zero , Srcop.b_use_zero,Specialop.b_halt_normal),
-            InstCode.sb      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_byte   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
-            InstCode.sw      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_word   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
-            InstCode.lui     -> concatBitPat(InstType.b_U, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_imm  , Srcop.b_use_zero,Specialop.b_noop)
-            // InstCode.add     -> concatBitPat(InstType.R, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.noop, Srcop.use_reg  , Srcop.use_reg ,Specialop.noop),
-            // InstCode.jalr    -> concatBitPat(InstType.I, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.jalr, Srcop.use_pc   , Srcop.use_four,Specialop.noop),
-            // InstCode.addi    -> concatBitPat(InstType.I, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
-            // InstCode.lbu     -> concatBitPat(InstType.I, ALUop.add, Regop.w_mem, Memop.l_byte_u , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
-            // InstCode.lw      -> concatBitPat(InstType.I, ALUop.add, Regop.w_mem, Memop.l_word   , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
-            // InstCode.ebreak  -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop     , Branchop.noop, Srcop.use_zero , Srcop.use_zero,Specialop.halt_normal),
-            // InstCode.sb      -> concatBitPat(InstType.S, ALUop.add, Regop.noop , Memop.s_byte   , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
-            // InstCode.sw      -> concatBitPat(InstType.S, ALUop.add, Regop.noop , Memop.s_word   , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
-            // InstCode.lui     -> concatBitPat(InstType.U, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.noop, Srcop.use_imm  , Srcop.use_zero,Specialop.noop)
+            // InstCode.add     -> concatBitPat(InstType.b_R, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_reg ,Specialop.b_noop),
+            // InstCode.jalr    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_jalr, Srcop.b_use_pc   , Srcop.b_use_four,Specialop.b_noop),
+            // InstCode.addi    -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            // InstCode.lbu     -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_byte_u , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            // InstCode.lw      -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_w_mem, Memop.b_l_word   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            // InstCode.ebreak  -> concatBitPat(InstType.b_I, ALUop.b_add, Regop.b_noop , Memop.b_noop     , Branchop.b_noop, Srcop.b_use_zero , Srcop.b_use_zero,Specialop.b_halt_normal),
+            // InstCode.sb      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_byte   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            // InstCode.sw      -> concatBitPat(InstType.b_S, ALUop.b_add, Regop.b_noop , Memop.b_s_word   , Branchop.b_noop, Srcop.b_use_reg  , Srcop.b_use_imm ,Specialop.b_noop),
+            // InstCode.lui     -> concatBitPat(InstType.b_U, ALUop.b_add, Regop.b_w_alu, Memop.b_noop     , Branchop.b_noop, Srcop.b_use_imm  , Srcop.b_use_zero,Specialop.b_noop)
+            InstCode.add     -> concatBitPat(InstType.R, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.noop, Srcop.use_reg  , Srcop.use_reg ,Specialop.noop),
+            InstCode.jalr    -> concatBitPat(InstType.I, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.jalr, Srcop.use_pc   , Srcop.use_four,Specialop.noop),
+            InstCode.addi    -> concatBitPat(InstType.I, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
+            InstCode.lbu     -> concatBitPat(InstType.I, ALUop.add, Regop.w_mem, Memop.l_byte_u , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
+            InstCode.lw      -> concatBitPat(InstType.I, ALUop.add, Regop.w_mem, Memop.l_word   , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
+            InstCode.ebreak  -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop     , Branchop.noop, Srcop.use_zero , Srcop.use_zero,Specialop.halt_normal),
+            InstCode.sb      -> concatBitPat(InstType.S, ALUop.add, Regop.noop , Memop.s_byte   , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
+            InstCode.sw      -> concatBitPat(InstType.S, ALUop.add, Regop.noop , Memop.s_word   , Branchop.noop, Srcop.use_reg  , Srcop.use_imm ,Specialop.noop),
+            InstCode.lui     -> concatBitPat(InstType.U, ALUop.add, Regop.w_alu, Memop.noop     , Branchop.noop, Srcop.use_imm  , Srcop.use_zero,Specialop.noop)
         ),
-        concatBitPat(InstType.b_Invalid, ALUop.b_add, Regop.b_noop, Memop.b_noop, Branchop.b_noop, Srcop.b_use_zero, Srcop.b_use_zero, Specialop.b_halt_error)
-        // concatBitPat(InstType.Invalid, ALUop.add, Regop.noop, Memop.noop, Branchop.noop, Srcop.use_zero, Srcop.use_zero, Specialop.halt_error)
+        // concatBitPat(InstType.b_Invalid, ALUop.b_add, Regop.b_noop, Memop.b_noop, Branchop.b_noop, Srcop.b_use_zero, Srcop.b_use_zero, Specialop.b_halt_error)
+        concatBitPat(InstType.Invalid, ALUop.add, Regop.noop, Memop.noop, Branchop.noop, Srcop.use_zero, Srcop.use_zero, Specialop.halt_error)
 
     )
 
