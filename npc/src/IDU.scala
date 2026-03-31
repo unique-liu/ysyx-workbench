@@ -142,10 +142,10 @@ class inst_decoder extends Module{
         if (parts.isEmpty) BitPat("b")
         else {
             val bitStrs = parts.map { p =>
-                p.litValueOption match {
+                p.litOption match {
                     case Some(v) =>
                     val w = p.getWidth
-                    val s = v.toString(2)
+                    val s = v.bigInteger.toString(2)
                     "0" * (w - s.length) + s
                     case None =>
                     throw new Exception(s"concatBitPat: non-literal part (width=${p.getWidth}), ensure you pass literal UInts")
