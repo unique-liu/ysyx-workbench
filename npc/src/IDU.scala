@@ -156,29 +156,22 @@ class inst_decoder extends Module{
     //     }
     // }
 
-    def concatBitPat(parts: Any*): BitPat = {
-        val bitStrs = parts.map {
-            case bp: BitPat =>
-            // 处理 BitPat：提取纯二进制串
-            bp.toString.replace("BitPat(", "").replace(")", "").trim
-            case u: UInt =>
-            // 处理 UInt：按位宽转二进制，自动补前导0
-            u.litValueOption match {
-                case Some(v) =>
-                val w = u.getWidth
-                val s = v.toString(2)
-                "0" * (w - s.length) + s
-                case None =>
-                throw new Exception(s"concatBitPat 只能输入常量 UInt/BitPat")
-            }
-            case other =>
-            throw new Exception(s"不支持的类型: ${other.getClass}")
+    def concatBitPat(parts: BitPat*): BitPat = {
+        // 核心：提取纯 01 串，去掉 BitPat() 包装
+        val bitStrs = parts.map { bp =>
+            bp.toString
+            .replace("BitPat(", "")  // 去掉前缀
+            .replace(")", "")        // 去掉后缀
+            .replace("_", "")        // 去掉分隔符
         }
-
+        
         val fullBits = bitStrs.mkString
-        // 打印最终结果
-        println(s"[concatBitPat 最终位串] => b$fullBits\n")
-        BitPat(s"b$fullBits")
+        
+        // 打印最终拼接结果（你要的功能）
+        println("[concatBitPat 最终位串] => b" + fullBits)
+        
+        // 生成合法 BitPat
+        BitPat("b" + fullBits)
     }
     val table = TruthTable(
         Map(
