@@ -155,24 +155,22 @@ class inst_decoder extends Module{
 
     val decoded = decoder(io.inst, table)
 
-    var end = 0
-    // 最后拼接的 = 最低位
-    io.special_op                 := decoded(end + Specialop.op_width - 1, end)
-    end                           = end + Specialop.op_width
-    io.src2_op                    := decoded(end + Srcop.op_width - 1, end)
-    end                           = end + Srcop.op_width
-    io.src1_op                    := decoded(end + Srcop.op_width - 1, end)
-    end                           = end + Srcop.op_width
-    io.branch_op                  := decoded(end + Branchop.op_width - 1, end)
-    end                           = end + Branchop.op_width
-    io.mem_op                     := decoded(end + Memop.op_width - 1, end)
-    end                           = end + Memop.op_width
-    io.reg_op                     := decoded(end + Regop.op_width - 1, end)
-    end                           = end + Regop.op_width
-    io.alu_op                     := decoded(end + ALUop.op_width - 1, end)
-    end                           = end + ALUop.op_width
-    // 最先拼接的 = 最高位
-    io.inst_type                  := decoded(end + InstType.type_width - 1, end)
+    var start                     = 0
+    io.inst_type                  := decoded(start + InstType.type_width - 1, start)
+    start                         = start + InstType.type_width
+    io.alu_op                     := decoded(start + ALUop.op_width - 1, start)
+    start                         = start + ALUop.op_width
+    io.reg_op                     := decoded(start + Regop.op_width - 1, start)
+    start                         = start + Regop.op_width
+    io.mem_op                     := decoded(start + Memop.op_width - 1, start)
+    start                         = start + Memop.op_width
+    io.branch_op                  := decoded(start + Branchop.op_width - 1, start)
+    start                         = start + Branchop.op_width
+    io.src1_op                    := decoded(start + Srcop.op_width - 1, start)
+    start                         = start + Srcop.op_width
+    io.src2_op                    := decoded(start + Srcop.op_width - 1, start)
+    start                         = start + Srcop.op_width
+    io.special_op                 := decoded(start + Specialop.op_width - 1, start) 
 }
 
 class imm_gen extends Module{
