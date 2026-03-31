@@ -54,7 +54,7 @@ class IFU (initPC:Int=0)extends Module{
     io.next.PC                  := regPC
     io.next.inst                := io.memio.rdata
     
-    io.memio.ren                := will_in
+    io.memio.ren                := will_in & !reset.asBool
     io.memio.raddr              := nextPC
     io.memio.wen                := 0.B
     io.memio.waddr              := 0.U
