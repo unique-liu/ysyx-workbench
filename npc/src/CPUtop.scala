@@ -8,7 +8,7 @@ class CPUtop extends Module{
     val u_regfile               = Module(new Regfile())
     val u_i_mem                 = Module(new MemIO())
     val u_d_mem                 = Module(new MemIO())
-    val u_ifu                   = Module(new IFU())
+    val u_ifu                   = Module(new IFU(initPC=0x7fff_fffc))
     val u_idu                   = Module(new IDU())
     val u_exu                   = Module(new EXU())
     val u_lsu                   = Module(new LSU())
