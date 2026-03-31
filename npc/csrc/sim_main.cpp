@@ -8,7 +8,7 @@
 #include <fstream>
 #include <string>
 #include <cstring>
-
+#include <signal.h>
 #include <elf.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -21,6 +21,12 @@ uint8_t mem[MEM_SIZE_BYTES];
 
 int halt = 0;
 int error = 0;
+
+void sigint_handler(int signum) {
+    printf("halt with interupt\n");
+    halt = 1;  // 设置标志，不直接关闭波形
+    error = 1; // 设置错误标志，表示是被中断信号终止的
+}
 
 bool load_program_elf(const std::string& filename) {
     int fd = open(filename.c_str(), O_RDONLY);
@@ -84,6 +90,7 @@ bool load_program_elf(const std::string& filename) {
     return true;
 }
 int main(int argc, char** argv) {
+    signal(SIGINT, sigint_handler);
     // 解析命令行参数：假设最后一个参数是程序文件路径
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <program_file>\n", argv[0]);

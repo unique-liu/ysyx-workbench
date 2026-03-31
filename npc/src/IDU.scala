@@ -43,7 +43,7 @@ class IDU extends Module{
     }.elsewhen(will_out){
         valid                   := 0.U(1.W)
     }
-    will_out                    := io.next.ready & io.next.valid
+    will_out                    := io.next.ready & io.next.valid 
     will_in                     := io.before.valid & io.before.ready
     io.before.ready             := (!valid | will_out) & !will_halt
     io.next.valid               := valid & !will_halt
