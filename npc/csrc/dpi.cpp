@@ -17,12 +17,10 @@ extern "C" void halt_system(char is_error) {
 }
 extern "C" int mem_read(int raddr) {
   // 总是读取地址为`raddr & ~0x3u`的4字节返回
-  printf("raddr = %08x\n",raddr);
   int paddr = raddr & ~0x3u;
   int real_addr = paddr - MEM_BASE;
-  printf("real_addr = %08x",real_addr);
   int return_data = 0;
-  if (paddr + 3< MEM_SIZE_BYTES && paddr >= 0) {
+  if (real_addr + 3< MEM_SIZE_BYTES && real_addr >= 0) {
     return_data = mem[real_addr] | (mem[real_addr + 1] << 8) | (mem[real_addr + 2] << 16) | (mem[real_addr + 3] << 24);
     DEBUG_PRINT(mem_read, "Reading from address 0x%08x get 0x%08x\n", raddr, return_data);
     return return_data;
@@ -38,7 +36,7 @@ extern "C" void mem_write(int waddr, int wdata, char wmask) {
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
   int paddr = waddr & ~0x3u;
   int real_addr = paddr - MEM_BASE;
-  if (paddr < 0 || paddr + 3>= MEM_SIZE_BYTES) {
+  if (real_addr < 0 || real_addr + 3>= MEM_SIZE_BYTES) {
     printf("write out of bounds at address 0x%08x\n", waddr);
     halt_system(1);
     return;
