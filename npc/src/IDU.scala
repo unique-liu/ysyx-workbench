@@ -135,7 +135,7 @@ class inst_decoder extends Module{
         val special_op          = Output(UInt(Specialop.op_width.W))
     })
     def concatBitPat(bps: BitPat*): BitPat = {
-        val bits = bps.map(_.rawString.stripPrefix("b").replace("?", "_")).mkString
+        val bits = bps.map(_.rawString.stripPrefix("b").replace("_", "")).mkString
         BitPat("b" + bits)
     }
     val table = TruthTable(
