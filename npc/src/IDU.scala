@@ -118,8 +118,8 @@ class IDU extends Module{
         halt_counter              := halt_counter - 1.U
     }
     val u_specialio                = Module(new SpecialIO)
-    u_specialio.io.halt           := halt_counter === 0.U
-    u_specialio.io.error          := is_error_halt
+    u_specialio.io.halt           := (halt_counter === 0.U) & valid
+    u_specialio.io.error          := is_error_halt & valid
 }
 
 class inst_decoder extends Module{
