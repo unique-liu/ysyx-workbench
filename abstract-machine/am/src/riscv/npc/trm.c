@@ -16,6 +16,7 @@ void putch(char ch) {
 
 void halt(int code) {
   asm volatile("ebreak");
+  __builtin_unreachable();
 }
 
 void _trm_init() {
