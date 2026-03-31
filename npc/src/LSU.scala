@@ -22,6 +22,7 @@ class LSU extends Module{
             val mem_result      = Output(UInt(32.W))
         }
         val memio = new Bundle{
+            val clock           = Output(Bool())
             val ren             = Output(Bool())
             val raddr           = Output(UInt(32.W))
             val rdata           = Input (UInt(32.W))
@@ -30,6 +31,11 @@ class LSU extends Module{
             val waddr           = Output(UInt(32.W))
             val wdata           = Output(UInt(32.W))
             val wmask           = Output(UInt(4.W))
+        }
+        val forward = new Bundle{
+            val reg_wdata       = Output(UInt(32.W))
+            val reg_rd          = Output(UInt(5.W))
+            val reg_useable     = Output(Bool())
         }
     })
     //dclarations
@@ -69,10 +75,11 @@ class LSU extends Module{
         is("b10".U){mem_mask := "b0011".U}
         is("b11".U){mem_mask := "b1111".U}
     }
-    io.memio.ren                := reg_mem_op(Memop.load_bit) & will_in
-    io.memio.raddr              := reg_alu_result
-    io.memio.wen                := ~reg_mem_op(Memop.load_bit) & (reg_mem_op =/= Memop.noop) & will_in
-    io.memio.waddr              := reg_alu_result
+    io.memio.clock              := clock.asBool
+    io.memio.ren                := io.before.mem_op(Memop.load_bit) & will_in
+    io.memio.raddr              := io.before.alu_result
+    io.memio.wen                := ~io.before.mem_op(Memop.load_bit) & (io.before.mem_op =/= Memop.noop) & will_in
+    io.memio.waddr              := io.before.alu_result
     io.memio.wdata              := io.before.mem_src
     io.memio.wmask              := mem_mask
 
@@ -90,4 +97,10 @@ class LSU extends Module{
         is(Memop.l_half_s){io.next.mem_result      := Cat(Fill(16,mem_out_aligned(15)),mem_out_aligned(15,0))}
         is(Memop.l_word  ){io.next.mem_result      := mem_out_aligned}
     }
+
+    //forwarding
+    io.forward.reg_wdata        := Mux(reg_reg_op(Regop.mem_bit),io.next.mem_result,reg_alu_result)
+    io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
+    io.forward.reg_useable      := valid
+
 }

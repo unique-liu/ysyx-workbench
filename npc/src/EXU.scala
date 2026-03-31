@@ -22,6 +22,11 @@ class EXU extends Module{
             val mem_op          = Output(UInt(Memop.op_width.W))
             val mem_src         = Output(UInt(32.W))
         }
+        val forward = new Bundle{
+            val reg_wdata       = Output(UInt(32.W))
+            val reg_rd          = Output(UInt(5.W))
+            val reg_useable     = Output(Bool())
+        }
     })
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
@@ -69,4 +74,9 @@ class EXU extends Module{
     io.next.reg_rd              := reg_reg_rd
     io.next.mem_op              := reg_mem_op
     io.next.mem_src             := reg_mem_src
+
+    //forwarding
+    io.forward.reg_wdata        := alu_out
+    io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
+    io.forward.reg_useable      := !reg_reg_op(Regop.mem_bit) & valid
 }

@@ -1,7 +1,7 @@
 BUILD_DIR = ./build
 CPP_DIRS = csrc
 VERILOG_DIRS = $(BUILD_DIR) vsrc
-
+VERILATOR_DIR = obj_dir
 # 顶层模块名
 TOP_MODULE = CPUtop
 TARGET = Vtop
@@ -60,8 +60,14 @@ clean:
 
 .PHONY: test verilog help reformat checkformat clean
 
-sim:
+# Some convenient rules
+BINARY = $(VERILATOR_DIR)/Vtop
+IMG ?=
+NPC_EXEC := $(BINARY) $(IMG)
+sim-env: $(BINARY)
+
+sim: sim-env
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@echo "Write this Makefile by yourself."
+	$(NPC_EXEC)
 
 -include ../Makefile
