@@ -153,6 +153,8 @@ class inst_decoder extends Module{
             }
             BitPat("b" + bitStrs.mkString)
         }
+        val expected = InstType.type_width + ALUop.op_width + Regop.op_width + Memop.op_width +Branchop.op_width + Srcop.op_width + Srcop.op_width + Specialop.op_width
+        require((parts.map(_.getWidth).sum) == expected, s"width mismatch")
     }
     val table = TruthTable(
         Map(
