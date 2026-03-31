@@ -17,7 +17,7 @@
 
 #define MEM_SIZE_BYTES (64 * 1024 * 1024)
 #define MEM_BASE 0x80000000
-#define MAX_TIME 10000
+#define MAX_TIME 100000
 uint8_t mem[MEM_SIZE_BYTES];
 
 int halt = 0;
