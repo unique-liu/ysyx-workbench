@@ -294,5 +294,5 @@ class branch_ctrl extends Module{
         is(Branchop.jal){io.take_branch     := true.B}
         is(Branchop.jalr){io.take_branch    := true.B}
     }
-    io.branch_target := Mux(io.branch_op === Branchop.jalr,(io.src1 + io.imm) & 0xFFFFFFFE.U(32.W),io.pc + io.imm)
+    io.branch_target := Mux(io.branch_op === Branchop.jalr,(io.src1 + io.imm) & (~1.U(32.W)),io.pc + io.imm)
 }
