@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
         top->clock = 1; top->eval();tfp->dump(time);time++;
     }
     top->reset = 0;
-    while (!halt) {
+    while (!halt && (time < 100000)) {
         top->clock = 0; top->eval();tfp->dump(time);time++;
         top->clock = 1; top->eval();tfp->dump(time);time++;
         
