@@ -17,8 +17,10 @@ extern "C" void halt_system(char is_error) {
 }
 extern "C" int mem_read(int raddr) {
   // 总是读取地址为`raddr & ~0x3u`的4字节返回
+  printf("raddr = %08x\n",raddr);
   int paddr = raddr & ~0x3u;
   int real_addr = paddr - MEM_BASE;
+  printf("real_addr = %08x",real_addr);
   int return_data = 0;
   if (paddr + 3< MEM_SIZE_BYTES && paddr >= 0) {
     return_data = mem[real_addr] | (mem[real_addr + 1] << 8) | (mem[real_addr + 2] << 16) | (mem[real_addr + 3] << 24);
