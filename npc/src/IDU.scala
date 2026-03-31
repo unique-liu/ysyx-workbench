@@ -139,11 +139,15 @@ class inst_decoder extends Module{
     //     BitPat("b" + bits)
     // }
     def concatBitPat(parts: UInt*): BitPat = {
-        val cat = Cat(parts: _*)
-        val width = cat.getWidth
-        val sval = cat.litValue.toString(2)
-        val padded = "0" * (width - sval.length) + sval
-        BitPat("b" + padded)
+        if (parts.isEmpty) {
+            BitPat("b")
+        } else {
+            val cat = parts.reduceLeft((a, b) => Cat(a, b))
+            val width = cat.getWidth
+            val sval = cat.litValue.toString(2)
+            val padded = "0" * (width - sval.length) + sval
+            BitPat("b" + padded)
+        }
     }
     val table = TruthTable(
         Map(
