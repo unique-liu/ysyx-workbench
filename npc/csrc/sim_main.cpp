@@ -17,6 +17,7 @@
 
 #define MEM_SIZE_BYTES (64 * 1024 * 1024)
 #define MEM_BASE 0x80000000
+#define MAX_TIME 10000
 uint8_t mem[MEM_SIZE_BYTES];
 
 int halt = 0;
@@ -124,7 +125,7 @@ int main(int argc, char** argv) {
         top->clock = 1; top->eval();tfp->dump(time);time++;
     }
     top->reset = 0;
-    while (!halt && (time < 1000)) {
+    while (!halt && (time < MAX_TIME)) {
         top->clock = 0; top->eval();tfp->dump(time);time++;
         top->clock = 1; top->eval();tfp->dump(time);time++;
         
@@ -141,7 +142,10 @@ int main(int argc, char** argv) {
     if (error) {
         fprintf(stderr, "Simulation finished with errors.\n");
         return 1;
-    }else {
+    }else if(time >= MAX_TIME){
+        fprintf(stderr, "Simulation finished with timeout.\n");
+        return 1;
+    }else{
         fprintf(stdout, "Simulation finished successfully.\n");
         return 0;
     }
