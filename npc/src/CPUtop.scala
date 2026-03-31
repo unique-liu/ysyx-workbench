@@ -26,4 +26,8 @@ class CPUtop extends Module{
 
     u_idu.io.regfile                <> u_regfile.io.read
     u_wbu.io.regfile                <> u_regfile.io.write
+
+    u_idu.io.EXU_forward             <> u_exu.io.forward
+    u_idu.io.LSU_forward             <> u_lsu.io.forward
+    u_idu.io.WBU_forward             <> u_wbu.io.forward
 }

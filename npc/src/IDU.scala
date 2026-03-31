@@ -30,8 +30,25 @@ class IDU extends Module{
             val rdata1          = Input (UInt(32.W))
             val rdata2          = Input (UInt(32.W))
         }
+        val EXU_forward = new Bundle{
+            val reg_wdata       = Input (UInt(32.W))
+            val reg_rd          = Input (UInt(5.W))
+            val reg_useable     = Input (Bool())
+        }
+        val LSU_forward = new Bundle{
+            val reg_wdata       = Input (UInt(32.W))
+            val reg_rd          = Input (UInt(5.W))
+            val reg_useable     = Input (Bool())
+        }
+        val WBU_forward = new Bundle{
+            val reg_wdata       = Input (UInt(32.W))
+            val reg_rd          = Input (UInt(5.W))
+            val reg_useable     = Input (Bool())
+        }
     })
     //dclarations
+    val rs1_stall               = Wire(Bool())
+    val rs2_stall               = Wire(Bool())
     val branch_taken            = Wire(Bool())
     val will_halt               = Wire(Bool())
     //fluiding control signals
@@ -46,7 +63,7 @@ class IDU extends Module{
     will_out                    := io.next.ready & io.next.valid 
     will_in                     := io.before.valid & io.before.ready
     io.before.ready             := (!valid | will_out) & !will_halt
-    io.next.valid               := valid & !will_halt
+    io.next.valid               := valid & !will_halt & !rs1_stall & !rs2_stall
 
     //latching signals
     val regPC                   = RegInit(0.U(32.W))
@@ -61,6 +78,23 @@ class IDU extends Module{
     val rs2                     = regInst(24, 20)
     io.regfile.raddr1           := rs1
     io.regfile.raddr2           := rs2
+
+    val rs1_need_EXU_forward      = rs1 =/= 0.U && (rs1 === io.EXU_forward.reg_rd)
+    val rs1_need_LSU_forward      = rs1 =/= 0.U && (rs1 === io.LSU_forward.reg_rd)
+    val rs1_need_WBU_forward      = rs1 =/= 0.U && (rs1 === io.WBU_forward.reg_rd)
+    val rs2_need_EXU_forward      = rs2 =/= 0.U && (rs2 === io.EXU_forward.reg_rd)
+    val rs2_need_LSU_forward      = rs2 =/= 0.U && (rs2 === io.LSU_forward.reg_rd)
+    val rs2_need_WBU_forward      = rs2 =/= 0.U && (rs2 === io.WBU_forward.reg_rd)
+    val rs1_forward_need          = (rs1_need_EXU_forward || rs1_need_LSU_forward || rs1_need_WBU_forward)
+    val rs2_forward_need          = (rs2_need_EXU_forward || rs2_need_LSU_forward || rs2_need_WBU_forward)
+    val rs1_forward_valid         = (rs1_need_EXU_forward && io.EXU_forward.reg_useable) || (rs1_need_LSU_forward && io.LSU_forward.reg_useable) || (rs1_need_WBU_forward && io.WBU_forward.reg_useable)
+    val rs2_forward_valid         = (rs2_need_EXU_forward && io.EXU_forward.reg_useable) || (rs2_need_LSU_forward && io.LSU_forward.reg_useable) || (rs2_need_WBU_forward && io.WBU_forward.reg_useable)
+    val rs1_forward_data          = Mux(rs1_need_EXU_forward, io.EXU_forward.reg_wdata, Mux(rs1_need_LSU_forward, io.LSU_forward.reg_wdata, Mux(rs1_need_WBU_forward, io.WBU_forward.reg_wdata, 0.U(32.W))))
+    val rs2_forward_data          = Mux(rs2_need_EXU_forward, io.EXU_forward.reg_wdata, Mux(rs2_need_LSU_forward, io.LSU_forward.reg_wdata, Mux(rs2_need_WBU_forward, io.WBU_forward.reg_wdata, 0.U(32.W))))
+    rs1_stall                     := rs1_forward_need && !rs1_forward_valid
+    rs2_stall                     := rs2_forward_need && !rs2_forward_valid
+    val rs1_data                  = Mux(rs1_forward_valid, rs1_forward_data, io.regfile.rdata1)
+    val rs2_data                  = Mux(rs2_forward_valid, rs2_forward_data, io.regfile.rdata2)
 
     //decoder
     val inst_decoder            = Module(new inst_decoder)
@@ -80,8 +114,8 @@ class IDU extends Module{
     //branch control
     val branch_ctrl              = Module(new branch_ctrl)
     branch_taken                 := branch_ctrl.io.take_branch//there have some problem, fix in the future
-    branch_ctrl.io.src1          := io.regfile.rdata1
-    branch_ctrl.io.src2          := io.regfile.rdata2
+    branch_ctrl.io.src1          := rs1_data
+    branch_ctrl.io.src2          := rs2_data
     branch_ctrl.io.pc            := regPC
     branch_ctrl.io.imm           := imm
     branch_ctrl.io.branch_op     := inst_decoder.io.branch_op
@@ -95,19 +129,19 @@ class IDU extends Module{
     io.next.alu_src2             := 0.U
     switch(src1_op){
         is(Srcop.use_zero){io.next.alu_src1 := 0.U}
-        is(Srcop.use_reg){io.next.alu_src1 := io.regfile.rdata1}
+        is(Srcop.use_reg){io.next.alu_src1 := rs1_data}
         is(Srcop.use_imm){io.next.alu_src1 := imm}
         is(Srcop.use_pc){io.next.alu_src1 := regPC}
         is(Srcop.use_four){io.next.alu_src1 := 4.U}
     }
     switch(src2_op){
         is(Srcop.use_zero){io.next.alu_src2 := 0.U}
-        is(Srcop.use_reg){io.next.alu_src2 := io.regfile.rdata2}
+        is(Srcop.use_reg){io.next.alu_src2 := rs2_data}
         is(Srcop.use_imm){io.next.alu_src2 := imm}
         is(Srcop.use_pc){io.next.alu_src2 := regPC}
         is(Srcop.use_four){io.next.alu_src2 := 4.U}
     }
-    io.next.mem_src              := io.regfile.rdata2
+    io.next.mem_src              := rs2_data
 
     //terminater
     val special_op               = inst_decoder.io.special_op

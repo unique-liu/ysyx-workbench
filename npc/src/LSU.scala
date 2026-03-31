@@ -32,6 +32,11 @@ class LSU extends Module{
             val wdata           = Output(UInt(32.W))
             val wmask           = Output(UInt(4.W))
         }
+        val forward = new Bundle{
+            val reg_wdata       = Output(UInt(32.W))
+            val reg_rd          = Output(UInt(5.W))
+            val reg_useable     = Output(Bool())
+        }
     })
     //dclarations
     val mem_mask                = Wire(UInt(4.W))
@@ -92,4 +97,10 @@ class LSU extends Module{
         is(Memop.l_half_s){io.next.mem_result      := Cat(Fill(16,mem_out_aligned(15)),mem_out_aligned(15,0))}
         is(Memop.l_word  ){io.next.mem_result      := mem_out_aligned}
     }
+
+    //forwarding
+    io.forward.reg_wdata        := Mux(reg_reg_op(Regop.mem_bit),io.next.mem_result,reg_alu_result)
+    io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
+    io.forward.reg_useable      := valid
+
 }

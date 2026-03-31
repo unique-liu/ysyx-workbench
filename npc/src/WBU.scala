@@ -21,6 +21,11 @@ class WBU extends Module{
             val wdata           = Output(UInt(32.W))
             val wen             = Output(Bool())
         }
+        val forward = new Bundle{
+            val reg_wdata       = Output(UInt(32.W))
+            val reg_rd          = Output(UInt(5.W))
+            val reg_useable     = Output(Bool())
+        }
     })
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
@@ -53,5 +58,11 @@ class WBU extends Module{
     io.regfile.wen              := reg_reg_op(Regop.write_bit) & valid
     io.regfile.waddr            := reg_reg_rd
     io.regfile.wdata            := Mux(reg_reg_op(Regop.mem_bit),reg_mem_result,reg_alu_result)
+
+    //forwarding
+    io.forward.reg_wdata        := io.regfile.wdata
+    io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
+    io.forward.reg_useable      := valid
+
 
 }
