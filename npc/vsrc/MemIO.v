@@ -1,4 +1,5 @@
 module MemIO (
+    input         io_clock,
     input         io_ren,
     input  [31:0] io_raddr,
     output [31:0] io_rdata,
@@ -14,15 +15,15 @@ module MemIO (
     reg [31:0] rdata_reg;
     assign io_rdata = rdata_reg;
 
-    always @(*) begin
+    always @(posedge io_clock) begin
         if (io_ren) begin
-            rdata_reg = mem_read(io_raddr);
+            rdata_reg <= mem_read(io_raddr);
         end else begin
-            rdata_reg = 32'h0;
+            rdata_reg <= 32'h0;
         end
     end
 
-    always @(*) begin
+    always @(posedge io_clock) begin
         if (io_wen) mem_write(io_waddr, io_wdata, {4'b0,io_wmask});
     end
 endmodule

@@ -22,6 +22,7 @@ class LSU extends Module{
             val mem_result      = Output(UInt(32.W))
         }
         val memio = new Bundle{
+            val clock           = Output(Bool())
             val ren             = Output(Bool())
             val raddr           = Output(UInt(32.W))
             val rdata           = Input (UInt(32.W))
@@ -69,6 +70,7 @@ class LSU extends Module{
         is("b10".U){mem_mask := "b0011".U}
         is("b11".U){mem_mask := "b1111".U}
     }
+    io.memio.clock              := clock.asBool
     io.memio.ren                := reg_mem_op(Memop.load_bit) & will_in
     io.memio.raddr              := reg_alu_result
     io.memio.wen                := ~reg_mem_op(Memop.load_bit) & (reg_mem_op =/= Memop.noop) & will_in
