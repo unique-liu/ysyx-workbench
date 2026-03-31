@@ -141,19 +141,18 @@ class inst_decoder extends Module{
 
     def concatBitPat(parts: UInt*): BitPat = {
         if (parts.isEmpty) BitPat("b")
-        else {
-            val bitStrs = parts.map { p =>
-                p.litOption match {
-                    case Some(v) =>
-                    val w = p.getWidth
-                    val s = v.bigInteger.toString(2)
-                    "0" * (w - s.length) + s
-                    case None =>
-                    throw new Exception(s"concatBitPat: non-literal part (width=${p.getWidth}), ensure you pass literal UInts")
-                }
+        val expected = InstType.type_width + ALUop.op_width + Regop.op_width + Memop.op_width +
+        Branchop.op_width + Srcop.op_width + Srcop.op_width + Specialop.op_width
+        require(parts.map(_.getWidth).sum == expected, s"width mismatch")
+        val bitStr = parts.reverse.map { p =>
+            p.litOption match {
+                case Some(v) =>
+                val s = v.bigInteger.toString(2)
+                "0" * (p.getWidth - s.length) + s
+                case None => throw new Exception(s"concatBitPat: non-literal part (width=${p.getWidth})")
             }
-            BitPat("b" + bitStrs.mkString)
-        }
+        }.mkString
+        BitPat("b" + bitStr)
     }
 
     // def concatBitPat(parts: BitPat*): BitPat = {
