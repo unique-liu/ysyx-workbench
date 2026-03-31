@@ -56,7 +56,7 @@ class IFU (initPC:Int=0)extends Module{
     io.next.inst                := io.memio.rdata
     
     io.memio.clock              := clock.asBool
-    io.memio.ren                := 1.B
+    io.memio.ren                := !restet.asBool
     io.memio.raddr              := nextPC
     io.memio.wen                := 0.B
     io.memio.waddr              := 0.U
