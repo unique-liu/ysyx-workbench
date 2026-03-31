@@ -63,9 +63,6 @@ clean:
 # Some convenient rules
 BINARY = $(VERILATOR_DIR)/Vtop
 IMG ?=
-ifeq ($(strip $(IMG)),)
-$(error No IMG files found)
-endif
 NPC_EXEC := $(BINARY) $(IMG)
 sim-env: $(BINARY)
 

@@ -111,7 +111,7 @@ class IDU extends Module{
 
     //terminater
     val special_op               = inst_decoder.io.special_op
-    will_halt                    := special_op === Specialop.halt_error || special_op === Specialop.halt_normal
+    will_halt                    := (special_op === Specialop.halt_error || special_op === Specialop.halt_normal) & valid
     val is_error_halt            = special_op === Specialop.halt_error
     val halt_counter             = RegInit(10.U(32.W))
     when(will_halt){
