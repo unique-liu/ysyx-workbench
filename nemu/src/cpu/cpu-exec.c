@@ -54,6 +54,7 @@ void iringbuf_print() {
 //ftrace
 #define FTRACE_MAX_NAME_LEN 32
 #define FTRACE_MAX_FUNC_NUM 100
+#define FTRACE_MAX_CALL_DEPTH 100
 struct function_table{
   char name[FTRACE_MAX_NAME_LEN];
   word_t addr;
@@ -62,7 +63,7 @@ struct function_table{
 
 struct function_table func_table[FTRACE_MAX_FUNC_NUM];
 uint64_t ftrace_call_depth = 0; 
-char ftrace_ws[64];
+word_t ftrace_call_stack[FTRACE_MAX_CALL_DEPTH];
 
 int init_function_table(FILE * fp) {
   int fread_ret = 0;
@@ -135,27 +136,36 @@ static int find_function_by_addr(word_t addr) {
   return -1;
 }
 
-static void ftrace_call(word_t pc, word_t target) {
+static void ftrace_call(word_t pc, word_t target,int rd) {
   
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]call[%10s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]call deep%2d[%10s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, (int)ftrace_call_depth+1, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  if (ftrace_call_depth < FTRACE_MAX_CALL_DEPTH) {
+    ftrace_call_stack[ftrace_call_depth] = (rd != 0)? pc+4 : 0;
+  }
   ftrace_call_depth++;
 }
 
 static void ftrace_ret(word_t pc, word_t target) {
-  if (ftrace_call_depth > 0) {
-    ftrace_call_depth--;
+  int current_deep = ftrace_call_depth - 1;
+  int target_deep  = 0;
+  for (int i = current_deep-1; i>=0; i--) {
+    if (ftrace_call_stack[i] == target) {
+      target_deep = i;
+      break;
+    }
   }
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"] ret[%s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"] ret deep%2d[%s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, target_deep, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  ftrace_call_depth = target_deep+1;
 }
 
 
 void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
-  if (rd != 0 || rs1 != 1) {
-    ftrace_call(pc, target);
+  if (rs1 != 1) {
+    ftrace_call(pc, target,rd);
   }else {
     ftrace_ret(pc, target);
   }
