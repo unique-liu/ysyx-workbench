@@ -61,6 +61,9 @@ struct function_table{
 };
 
 struct function_table func_table[FTRACE_MAX_FUNC_NUM];
+uint64_t ftrace_call_depth = 0; 
+char ftrace_ws[64];
+
 int init_function_table(FILE * fp) {
   int fread_ret = 0;
   // 读取ELF文件头
@@ -121,6 +124,41 @@ int init_function_table(FILE * fp) {
     }
   }
   return func_count;
+}
+
+static int find_function_by_addr(word_t addr) {
+  for (int i = 0; i < FTRACE_MAX_FUNC_NUM; i++) {
+    if (addr >= func_table[i].addr && addr < func_table[i].addr + func_table[i].size) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+static void ftrace_call(word_t pc, word_t target) {
+  
+  int current_idx = find_function_by_addr(pc);
+  int target_idx = find_function_by_addr(target);
+  log_write("[ftrace]:deep%3d [%10s@"FMT_PADDR"]call[%10s@"FMT_PADDR"]", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  ftrace_call_depth++;
+}
+
+static void ftrace_ret(word_t pc, word_t target) {
+  if (ftrace_call_depth > 0) {
+    ftrace_call_depth--;
+  }
+  int current_idx = find_function_by_addr(pc);
+  int target_idx = find_function_by_addr(target);
+  log_write("[ftrace]:deep%3d [%10s@"FMT_PADDR"] ret[%s@"FMT_PADDR"]", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+}
+
+
+void ftrace_enter(word_t pc, word_t target,int rd){
+  if (rd != 0) {
+    ftrace_call(pc, target);
+  }else {
+    ftrace_ret(pc, target);
+  }
 }
 //ftrace end
 
