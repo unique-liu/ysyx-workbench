@@ -55,7 +55,7 @@ word_t paddr_read(paddr_t addr, int len) {
   if (likely(in_pmem(addr))) {
     word_t ret = pmem_read(addr, len);
     #ifdef CONFIG_MTRACE
-    log_write("paddr_read: addr = " FMT_PADDR ", len = %d, data = " FMT_WORD "]\n", addr, len, ret);
+    log_write("paddr_read:  addr = " FMT_PADDR ", len = %d, data = " FMT_WORD "\n", addr, len, ret);
     #endif
     return ret;
   }
