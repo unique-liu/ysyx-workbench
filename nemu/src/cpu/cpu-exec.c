@@ -139,7 +139,7 @@ static void ftrace_call(word_t pc, word_t target) {
   
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  log_write("[ftrace]:deep%3d [%10s@"FMT_PADDR"]call[%10s@"FMT_PADDR"]", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]call[%10s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   ftrace_call_depth++;
 }
 
@@ -149,12 +149,12 @@ static void ftrace_ret(word_t pc, word_t target) {
   }
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  log_write("[ftrace]:deep%3d [%10s@"FMT_PADDR"] ret[%s@"FMT_PADDR"]", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"] ret[%s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
 }
 
 
-void ftrace_enter(word_t pc, word_t target,int rd){
-  if (rd != 0) {
+void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
+  if (rd != 0 || rs1 != 1) {
     ftrace_call(pc, target);
   }else {
     ftrace_ret(pc, target);
