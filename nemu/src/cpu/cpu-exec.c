@@ -18,6 +18,7 @@
 #include <cpu/difftest.h>
 #include <locale.h>
 #include "../monitor/sdb/sdb.h"
+#include <elf.h>
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -49,6 +50,79 @@ void iringbuf_print() {
   printf("=> %s\n", iringbuf[error_idx]);
 }
 //iringbuf end
+
+//ftrace
+#define FTRACE_MAX_NAME_LEN 32
+#define FTRACE_MAX_FUNC_NUM 100
+struct function_table{
+  char name[FTRACE_MAX_NAME_LEN];
+  word_t addr;
+  long size;
+};
+
+struct function_table func_table[FTRACE_MAX_FUNC_NUM];
+int init_function_table(FILE * fp) {
+  int fread_ret = 0;
+  // 读取ELF文件头
+  Elf32_Ehdr elf_header;
+  fread_ret = fread(&elf_header, sizeof(Elf32_Ehdr), 1, fp);
+  assert(fread_ret == 1);
+  // 定位到节区头表
+  fseek(fp, elf_header.e_shoff, SEEK_SET);
+
+  // 读取节区头表
+  Elf32_Shdr section_headers[elf_header.e_shnum];
+  fread_ret = 0;
+  fread_ret = fread(section_headers, sizeof(Elf32_Shdr), elf_header.e_shnum, fp);
+  assert(fread_ret == elf_header.e_shnum);
+
+  // 查找符号表和字符串表
+  Elf32_Shdr *symtab_section = NULL;
+  Elf32_Shdr *strtab_section = NULL;
+  for (int i = 0; i < elf_header.e_shnum; i++) {
+    if (section_headers[i].sh_type == SHT_SYMTAB) {
+      symtab_section = &section_headers[i];
+    } else if (section_headers[i].sh_type == SHT_STRTAB && i != elf_header.e_shstrndx) {
+      strtab_section = &section_headers[i];
+    }
+  }
+
+  if (symtab_section == NULL || strtab_section == NULL) {
+    fprintf(stderr, "Failed to find symbol table or string table in ELF file.\n");
+    return -1;
+  }
+
+  // 读取符号表和字符串表
+  Elf32_Sym symtab[symtab_section->sh_size / sizeof(Elf32_Sym)];
+  char strtab[strtab_section->sh_size];
+
+  fseek(fp, symtab_section->sh_offset, SEEK_SET);
+  fread_ret = 0;
+  fread_ret = fread(symtab, sizeof(Elf32_Sym), symtab_section->sh_size / sizeof(Elf32_Sym), fp);
+  assert(fread_ret == symtab_section->sh_size / sizeof(Elf32_Sym));
+
+  fseek(fp, strtab_section->sh_offset, SEEK_SET);
+  fread_ret = 0;
+  fread_ret = fread(strtab, sizeof(char), strtab_section->sh_size, fp);
+  assert(fread_ret == strtab_section->sh_size);
+
+  // 提取函数信息
+  int func_count = 0;
+  for (int i = 0; i < symtab_section->sh_size / sizeof(Elf32_Sym); i++) {
+    if (ELF32_ST_TYPE(symtab[i].st_info) == STT_FUNC && symtab[i].st_size > 0) {
+      strncpy(func_table[func_count].name, &strtab[symtab[i].st_name], sizeof(func_table[func_count].name) - 1);
+      func_table[func_count].addr = symtab[i].st_value;
+      func_table[func_count].size = symtab[i].st_size;
+      func_count++;
+      if (func_count >= FTRACE_MAX_FUNC_NUM) {
+        fprintf(stderr, "Function table is full, some functions may not be recorded.\n");
+        break;
+      }
+    }
+  }
+  return func_count;
+}
+//ftrace end
 
 void device_update();
 
