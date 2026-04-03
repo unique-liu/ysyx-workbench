@@ -24,11 +24,31 @@
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
+#define IRINGBUF_SIZE 16
 
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
+
+//iringbuf
+char iringbuf[IRINGBUF_SIZE][128];
+int iringbuf_idx = 0;
+void iringbuf_record(const char *s) {
+  strncpy(iringbuf[iringbuf_idx], s, 128);
+  iringbuf_idx = (iringbuf_idx + 1) % IRINGBUF_SIZE;
+}
+void iringbuf_print() {
+  int idx = iringbuf_idx;
+  int error_idx = (idx - 1 + IRINGBUF_SIZE) % IRINGBUF_SIZE;
+  printf("Instruction Ring Buffer (most recent at the top):\n");
+  while (idx != error_idx) {
+    idx = (idx + 1) % IRINGBUF_SIZE;
+    printf("   %s\n", iringbuf[idx]);
+  }
+  printf("=> %s\n", iringbuf[error_idx]);
+}
+//iringbuf end
 
 void device_update();
 
@@ -36,6 +56,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
+
+  iringbuf_record(_this->logbuf);
+
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 

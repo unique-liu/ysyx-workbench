@@ -36,7 +36,12 @@
     } \
   } while (0)
 
-#define panic(format, ...) Assert(0, format, ## __VA_ARGS__)
+#define panic(format, ...) \
+    do{\
+      extern void iringbuf_print();\
+      iringbuf_print();\
+      Assert(0, format, ## __VA_ARGS__);\
+    } while(0)
 
 #define TODO() panic("please implement me")
 
