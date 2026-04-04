@@ -152,9 +152,8 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
 }
 
 static void ftrace_ret(word_t pc, word_t target) {
-  int current_deep = ftrace_call_depth - 1;
   int target_deep  = 0;
-  for (int i = current_deep-1; i>=0; i--) {
+  for (int i = ftrace_call_depth-1; i>=0; i--) {
     if (ftrace_call_stack[i] == target) {
       target_deep = i;
       break;
