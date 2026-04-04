@@ -122,4 +122,50 @@ void *numtodecimal(void *dst, int num) {
   return dst;
 }
 
+void *numtohex(void *dst, int num) {
+  char temp[20];
+  int i = 0;
+  if (num == 0) {
+    temp[i++] = '0';
+  } else {
+    while (num > 0) {
+      int remainder = num % 16;
+      if (remainder < 10) {
+        temp[i++] = remainder + '0';
+      } else {
+        temp[i++] = remainder - 10 + 'a';
+      }
+      num /= 16;
+    }
+  }
+  for (int j = 0; j < i; j++) {
+    ((char *)dst)[j] = temp[i - j - 1];
+  }
+  ((char *)dst)[i] = '\0';
+  return dst;
+}
+
+void *doubletodecimal(void *dst, double num) {
+  // // 处理整数部分
+  // int int_part = (int)num;
+  // char int_str[20];
+  // numtodecimal(int_str, int_part);
+
+  // // 处理小数部分，保留两位小数
+  // double frac_part = num - int_part;
+  // char frac_str[20];
+  // numtodecimal(frac_str, (int)(frac_part * 100));
+
+  // // 拼接整数部分和小数部分
+  // char *p = (char *)dst;
+  // strcpy(p, int_str);
+  // p += strlen(int_str);
+  // *p++ = '.';
+  // strcpy(p, frac_str);
+
+  strcpy(dst,"?.??");
+  
+  return dst;
+}
+
 #endif

@@ -126,7 +126,7 @@ int init_function_table(FILE * fp) {
   }
   return func_count;
 }
-
+#ifdef CONFIG_FTRACE
 static int find_function_by_addr(word_t addr) {
   for (int i = 0; i < FTRACE_MAX_FUNC_NUM; i++) {
     if (addr >= func_table[i].addr && addr < func_table[i].addr + func_table[i].size) {
@@ -140,7 +140,11 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
   
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]call deep%2d[%10s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, (int)ftrace_call_depth+1, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  if (current_idx == target_idx && rd == 0) {
+    // should be "j" instruction, not a call, ignore it
+    return;
+  }
+  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]%s call deep%2d[%10s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc,((rd != 0) ? "" : "tail"), (int)ftrace_call_depth+1, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   if (ftrace_call_depth < FTRACE_MAX_CALL_DEPTH) {
     ftrace_call_stack[ftrace_call_depth] = (rd != 0)? pc+4 : 0;
   }
@@ -148,9 +152,8 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
 }
 
 static void ftrace_ret(word_t pc, word_t target) {
-  int current_deep = ftrace_call_depth - 1;
   int target_deep  = 0;
-  for (int i = current_deep-1; i>=0; i--) {
+  for (int i = ftrace_call_depth-1; i>=0; i--) {
     if (ftrace_call_stack[i] == target) {
       target_deep = i;
       break;
@@ -158,17 +161,19 @@ static void ftrace_ret(word_t pc, word_t target) {
   }
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"] ret deep%2d[%s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, target_deep, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
-  ftrace_call_depth = target_deep+1;
+  log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]  ret deep%2d[%s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, target_deep, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  ftrace_call_depth = target_deep;
 }
-
+#endif
 
 void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
+  #ifdef CONFIG_FTRACE
   if (rs1 != 1) {
     ftrace_call(pc, target,rd);
   }else {
     ftrace_ret(pc, target);
   }
+  #endif
 }
 //ftrace end
 
@@ -177,9 +182,10 @@ void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("[itrace]%s\n", _this->logbuf); }
+  iringbuf_record(_this->logbuf);
 #endif
 
-  iringbuf_record(_this->logbuf);
+  
 
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));

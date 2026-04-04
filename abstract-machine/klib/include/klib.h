@@ -24,6 +24,8 @@ char  *strncpy   (char *dst, const char *src, size_t n);
 int    strcmp    (const char *s1, const char *s2);
 int    strncmp   (const char *s1, const char *s2, size_t n);
 void *numtodecimal(void *dst, int num);
+void *numtohex(void *dst, int num);
+void *doubletodecimal(void *dst, double num);
 
 // stdlib.h
 void   srand     (unsigned int seed);

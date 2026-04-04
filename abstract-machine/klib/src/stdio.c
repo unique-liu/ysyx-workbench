@@ -6,19 +6,21 @@
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
 int printf(const char *fmt, ...) {
-  panic("Not implemented");
+  char buf[1024];
+  va_list ap;
+  va_start(ap, fmt);
+  int len = vsprintf(buf, fmt, ap);
+  va_end(ap);
+  for (int i = 0; i < len; i++) {
+    putch(buf[i]);
+  }
+  return len;
 }
 
 int vsprintf(char *out, const char *fmt, va_list ap) {
-  panic("Not implemented");
-}
-
-int sprintf(char *out, const char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
   int i = 0,j=0;
-
   int num;
+  double f;
   char *str;
   while (1) {
     if (fmt[i] =='\0') {
@@ -39,6 +41,23 @@ int sprintf(char *out, const char *fmt, ...) {
           j+=strlen(str);
           i++;
           break;
+        
+        case 'x':
+          num=va_arg(ap,int);
+          j+=strlen(numtohex(out+j,num));
+          i++;
+          break;
+
+        case 'f':
+          f=va_arg(ap,double);
+          j+=strlen(doubletodecimal(out+j,f));
+          i++;
+          break;
+
+        case '%':
+          out[j++] = '%';
+          i++;
+          break;
 
         default:
           return -1;
@@ -51,8 +70,18 @@ int sprintf(char *out, const char *fmt, ...) {
   }
 }
 
+int sprintf(char *out, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  int len = vsprintf(out, fmt, ap);
+  va_end(ap);
+  return len;
+}
+
 int snprintf(char *out, size_t n, const char *fmt, ...) {
-  panic("Not implemented");
+  va_list ap;
+  va_start(ap, fmt);
+  return vsnprintf(out, n, fmt, ap);
 }
 
 int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
