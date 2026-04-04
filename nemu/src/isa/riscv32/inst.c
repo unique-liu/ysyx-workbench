@@ -24,7 +24,7 @@
 
 extern void ftrace_enter(word_t pc, word_t target,int rd,int rs1) ;
 
-#define DEBUG_INST
+// #define DEBUG_INST
 #define DEBUG_INST_RATIO 1000
 #ifdef DEBUG_INST
 static uint64_t inst_count = 0;
