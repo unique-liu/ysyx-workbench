@@ -166,7 +166,10 @@ static void ftrace_ret(word_t pc, word_t target) {
 void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
   #ifdef CONFIG_FTRACE
   if (rs1 != 1) {
-    ftrace_call(pc, target,rd);
+    if (rd != 0) {
+      ftrace_call(pc, target,rd);
+    }
+    
   }else {
     ftrace_ret(pc, target);
   }
