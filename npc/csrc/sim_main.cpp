@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
     //     top->clock = 1; top->eval();tfp->dump(time);time++;
         
     // }
+    executer();
 
     finish_all();
 

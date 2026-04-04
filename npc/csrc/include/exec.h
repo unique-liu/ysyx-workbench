@@ -26,6 +26,6 @@ extern VerilatedContext* contextp;
 extern VCPUtop* top;
 extern VerilatedFstC* tfp;
 
-void exctuter();
+void executer();
 
 #endif // EXEC_H

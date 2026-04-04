@@ -20,7 +20,7 @@ void reset(int n){
     top->reset = 0;
 }
 
-void exctuter(){
+void executer(){
     reset(10);
     while (npc_state.type == NPC_RUNNING) {
         exceute_once();
