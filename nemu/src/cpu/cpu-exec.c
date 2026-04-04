@@ -140,6 +140,10 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
   
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
+  if (current_idx == target && rd == 0) {
+    // should be "j" instruction, not a call, ignore it
+    return;
+  }
   log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]call deep%2d[%10s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, (int)ftrace_call_depth+1, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   if (ftrace_call_depth < FTRACE_MAX_CALL_DEPTH) {
     ftrace_call_stack[ftrace_call_depth] = (rd != 0)? pc+4 : 0;
@@ -166,10 +170,7 @@ static void ftrace_ret(word_t pc, word_t target) {
 void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
   #ifdef CONFIG_FTRACE
   if (rs1 != 1) {
-    if (rd != 0) {
-      ftrace_call(pc, target,rd);
-    }
-    
+    ftrace_call(pc, target,rd);
   }else {
     ftrace_ret(pc, target);
   }
