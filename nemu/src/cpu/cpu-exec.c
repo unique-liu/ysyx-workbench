@@ -140,7 +140,7 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
   
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  if (current_idx == target && rd == 0) {
+  if (current_idx == target_idx && rd == 0) {
     // should be "j" instruction, not a call, ignore it
     return;
   }
