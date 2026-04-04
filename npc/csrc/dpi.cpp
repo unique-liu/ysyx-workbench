@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "debug.h"
+#include <debug.h>
 #define MEM_SIZE_BYTES (64 * 1024 * 1024)
 #define MEM_BASE 0x80000000
 extern uint8_t mem[MEM_SIZE_BYTES];
@@ -22,7 +22,7 @@ extern "C" int mem_read(int raddr) {
   int return_data = 0;
   if (real_addr + 3< MEM_SIZE_BYTES && real_addr >= 0) {
     return_data = mem[real_addr] | (mem[real_addr + 1] << 8) | (mem[real_addr + 2] << 16) | (mem[real_addr + 3] << 24);
-    DEBUG_PRINT(mem_read, "Reading from address 0x%08x get 0x%08x\n", raddr, return_data);
+    DEBUG_PRINT(mem_read,T, "Reading from address 0x%08x get 0x%08x\n", raddr, return_data);
     return return_data;
   } else {
     printf("read out of bounds at address 0x%08x\n", raddr);
