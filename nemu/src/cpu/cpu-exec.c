@@ -126,7 +126,7 @@ int init_function_table(FILE * fp) {
   }
   return func_count;
 }
-
+#ifdef CONFIG_FTRACE
 static int find_function_by_addr(word_t addr) {
   for (int i = 0; i < FTRACE_MAX_FUNC_NUM; i++) {
     if (addr >= func_table[i].addr && addr < func_table[i].addr + func_table[i].size) {
@@ -164,7 +164,7 @@ static void ftrace_ret(word_t pc, word_t target) {
   log_write("[ftrace]:deep%2d [%10s@"FMT_PADDR"]  ret deep%2d[%s@"FMT_PADDR"]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, target_deep, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   ftrace_call_depth = target_deep;
 }
-
+#endif
 
 void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
   #ifdef CONFIG_FTRACE
@@ -182,9 +182,10 @@ void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("[itrace]%s\n", _this->logbuf); }
+  iringbuf_record(_this->logbuf);
 #endif
 
-  iringbuf_record(_this->logbuf);
+  
 
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
