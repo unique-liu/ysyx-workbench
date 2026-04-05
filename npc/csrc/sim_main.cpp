@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
         
     // }
     sdb_mainloop();
+    printf("test1");
     
 
     return finish_all();
