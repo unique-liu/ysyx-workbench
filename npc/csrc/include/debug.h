@@ -3,7 +3,6 @@
 #define DEBUG_H
 
 #include <assert.h>
-#include <stdio.h>
 #include <config.h>
 
 #define LOG_PATH_T "logs/log-trace.txt"
@@ -33,7 +32,7 @@
 
 #define DEBUG_PRINT(name,target,fmt, ...) do{\
     extern FILE *T;\
-    fprintf(target,"[%s:%d %s ]["#name"] ", __FILE__, __LINE__, __func__);\
+    fprintf(target,"[%s:%d %s %llu]["#name"] ", __FILE__, __LINE__, __func__,npc_state.time);\
     fprintf(target,fmt,## __VA_ARGS__);\
 }while(0)
 

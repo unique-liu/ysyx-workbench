@@ -1,8 +1,23 @@
 #include <init.h>
 
 DEBUG_DECLARE();
+void init_disasm();
 
 bool load_program_elf(const std::string& filename) {
+    //loading function table for ftrace
+    if (filename.c_str() == NULL) {
+        return false;
+    }
+    FILE *fp = fopen(filename.c_str(), "rb");
+    if (!fp) {
+        return false;
+    }
+    int ret = init_function_table(fp);
+    assert(ret >= 0);
+    DEBUG_PRINT(init-info,T,"Loaded %d functions from ELF file.", ret);
+    fclose(fp);
+    //function table loading end
+
     int fd = open(filename.c_str(), O_RDONLY);
     if (fd < 0) {
         fprintf(stderr, "Error: Cannot open ELF file: %s\n", filename.c_str());
@@ -11,6 +26,7 @@ bool load_program_elf(const std::string& filename) {
 
     struct stat st;
     fstat(fd, &st);
+    //used for program loading
     uint8_t* file_data = (uint8_t*)mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
     if (file_data == MAP_FAILED) {
@@ -66,7 +82,7 @@ bool load_program_elf(const std::string& filename) {
 
 void sigint_handler(int signum) {
     printf("halt with interupt\n");
-    npc_state.type = NPC_STOP;
+    npc_state.type = NPC_WAITING;
 }
 
 void init_verilator(int argc, char** argv) {
@@ -96,9 +112,15 @@ int init_all(int argc, char** argv) {
         return -1;
     }
 
+    // 初始化 sdb
+    init_sdb();
+
+    // 初始化反汇编
+    init_disasm();
+
     init_verilator(argc, argv);
 
-    npc_state.type = NPC_RUNNING;
+    npc_state.type = NPC_WAITING;
     npc_state.inst_count = 0;
     npc_state.time = 0;
     return 0;

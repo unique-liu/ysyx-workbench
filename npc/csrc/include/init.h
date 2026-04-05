@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <exec.h>
 #include <debug.h>
+#include <trace.h>
+#include <sdb.h>
 
 bool load_program_elf(const std::string& filename);
 int init_all(int argc, char** argv);

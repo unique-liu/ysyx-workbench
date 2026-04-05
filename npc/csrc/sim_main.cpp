@@ -14,8 +14,7 @@
 #include <init.h>
 #include <mem.h>
 #include <exec.h>
-
-uint8_t mem[MEM_SIZE_BYTES];
+#include <sdb.h>
 
 
 int main(int argc, char** argv) {
@@ -53,9 +52,10 @@ int main(int argc, char** argv) {
     //     top->clock = 1; top->eval();tfp->dump(time);time++;
         
     // }
-    executer();
+    sdb_mainloop();
+    
 
-    finish_all();
+    return finish_all();
 
     // Final model cleanup
     // tfp->close();  
