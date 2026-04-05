@@ -48,7 +48,7 @@ void init_wp_pool() {
 
 WP* new_wp(){
   if (free_==NULL) {
-    printf(0, "No available watchpoint.\n");
+    printf( "No available watchpoint.\n");
     exit(1);
   }
   WP *wp = free_;

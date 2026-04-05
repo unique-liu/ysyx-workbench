@@ -11,7 +11,7 @@ VERILATOR = verilator
 
 # 收集所有.v .sv .cpp 文件
 VERILOG_SRC = $(shell find $(VERILOG_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
-CPP_SRC = $(shell find $(CPP_DIRS) -type f -name "*.cpp" 2>/dev/null)
+CPP_SRC = $(shell find $(CPP_DIRS) -type f \( -name "*.c" -o -name "*.cpp" \) 2>/dev/null)
 
 ifeq ($(strip $(VERILOG_SRC)),)
 $(error No Verilog/SystemVerilog files found in $(VERILOG_DIRS))
@@ -22,8 +22,9 @@ $(warning No C++ source files found, assuming pure Verilog simulation)
 endif
 
 # 编译选项
-VCC_FLAGZ = -I/home/liu/ysyx-workbench/npc/csrc/include
-VERILATOR_FLAGS = --cc -CFLAGS "$(VCC_FLAGZ)" --build --exe -j --top-module $(TOP_MODULE)
+VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include  
+LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
+VERILATOR_FLAGS = --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE)
 # 如需波形跟踪，添加：
 VERILATOR_FLAGS += --trace --trace-fst
 # 目标：构建可执行文件

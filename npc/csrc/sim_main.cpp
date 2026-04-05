@@ -14,7 +14,7 @@
 #include <init.h>
 #include <mem.h>
 #include <exec.h>
-
+#include <sdb.h>
 
 
 int main(int argc, char** argv) {
@@ -52,6 +52,7 @@ int main(int argc, char** argv) {
     //     top->clock = 1; top->eval();tfp->dump(time);time++;
         
     // }
+    sdb_mainloop();
     
 
     return finish_all();

@@ -19,8 +19,9 @@
  */
 #include <regex.h>
 #include <mem.h>
-#include "include/debug.h"
+#include <debug.h>
 #include <isa.h>
+#include <macro.h>
 enum {
   TK_NOTYPE = 256, 
   /* TODO: Add more token types */
@@ -89,7 +90,7 @@ void init_regex() {
     ret = regcomp(&re[i], rules[i].regex, REG_EXTENDED);
     if (ret != 0) {
       regerror(ret, &re[i], error_msg, 128);
-      panic("regex compilation failed: %s\n%s", error_msg, rules[i].regex);
+      printf("regex compilation failed: %s\n%s", error_msg, rules[i].regex);
     }
   }
 }

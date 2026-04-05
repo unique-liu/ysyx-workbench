@@ -14,10 +14,11 @@
 ***************************************************************************************/
 #include <exec.h>
 #include <mem.h>
-#include "include/isa.h"
+#include <isa.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <sdb.h>
+#include <macro.h>
 
 static int is_batch_mode = false;
 
@@ -44,13 +45,15 @@ static char* rl_gets() {
 }
 
 static int cmd_c(char *args) {
+  npc_state.type = NPC_RUNNING;
   execute(-1);
   return 0;
 }
 
 
 static int cmd_q(char *args) {
-  exit(0);
+  npc_state.type = NPC_STOP;
+  return 0;
 }
 
 static int cmd_help(char *args);
@@ -117,6 +120,7 @@ static int cmd_si(char *args){
   if(arg != NULL){
     steps = atoi(arg);
   }
+  npc_state.type = NPC_RUNNING;
   execute(steps);
   return 0;
 }
@@ -253,8 +257,8 @@ void sdb_mainloop() {
     }
 
 #ifdef CONFIG_DEVICE
-    extern void sdl_clear_event_queue();
-    sdl_clear_event_queue();
+    // extern void sdl_clear_event_queue();
+    // sdl_clear_event_queue();
 #endif
 
     int i;
@@ -266,6 +270,10 @@ void sdb_mainloop() {
     }
 
     if (i == NR_CMD) { printf("Unknown command '%s'\n", cmd); }
+    if (npc_state.type == NPC_STOP) {
+      printf("Execution stopped.\n");
+      return;
+    }
   }
 }
 

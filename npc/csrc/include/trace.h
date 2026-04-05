@@ -7,7 +7,7 @@
 #include <elf.h>
 #include <assert.h>
 #include <config.h>
-#include "debug.h"
+#include <debug.h>
 
 typedef uint32_t word_t ;
 

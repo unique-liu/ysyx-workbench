@@ -15,7 +15,7 @@ typedef enum{
     NPC_INVALID,
     NPC_RUNNING,
     NPC_HALT,//stop by instruction
-    NPC_STOP,//stop by other reasons, e.g. interupt
+    NPC_STOP,//stop by other reasons, e.g. interupt or user command q
     NPC_TIMEOUT,//stop by timeout
     NPC_WAITING,//waiting for external events, e.g. user commands
     NPC_ERROR

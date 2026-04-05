@@ -57,6 +57,8 @@ extern "C" void mem_write(int waddr, int wdata, char wmask) {
   // }
   paddr_write(paddr, 4, wdata, wmask);
 }
+
+extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int rdata, int wen) {
   // 同步函数, 同步提交指令到cpu
   if (submit==0) {
@@ -70,7 +72,7 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int rdata, int wen
     cpu.gpr[rd] = rdata;
   }
   cpu.inst = inst;
-  void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+  
   disassemble(cpu.logbuf, sizeof(cpu.logbuf), cpu.pc, (uint8_t *)&cpu.inst, 4);
-  !!!need to link a lib
+
 }

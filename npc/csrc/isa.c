@@ -1,4 +1,4 @@
-#include "include/isa.h"
+#include <isa.h>
 
 CPU_state_t cpu;
 

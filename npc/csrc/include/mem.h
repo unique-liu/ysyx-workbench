@@ -7,6 +7,7 @@
 #define MEM_SIZE_BYTES (64 * 1024 * 1024)
 #define MEM_BASE 0x80000000
 
+typedef int vaddr_t ;
 
 extern uint8_t mem[MEM_SIZE_BYTES];
 

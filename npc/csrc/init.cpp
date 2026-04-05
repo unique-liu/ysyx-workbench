@@ -1,6 +1,7 @@
 #include <init.h>
 
 DEBUG_DECLARE();
+void init_disasm();
 
 bool load_program_elf(const std::string& filename) {
     //loading function table for ftrace
@@ -111,6 +112,12 @@ int init_all(int argc, char** argv) {
         return -1;
     }
 
+    // 初始化 sdb
+    init_sdb();
+
+    // 初始化反汇编
+    init_disasm();
+
     init_verilator(argc, argv);
 
     npc_state.type = NPC_WAITING;
@@ -128,14 +135,11 @@ int finish_all() {
 
     int ret = 0;
     switch (npc_state.type) {
-        case NPC_RUNNING:
-            printf("[UNKNOWN] Unexecuted halt\n");
-            break;
         case NPC_HALT:
             printf("[SUCCEED] Halt by instruction\n");
             break;
         case NPC_STOP:
-            printf("[SUCCEED] Halt by interupt\n");
+            printf("[SUCCEED] Halt by interupt or command q\n");
             break;
         case NPC_TIMEOUT:
             printf("[FAILED] Halt by timeout\n");
@@ -146,7 +150,7 @@ int finish_all() {
             ret = -1;
             break;
         default:
-            printf("[FAILED] Unknown halt reason\n");
+            printf("[UNKNOWN] Unknown halt reason\n");
             ret = -1;
     }
     DEBUG_END();
