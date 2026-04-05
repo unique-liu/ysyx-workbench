@@ -4,6 +4,10 @@
 #include "VCPUtop.h"
 #include <verilated.h>
 #include "verilated_fst_c.h"
+#include <sdb.h>
+#include <config.h>
+#include <isa.h>
+#include <trace.h>
 
 #define MAX_TIME 100000
 
@@ -13,6 +17,7 @@ typedef enum{
     NPC_HALT,//stop by instruction
     NPC_STOP,//stop by other reasons, e.g. interupt
     NPC_TIMEOUT,//stop by timeout
+    NPC_WAITING,//waiting for external events, e.g. user commands
     NPC_ERROR
 } rstate_types_t;
 typedef struct{
@@ -26,6 +31,6 @@ extern VerilatedContext* contextp;
 extern VCPUtop* top;
 extern VerilatedFstC* tfp;
 
-void executer();
+void execute(int n);
 
 #endif // EXEC_H

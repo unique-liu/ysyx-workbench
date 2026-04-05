@@ -15,7 +15,6 @@
 #include <mem.h>
 #include <exec.h>
 
-uint8_t mem[MEM_SIZE_BYTES];
 
 
 int main(int argc, char** argv) {
@@ -53,7 +52,7 @@ int main(int argc, char** argv) {
     //     top->clock = 1; top->eval();tfp->dump(time);time++;
         
     // }
-    executer();
+    
 
     return finish_all();
 
