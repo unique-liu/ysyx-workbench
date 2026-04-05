@@ -135,14 +135,11 @@ int finish_all() {
 
     int ret = 0;
     switch (npc_state.type) {
-        case NPC_RUNNING:
-            printf("[UNKNOWN] Unexecuted halt\n");
-            break;
         case NPC_HALT:
             printf("[SUCCEED] Halt by instruction\n");
             break;
         case NPC_STOP:
-            printf("[SUCCEED] Halt by interupt\n");
+            printf("[SUCCEED] Halt by interupt or command q\n");
             break;
         case NPC_TIMEOUT:
             printf("[FAILED] Halt by timeout\n");
@@ -153,7 +150,7 @@ int finish_all() {
             ret = -1;
             break;
         default:
-            printf("[FAILED] Unknown halt reason\n");
+            printf("[UNKNOWN] Unknown halt reason\n");
             ret = -1;
     }
     DEBUG_END();

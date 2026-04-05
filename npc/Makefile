@@ -22,8 +22,8 @@ $(warning No C++ source files found, assuming pure Verilog simulation)
 endif
 
 # 编译选项
-VCC_FLAGZ = -I/home/liu/ysyx-workbench/npc/csrc/include -I/home/liu/ysyx-workbench/nemu/tools/capstone/repo/include  
-LIBS = /home/liu/ysyx-workbench/npc/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
+VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include  
+LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
 VERILATOR_FLAGS = --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE)
 # 如需波形跟踪，添加：
 VERILATOR_FLAGS += --trace --trace-fst
