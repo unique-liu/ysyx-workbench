@@ -63,8 +63,8 @@ extern "C" void mem_write(int waddr, int wdata, char wmask,int pc) {
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen,word_t target,int rs1,int branch) {
   // 同步函数, 同步提交指令到cpu
+  DEBUG_PRINT(test, T, "submit = %d", submit);
   if (submit==0) {
-    cpu.logbuf[0] = '\0';
     return;
   }
 
@@ -85,5 +85,9 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   
   int len = sprintf(cpu.logbuf, "0x%08x: 0x%08x ", pc, inst);
   disassemble(cpu.logbuf + len, sizeof(cpu.logbuf) - len, cpu.pc, (uint8_t *)&cpu.inst, 4);
+
+  #ifdef CONFIG_ITRACE
+  itrace_record(cpu.logbuf);
+  #endif
 
 }

@@ -153,6 +153,11 @@ int finish_all() {
             printf("[UNKNOWN] Unknown halt reason\n");
             ret = -1;
     }
+    #ifdef CONFIG_ITRACE
+    if (ret == -1) {
+        iringbuf_print();
+    }
+    #endif
     DEBUG_END();
 
     return ret;

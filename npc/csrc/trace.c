@@ -114,8 +114,10 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
   DEBUG_PRINT(ftrace,T,"deep%2d [%10s@0x%08x]%s call deep%2d[%10s@0x%08x]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc,((rd != 0) ? "" : "tail"), (int)ftrace_call_depth+1, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   if (ftrace_call_depth < FTRACE_MAX_CALL_DEPTH) {
     ftrace_call_stack[ftrace_call_depth] = (rd != 0)? pc+4 : 0;
+    ftrace_call_depth++;
+  }else {
+    printf("ftrace call stack overflow at pc: 0x%08x\n", pc);
   }
-  ftrace_call_depth++;
 }
 
 static void ftrace_ret(word_t pc, word_t target) {
@@ -135,7 +137,7 @@ static void ftrace_ret(word_t pc, word_t target) {
 
 void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
   #ifdef CONFIG_FTRACE
-  if (rs1 != 1) {
+  if (rs1 != 1 || rd != 0) {
     ftrace_call(pc, target,rd);
   }else {
     ftrace_ret(pc, target);

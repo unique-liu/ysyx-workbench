@@ -21,11 +21,11 @@ void reset(int n){
 }
 
 static void trace_and_difftest() {
-    #ifdef CONFIG_ITRACE
-    if (cpu.logbuf[0] != '\0') {
-        itrace_record(cpu.logbuf);
-    }
-    #endif
+    // #ifdef CONFIG_ITRACE
+    // if (cpu.logbuf[0] != '\0') {
+    //     itrace_record(cpu.logbuf);
+    // }
+    // #endif
 
 //   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
 //   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
