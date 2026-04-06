@@ -79,6 +79,7 @@ class WBU extends Module{
     u_debugio.io.clock          := clock.asBool
     u_debugio.io.pc             := reg_PC
     u_debugio.io.inst           := reg_debug.inst
+    dontTouch(u_debugio.io.submit)
     u_debugio.io.submit         := will_out 
     u_debugio.io.rd             := io.regfile.waddr
     u_debugio.io.wdata          := io.regfile.wdata
