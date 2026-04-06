@@ -59,7 +59,7 @@ extern "C" void mem_write(int waddr, int wdata, char wmask) {
 }
 
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int rdata, int wen) {
+extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen,word_t target,int rs1,int branch) {
   // 同步函数, 同步提交指令到cpu
   if (submit==0) {
     cpu.logbuf[0] = '\0';
@@ -68,10 +68,16 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int rdata, int wen
 
   cpu.pc = pc;
   if (wen && rd != 0) {
-    DEBUG_PRINT(rtrace,T, "%s = 0x%08x\n", regs[rd], rdata);
-    cpu.gpr[rd] = rdata;
+    #ifdef CONFIG_RTRACE
+    DEBUG_PRINT(rtrace,T, "%s = 0x%08x\n", regs[rd], wdata);
+    #endif
+    cpu.gpr[rd] = wdata;
   }
   cpu.inst = inst;
+
+  #ifdef CONFIG_FTRACE
+  ftrace_enter(pc, target,rd ,rs1);
+  #endif
   
   disassemble(cpu.logbuf, sizeof(cpu.logbuf), cpu.pc, (uint8_t *)&cpu.inst, 4);
 

@@ -16,6 +16,7 @@ class IDU extends Module{
         val next = new Bundle{
             val valid           = Output(Bool())
             val ready           = Input (Bool())
+            val PC              = Output(UInt(32.W))
             val alu_src1        = Output(UInt(32.W))
             val alu_src2        = Output(UInt(32.W))
             val alu_op          = Output(UInt(ALUop.op_width.W))
@@ -23,6 +24,11 @@ class IDU extends Module{
             val reg_rd          = Output(UInt(5.W))
             val mem_op          = Output(UInt(Memop.op_width.W))
             val mem_src         = Output(UInt(32.W))
+            val debug = new Bundle{
+                val inst            = Output(UInt(32.W))
+                val branch          = Output(Bool())
+                val branch_target   = Output(UInt(32.W))
+            }
         }
         val regfile = new Bundle{
             val raddr1          = Output(UInt(5.W))
@@ -154,6 +160,12 @@ class IDU extends Module{
     val u_specialio                = Module(new SpecialIO)
     u_specialio.io.halt           := (halt_counter === 0.U) & valid
     u_specialio.io.error          := is_error_halt & valid
+
+    //normal output
+    io.next.PC                    := regPC
+    io.next.debug.inst            := regInst
+    io.next.debug.branch          := branch_taken
+    io.next.debug.branch_target   := branch_ctrl.io.branch_target
 }
 
 class inst_decoder extends Module{

@@ -45,6 +45,10 @@ static char* rl_gets() {
 }
 
 static int cmd_c(char *args) {
+  if (npc_state.type != NPC_WAITING){
+    printf("Error: Cannot step into instructions while the program is not in waiting state.\n");
+    return 0;
+  }
   npc_state.type = NPC_RUNNING;
   execute(-1);
   return 0;
@@ -115,6 +119,10 @@ static int cmd_test(char *args) {
 }
 
 static int cmd_si(char *args){
+  if (npc_state.type != NPC_WAITING){
+    printf("Error: Cannot step into instructions while the program is not in waiting state.\n");
+    return 0;
+  }
   char *arg = strtok(NULL, " ");
   int steps = 1;
   if(arg != NULL){
