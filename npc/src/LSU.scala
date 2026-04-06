@@ -94,7 +94,7 @@ class LSU extends Module{
         is("b11".U){mem_mask := "b1111".U}
     }
     io.memio.clock              := clock.asBool
-    io.memio.PC                 := reg_PC
+    io.memio.PC                 := io.before.PC
     io.memio.ren                := io.before.mem_op(Memop.load_bit) & will_in
     io.memio.raddr              := io.before.alu_result
     io.memio.wen                := ~io.before.mem_op(Memop.load_bit) & (io.before.mem_op =/= Memop.noop) & will_in
