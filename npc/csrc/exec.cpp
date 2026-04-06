@@ -50,6 +50,7 @@ void execute(int n){
             break;
         }
         if (npc_state.time >= MAX_TIME) {
+            printf("\033[31mTime out\033[0m\n");
             npc_state.type = NPC_TIMEOUT;
             break;
         }

@@ -9,7 +9,7 @@
 #include <isa.h>
 #include <trace.h>
 
-#define MAX_TIME 100000
+#define MAX_TIME 1000000
 #define RESET_TIME 10
 
 typedef enum{
