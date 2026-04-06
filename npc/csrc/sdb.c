@@ -21,7 +21,7 @@
 #include <macro.h>
 
 static int is_batch_mode = false;
-static int reseted = 0;
+static int reseted = 0,quit = 0;
 
 void init_regex();
 void init_wp_pool();
@@ -61,7 +61,10 @@ static int cmd_c(char *args) {
 
 
 static int cmd_q(char *args) {
-  npc_state.type = NPC_STOP;
+  if (npc_state.type == NPC_WAITING) {
+    npc_state.type = NPC_STOP;
+  }
+  quit = 1;
   return 0;
 }
 
@@ -287,7 +290,7 @@ void sdb_mainloop() {
     }
 
     if (i == NR_CMD) { printf("Unknown command '%s'\n", cmd); }
-    if (npc_state.type == NPC_STOP) {
+    if (quit) {
       printf("Execution stopped.\n");
       return;
     }

@@ -43,6 +43,8 @@ class IFU (initPC:Int=0)extends Module{
     io.next.valid               := valid
 
     val regPC                   = RegInit(initPC.U(32.W))
+    val reginst                 = RegInit(0.U(32.W))
+    val reg_mismatch            = RegInit(false.B)
     val nextPC                  = Wire(UInt(32.W))
     when(io.next.ifbranch){
         nextPC                  := io.next.branchPC
@@ -52,9 +54,13 @@ class IFU (initPC:Int=0)extends Module{
     when(will_in){
         regPC                   := nextPC
     }
+    when(!will_out){
+        reginst                 := io.memio.rdata
+        reg_mismatch            := true.B
+    }
 
     io.next.PC                  := regPC
-    io.next.inst                := io.memio.rdata
+    io.next.inst                := Mux(reg_mismatch, reginst, io.memio.rdata)
     
     io.memio.clock              := clock.asBool
     io.memio.PC                 := regPC
