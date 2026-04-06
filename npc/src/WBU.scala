@@ -76,7 +76,7 @@ class WBU extends Module{
 
     //debug
     val u_debugio               = Module(new DebugIO)
-    u_debugio.io.clock          := clock
+    u_debugio.io.clock          := clock.asBool
     u_debugio.io.pc             := reg_PC
     u_debugio.io.inst           := reg_debug.inst
     u_debugio.io.submit         := will_out 
