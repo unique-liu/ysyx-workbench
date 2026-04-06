@@ -7,10 +7,10 @@
 
 extern "C" void halt_system(char is_error) {
   if (is_error) {
-    printf("Halt with error\n");
+    printf("\033[31mHalt with error\033[0m\n");
     npc_state.type = NPC_ERROR;
   } else {
-    printf("Halt without error\n");
+    printf("\033[32mHalt correctly\033[0m\n");
     npc_state.type = NPC_HALT;
   }
 }

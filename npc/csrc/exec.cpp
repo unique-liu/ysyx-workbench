@@ -11,11 +11,13 @@ void exceute_once(){
 }
 
 void reset(int n){
+    DEBUG_PRINT(reset, T, "reset start\n");
     top->reset = 1; 
     for (int i = 0; i < n; i++) {
         exceute_once();
     }
     top->reset = 0;
+    DEBUG_PRINT(reset, T, "reset end\n");
 }
 
 static void trace_and_difftest() {
