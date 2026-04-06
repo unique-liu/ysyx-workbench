@@ -73,7 +73,7 @@ void paddr_write(int addr, int len, int wdata, char wmask) {
   if (in_pmem(addr)) { 
     pmem_write(addr, len, wdata, wmask);
     #ifdef CONFIG_MTRACE
-    DEBUG_PRINT(mtrace, T, "write 0x%08x with length %d get 0x%08x [S]\n", addr, len, wdata);
+    DEBUG_PRINT(mtrace, T, "write 0x%08x with length %d save 0x%08x [S]\n", addr, len, wdata);
     #endif
     return; 
   }

@@ -93,14 +93,14 @@ class IDU extends Module{
     val rs2_need_WBU_forward      = rs2 =/= 0.U && (rs2 === io.WBU_forward.reg_rd)
     val rs1_forward_need          = (rs1_need_EXU_forward || rs1_need_LSU_forward || rs1_need_WBU_forward)
     val rs2_forward_need          = (rs2_need_EXU_forward || rs2_need_LSU_forward || rs2_need_WBU_forward)
-    val rs1_forward_valid         = (rs1_need_EXU_forward && io.EXU_forward.reg_useable) || (rs1_need_LSU_forward && io.LSU_forward.reg_useable) || (rs1_need_WBU_forward && io.WBU_forward.reg_useable)
-    val rs2_forward_valid         = (rs2_need_EXU_forward && io.EXU_forward.reg_useable) || (rs2_need_LSU_forward && io.LSU_forward.reg_useable) || (rs2_need_WBU_forward && io.WBU_forward.reg_useable)
+    val rs1_forward_valid         = Mux(rs1_need_EXU_forward, io.EXU_forward.reg_useable, Mux(rs1_need_LSU_forward, io.LSU_forward.reg_useable, Mux(rs1_need_WBU_forward, io.WBU_forward.reg_useable, false.B)))
+    val rs2_forward_valid         = Mux(rs2_need_EXU_forward, io.EXU_forward.reg_useable, Mux(rs2_need_LSU_forward, io.LSU_forward.reg_useable, Mux(rs2_need_WBU_forward, io.WBU_forward.reg_useable, false.B)))
     val rs1_forward_data          = Mux(rs1_need_EXU_forward, io.EXU_forward.reg_wdata, Mux(rs1_need_LSU_forward, io.LSU_forward.reg_wdata, Mux(rs1_need_WBU_forward, io.WBU_forward.reg_wdata, 0.U(32.W))))
     val rs2_forward_data          = Mux(rs2_need_EXU_forward, io.EXU_forward.reg_wdata, Mux(rs2_need_LSU_forward, io.LSU_forward.reg_wdata, Mux(rs2_need_WBU_forward, io.WBU_forward.reg_wdata, 0.U(32.W))))
     rs1_stall                     := rs1_forward_need && !rs1_forward_valid
     rs2_stall                     := rs2_forward_need && !rs2_forward_valid
-    val rs1_data                  = Mux(rs1_forward_valid, rs1_forward_data, io.regfile.rdata1)
-    val rs2_data                  = Mux(rs2_forward_valid, rs2_forward_data, io.regfile.rdata2)
+    val rs1_data                  = Mux(rs1_forward_need, rs1_forward_data, io.regfile.rdata1)
+    val rs2_data                  = Mux(rs2_forward_need, rs2_forward_data, io.regfile.rdata2)
 
     //decoder
     val inst_decoder            = Module(new inst_decoder)
