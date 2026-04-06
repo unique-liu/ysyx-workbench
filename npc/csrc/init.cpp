@@ -146,18 +146,20 @@ int finish_all() {
             ret = -1;
             break;
         case NPC_ERROR:
+            #ifdef CONFIG_ITRACE
+            iringbuf_print();
+            #endif
             printf("[FAILED] Halt with error\n");
             ret = -1;
             break;
         default:
+            #ifdef CONFIG_ITRACE
+            iringbuf_print();
+            #endif
             printf("[UNKNOWN] Unknown halt reason\n");
             ret = -1;
     }
-    #ifdef CONFIG_ITRACE
-    if (ret == -1) {
-        iringbuf_print();
-    }
-    #endif
+    
     DEBUG_END();
 
     return ret;
