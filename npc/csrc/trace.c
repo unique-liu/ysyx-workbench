@@ -26,7 +26,7 @@ void iringbuf_print() {
 }
 
 void itrace_record(const char *s) {
-  DEBUG_PRINT(itrace-info,T,"%s\n", s);
+  DEBUG_PRINT(itrace,T,"%s\n", s);
   iringbuf_record(s);
 }
 //iringbuf end

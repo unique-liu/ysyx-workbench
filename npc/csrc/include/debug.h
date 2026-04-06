@@ -30,9 +30,14 @@
     }\
 } while (0)
 
+// #define DEBUG_PRINT(name,target,fmt, ...) do{\
+//     extern FILE *T;\
+//     fprintf(target,"[%s:%d %s %llu]["#name"] ", __FILE__, __LINE__, __func__,npc_state.time);\
+//     fprintf(target,fmt,## __VA_ARGS__);\
+// }while(0)
 #define DEBUG_PRINT(name,target,fmt, ...) do{\
     extern FILE *T;\
-    fprintf(target,"[%s:%d %s %llu]["#name"] ", __FILE__, __LINE__, __func__,npc_state.time);\
+    fprintf(target,"[t:%llu]["#name"] ",npc_state.time);\
     fprintf(target,fmt,## __VA_ARGS__);\
 }while(0)
 
