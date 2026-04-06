@@ -21,6 +21,7 @@
 #include <macro.h>
 
 static int is_batch_mode = false;
+static int reseted = 0;
 
 void init_regex();
 void init_wp_pool();
@@ -48,6 +49,10 @@ static int cmd_c(char *args) {
   if (npc_state.type != NPC_WAITING){
     printf("Error: Cannot step into instructions while the program is not in waiting state.\n");
     return 0;
+  }
+  if (reseted == 0) {
+    reset(RESET_TIME);
+    reseted = 1;
   }
   npc_state.type = NPC_RUNNING;
   execute(-1);
@@ -122,6 +127,10 @@ static int cmd_si(char *args){
   if (npc_state.type != NPC_WAITING){
     printf("Error: Cannot step into instructions while the program is not in waiting state.\n");
     return 0;
+  }
+  if (reseted == 0) {
+    reset(RESET_TIME);
+    reseted = 1;
   }
   char *arg = strtok(NULL, " ");
   int steps = 1;
