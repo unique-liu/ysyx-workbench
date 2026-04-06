@@ -78,7 +78,9 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   cpu.inst = inst;
 
   #ifdef CONFIG_FTRACE
-  ftrace_enter(pc, target,rd ,rs1);
+  if (branch) {
+    ftrace_enter(pc, target,rd ,rs1);
+  }
   #endif
   
   int len = sprintf(cpu.logbuf, "0x%08x: 0x%08x ", pc, inst);
