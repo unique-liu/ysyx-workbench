@@ -14,7 +14,7 @@ extern "C" void halt_system(char is_error) {
     npc_state.type = NPC_HALT;
   }
 }
-extern "C" int mem_read(int raddr) {
+extern "C" int mem_read(int raddr, int pc) {
   // 总是读取地址为`raddr & ~0x3u`的4字节返回
   int paddr = raddr & ~0x3u;
   // int real_addr = paddr - MEM_BASE;
@@ -28,10 +28,11 @@ extern "C" int mem_read(int raddr) {
   //   halt_system(1);
   //   return 0;
   // }
+  DEBUG_PRINT(cpu, T, "pc: 0x%08x", pc);
   return paddr_read(paddr, 4);
 
 }
-extern "C" void mem_write(int waddr, int wdata, char wmask) {
+extern "C" void mem_write(int waddr, int wdata, char wmask,int pc) {
   // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
   // `wmask`中每比特表示`wdata`中1个字节的掩码,
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
@@ -55,6 +56,7 @@ extern "C" void mem_write(int waddr, int wdata, char wmask) {
   // if ((wmask >> 3) & 1) {
   //   mem[real_addr + 3] = (wdata >> 24) & 0xFF;
   // }
+  DEBUG_PRINT(cpu, T, "pc: 0x%08x", pc);
   paddr_write(paddr, 4, wdata, wmask);
 }
 
@@ -69,7 +71,7 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   cpu.pc = pc;
   if (wen && rd != 0) {
     #ifdef CONFIG_RTRACE
-    DEBUG_PRINT(rtrace,T, "%s = 0x%08x\n", regs[rd], wdata);
+    DEBUG_PRINT(rtrace,T, "0x%08x: %s = 0x%08x\n", pc, regs[rd], wdata);
     #endif
     cpu.gpr[rd] = wdata;
   }
@@ -79,6 +81,7 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   ftrace_enter(pc, target,rd ,rs1);
   #endif
   
-  disassemble(cpu.logbuf, sizeof(cpu.logbuf), cpu.pc, (uint8_t *)&cpu.inst, 4);
+  int len = sprintf(cpu.logbuf, "0x%08x: 0x%08x ", pc, inst);
+  disassemble(cpu.logbuf + len, sizeof(cpu.logbuf) - len, cpu.pc, (uint8_t *)&cpu.inst, 4);
 
 }

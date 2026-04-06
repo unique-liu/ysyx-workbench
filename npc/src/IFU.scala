@@ -17,6 +17,7 @@ class IFU (initPC:Int=0)extends Module{
         }
         val memio = new Bundle{
             val clock           = Output(Bool())
+            val PC              = Output(UInt(32.W))
             val ren             = Output(Bool())
             val raddr           = Output(UInt(32.W))
             val rdata           = Input (UInt(32.W))
@@ -56,6 +57,7 @@ class IFU (initPC:Int=0)extends Module{
     io.next.inst                := io.memio.rdata
     
     io.memio.clock              := clock.asBool
+    io.memio.PC                 := regPC
     io.memio.ren                := !reset.asBool
     io.memio.raddr              := nextPC
     io.memio.wen                := 0.B

@@ -11,7 +11,7 @@ class DebugIO extends ExtModule{
         val clock = Input (Bool())
         val pc    = Input (UInt(32.W))
         val inst  = Input (UInt(32.W))
-        val submit= Input (Bool())
+        val submit= dontTouch(Input (Bool()))
         val rd    = Input (UInt(5.W))
         val wdata = Input (UInt(32.W))
         val wen   = Input (Bool())

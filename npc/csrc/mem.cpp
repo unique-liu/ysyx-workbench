@@ -51,22 +51,16 @@ int mmio_write(int addr,int len,int wdata,char wmask){
 int paddr_read(int addr, int len) {
   int ret = 0;
   if (in_pmem(addr)) {
-    #ifdef CONFIG_MTRACE
-    DEBUG_PRINT(mtrace, T, "read 0x%08x with length %d", addr, len);
-    #endif
     ret = pmem_read(addr, len);
     #ifdef CONFIG_MTRACE
-    DEBUG_PRINT(mtrace, T, " get 0x%08x [S]\n", ret);
+    DEBUG_PRINT(mtrace, T, "read 0x%08x with length %d get 0x%08x [S]\n", addr, len, ret);
     #endif
     return ret;
   }
 #ifdef CONFIG_DEVICE
-    #ifdef CONFIG_DTRACE
-    DEBUG_PRINT(dtrace, T, "read 0x%08x with length %d", addr, len);
-    #endif
     ret = mmio_read(addr, len);
     #ifdef CONFIG_DTRACE
-    DEBUG_PRINT(dtrace, T, " get 0x%08x [S]\n", ret);
+    DEBUG_PRINT(dtrace, T, "read 0x%08x with length %d get 0x%08x [S]\n", addr, len, ret);
     #endif
     return ret;
 #endif
@@ -77,22 +71,16 @@ int paddr_read(int addr, int len) {
 void paddr_write(int addr, int len, int wdata, char wmask) {
 
   if (in_pmem(addr)) { 
-    #ifdef CONFIG_MTRACE
-    DEBUG_PRINT(mtrace, T, "write 0x%08x with length %d", addr, len);
-    #endif
     pmem_write(addr, len, wdata, wmask);
     #ifdef CONFIG_MTRACE
-    DEBUG_PRINT(mtrace, T, " get 0x%08x [S]\n", wdata);
+    DEBUG_PRINT(mtrace, T, "write 0x%08x with length %d get 0x%08x [S]\n", addr, len, wdata);
     #endif
     return; 
   }
  #ifdef CONFIG_DEVICE
-    #ifdef CONFIG_DTRACE
-    DEBUG_PRINT(dtrace, T, "write 0x%08x with length %d save 0x%08x", addr, len, wdata);
-    #endif
     mmio_write(addr, len, wdata, wmask); 
     #ifdef CONFIG_DTRACE
-    DEBUG_PRINT(dtrace, T, " [S]\n");
+    DEBUG_PRINT(dtrace, T, "write 0x%08x with length %d save 0x%08x [S]\n", addr, len, wdata);
     #endif
     return;
 #endif
