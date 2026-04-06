@@ -7,14 +7,14 @@
 
 extern "C" void halt_system(char is_error) {
   if (is_error) {
-    printf("Halt with error\n");
+    printf("\033[31mHalt with error\033[0m\n");
     npc_state.type = NPC_ERROR;
   } else {
-    printf("Halt without error\n");
+    printf("\033[32mHalt correctly\033[0m\n");
     npc_state.type = NPC_HALT;
   }
 }
-extern "C" int mem_read(int raddr) {
+extern "C" int mem_read(int raddr, int pc) {
   // 总是读取地址为`raddr & ~0x3u`的4字节返回
   int paddr = raddr & ~0x3u;
   // int real_addr = paddr - MEM_BASE;
@@ -28,10 +28,11 @@ extern "C" int mem_read(int raddr) {
   //   halt_system(1);
   //   return 0;
   // }
+  DEBUG_PRINT(cpu, T, "pc: 0x%08x", pc);
   return paddr_read(paddr, 4);
 
 }
-extern "C" void mem_write(int waddr, int wdata, char wmask) {
+extern "C" void mem_write(int waddr, int wdata, char wmask,int pc) {
   // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
   // `wmask`中每比特表示`wdata`中1个字节的掩码,
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
@@ -55,24 +56,38 @@ extern "C" void mem_write(int waddr, int wdata, char wmask) {
   // if ((wmask >> 3) & 1) {
   //   mem[real_addr + 3] = (wdata >> 24) & 0xFF;
   // }
+  DEBUG_PRINT(cpu, T, "pc: 0x%08x", pc);
   paddr_write(paddr, 4, wdata, wmask);
 }
 
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int rdata, int wen) {
+extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen,word_t target,int rs1,int branch) {
   // 同步函数, 同步提交指令到cpu
+  // DEBUG_PRINT(test, T, "submit = %d", submit);
   if (submit==0) {
-    cpu.logbuf[0] = '\0';
     return;
   }
 
   cpu.pc = pc;
   if (wen && rd != 0) {
-    DEBUG_PRINT(rtrace,T, "%s = 0x%08x\n", regs[rd], rdata);
-    cpu.gpr[rd] = rdata;
+    #ifdef CONFIG_RTRACE
+    DEBUG_PRINT(rtrace,T, "0x%08x: %s = 0x%08x\n", pc, regs[rd], wdata);
+    #endif
+    cpu.gpr[rd] = wdata;
   }
   cpu.inst = inst;
+
+  #ifdef CONFIG_FTRACE
+  if (branch) {
+    ftrace_enter(pc, target,rd ,rs1);
+  }
+  #endif
   
-  disassemble(cpu.logbuf, sizeof(cpu.logbuf), cpu.pc, (uint8_t *)&cpu.inst, 4);
+  int len = sprintf(cpu.logbuf, "0x%08x: 0x%08x ", pc, inst);
+  disassemble(cpu.logbuf + len, sizeof(cpu.logbuf) - len, cpu.pc, (uint8_t *)&cpu.inst, 4);
+
+  #ifdef CONFIG_ITRACE
+  itrace_record(cpu.logbuf);
+  #endif
 
 }

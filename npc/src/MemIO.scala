@@ -5,6 +5,7 @@ import chisel3.ExtModule
 class MemIO extends ExtModule {
   val io = IO(new Bundle {
     val clock = Input (Bool())
+    val PC    = Input (UInt(32.W))
     val ren   = Input (Bool())
     val raddr = Input (UInt(32.W))
     val rdata = Output(UInt(32.W))

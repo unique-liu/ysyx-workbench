@@ -17,6 +17,7 @@ class IFU (initPC:Int=0)extends Module{
         }
         val memio = new Bundle{
             val clock           = Output(Bool())
+            val PC              = Output(UInt(32.W))
             val ren             = Output(Bool())
             val raddr           = Output(UInt(32.W))
             val rdata           = Input (UInt(32.W))
@@ -41,7 +42,29 @@ class IFU (initPC:Int=0)extends Module{
     io.before.ready             := !valid | will_out
     io.next.valid               := valid
 
+    //state machine
+    val ifus                    = RegInit(IFUS.s_init)
+    when(ifus === IFUS.s_init){
+        when(will_in){
+            ifus                := IFUS.s_ready
+        }
+    }.elsewhen(ifus === IFUS.s_ready){
+        when(will_in){
+            ifus                := IFUS.s_ready
+        }.otherwise{
+            ifus                := IFUS.s_wait
+        }
+    }.elsewhen(ifus === IFUS.s_wait){
+        when(will_in){
+            ifus                := IFUS.s_ready
+        }.otherwise{
+            ifus                := IFUS.s_wait
+        }
+    }
+
+    //
     val regPC                   = RegInit(initPC.U(32.W))
+    val reginst                 = RegInit(0.U(32.W))
     val nextPC                  = Wire(UInt(32.W))
     when(io.next.ifbranch){
         nextPC                  := io.next.branchPC
@@ -51,12 +74,16 @@ class IFU (initPC:Int=0)extends Module{
     when(will_in){
         regPC                   := nextPC
     }
+    when(!will_in){
+        reginst                 := io.memio.rdata
+    }
 
     io.next.PC                  := regPC
-    io.next.inst                := io.memio.rdata
+    io.next.inst                := Mux(ifus(IFUS.s_wait_b), reginst, io.memio.rdata)
     
     io.memio.clock              := clock.asBool
-    io.memio.ren                := !reset.asBool
+    io.memio.PC                 := regPC
+    io.memio.ren                := !reset.asBool & will_in
     io.memio.raddr              := nextPC
     io.memio.wen                := 0.B
     io.memio.waddr              := 0.U

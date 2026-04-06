@@ -151,6 +151,13 @@ object InstCode{
     //U-type: imm[31:12]|rd|opcode
     val lui         = BitPat("b????????????????????_?????_0110111")
     //J-type: imm[20|10:1|11|19:12]|rd|opcode
-
-
+}
+object IFUS{
+    val state_width = 3
+    val s_init_b    = 0
+    val s_wait_b    = 1
+    val s_ready_b   = 2
+    val s_init      = "b001".U(state_width.W)//wait pc to be update, current pc is not valid
+    val s_wait      = "b010".U(state_width.W)//pc and inst are mismatch, need to use saved inst
+    val s_ready     = "b100".U(state_width.W)//pc and inst are valid, ready to output
 }

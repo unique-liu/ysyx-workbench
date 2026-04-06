@@ -14,7 +14,7 @@ bool load_program_elf(const std::string& filename) {
     }
     int ret = init_function_table(fp);
     assert(ret >= 0);
-    DEBUG_PRINT(init-info,T,"Loaded %d functions from ELF file.", ret);
+    DEBUG_PRINT(init,T,"Loaded %d functions from ELF file.\n", ret);
     fclose(fp);
     //function table loading end
 
@@ -146,13 +146,20 @@ int finish_all() {
             ret = -1;
             break;
         case NPC_ERROR:
+            #ifdef CONFIG_ITRACE
+            iringbuf_print();
+            #endif
             printf("[FAILED] Halt with error\n");
             ret = -1;
             break;
         default:
+            #ifdef CONFIG_ITRACE
+            iringbuf_print();
+            #endif
             printf("[UNKNOWN] Unknown halt reason\n");
             ret = -1;
     }
+    
     DEBUG_END();
 
     return ret;

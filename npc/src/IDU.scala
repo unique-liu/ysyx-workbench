@@ -16,6 +16,7 @@ class IDU extends Module{
         val next = new Bundle{
             val valid           = Output(Bool())
             val ready           = Input (Bool())
+            val PC              = Output(UInt(32.W))
             val alu_src1        = Output(UInt(32.W))
             val alu_src2        = Output(UInt(32.W))
             val alu_op          = Output(UInt(ALUop.op_width.W))
@@ -23,6 +24,11 @@ class IDU extends Module{
             val reg_rd          = Output(UInt(5.W))
             val mem_op          = Output(UInt(Memop.op_width.W))
             val mem_src         = Output(UInt(32.W))
+            val debug = new Bundle{
+                val inst            = Output(UInt(32.W))
+                val branch          = Output(Bool())
+                val branch_target   = Output(UInt(32.W))
+            }
         }
         val regfile = new Bundle{
             val raddr1          = Output(UInt(5.W))
@@ -87,14 +93,14 @@ class IDU extends Module{
     val rs2_need_WBU_forward      = rs2 =/= 0.U && (rs2 === io.WBU_forward.reg_rd)
     val rs1_forward_need          = (rs1_need_EXU_forward || rs1_need_LSU_forward || rs1_need_WBU_forward)
     val rs2_forward_need          = (rs2_need_EXU_forward || rs2_need_LSU_forward || rs2_need_WBU_forward)
-    val rs1_forward_valid         = (rs1_need_EXU_forward && io.EXU_forward.reg_useable) || (rs1_need_LSU_forward && io.LSU_forward.reg_useable) || (rs1_need_WBU_forward && io.WBU_forward.reg_useable)
-    val rs2_forward_valid         = (rs2_need_EXU_forward && io.EXU_forward.reg_useable) || (rs2_need_LSU_forward && io.LSU_forward.reg_useable) || (rs2_need_WBU_forward && io.WBU_forward.reg_useable)
+    val rs1_forward_valid         = Mux(rs1_need_EXU_forward, io.EXU_forward.reg_useable, Mux(rs1_need_LSU_forward, io.LSU_forward.reg_useable, Mux(rs1_need_WBU_forward, io.WBU_forward.reg_useable, false.B)))
+    val rs2_forward_valid         = Mux(rs2_need_EXU_forward, io.EXU_forward.reg_useable, Mux(rs2_need_LSU_forward, io.LSU_forward.reg_useable, Mux(rs2_need_WBU_forward, io.WBU_forward.reg_useable, false.B)))
     val rs1_forward_data          = Mux(rs1_need_EXU_forward, io.EXU_forward.reg_wdata, Mux(rs1_need_LSU_forward, io.LSU_forward.reg_wdata, Mux(rs1_need_WBU_forward, io.WBU_forward.reg_wdata, 0.U(32.W))))
     val rs2_forward_data          = Mux(rs2_need_EXU_forward, io.EXU_forward.reg_wdata, Mux(rs2_need_LSU_forward, io.LSU_forward.reg_wdata, Mux(rs2_need_WBU_forward, io.WBU_forward.reg_wdata, 0.U(32.W))))
     rs1_stall                     := rs1_forward_need && !rs1_forward_valid
     rs2_stall                     := rs2_forward_need && !rs2_forward_valid
-    val rs1_data                  = Mux(rs1_forward_valid, rs1_forward_data, io.regfile.rdata1)
-    val rs2_data                  = Mux(rs2_forward_valid, rs2_forward_data, io.regfile.rdata2)
+    val rs1_data                  = Mux(rs1_forward_need, rs1_forward_data, io.regfile.rdata1)
+    val rs2_data                  = Mux(rs2_forward_need, rs2_forward_data, io.regfile.rdata2)
 
     //decoder
     val inst_decoder            = Module(new inst_decoder)
@@ -154,6 +160,12 @@ class IDU extends Module{
     val u_specialio                = Module(new SpecialIO)
     u_specialio.io.halt           := (halt_counter === 0.U) & valid
     u_specialio.io.error          := is_error_halt & valid
+
+    //normal output
+    io.next.PC                    := regPC
+    io.next.debug.inst            := regInst
+    io.next.debug.branch          := branch_taken
+    io.next.debug.branch_target   := branch_ctrl.io.branch_target
 }
 
 class inst_decoder extends Module{

@@ -11,19 +11,21 @@ void exceute_once(){
 }
 
 void reset(int n){
+    DEBUG_PRINT(reset, T, "reset start\n");
     top->reset = 1; 
     for (int i = 0; i < n; i++) {
         exceute_once();
     }
     top->reset = 0;
+    DEBUG_PRINT(reset, T, "reset end\n");
 }
 
 static void trace_and_difftest() {
-    #ifdef CONFIG_ITRACE
-    if (cpu.logbuf[0] != '\0') {
-        itrace_record(cpu.logbuf);
-    }
-    #endif
+    // #ifdef CONFIG_ITRACE
+    // if (cpu.logbuf[0] != '\0') {
+    //     itrace_record(cpu.logbuf);
+    // }
+    // #endif
 
 //   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
 //   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
@@ -48,6 +50,7 @@ void execute(int n){
             break;
         }
         if (npc_state.time >= MAX_TIME) {
+            printf("\033[31mTime out\033[0m\n");
             npc_state.type = NPC_TIMEOUT;
             break;
         }

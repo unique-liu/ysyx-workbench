@@ -5,6 +5,7 @@ class EXU extends Module{
         val before = new Bundle{
             val valid           = Input (Bool())
             val ready           = Output(Bool())
+            val PC              = Input (UInt(32.W))
             val alu_src1        = Input (UInt(32.W))
             val alu_src2        = Input (UInt(32.W))
             val alu_op          = Input (UInt(ALUop.op_width.W))
@@ -12,15 +13,26 @@ class EXU extends Module{
             val reg_rd          = Input (UInt(5.W))
             val mem_op          = Input (UInt(Memop.op_width.W))
             val mem_src         = Input (UInt(32.W))
+            val debug = new Bundle{
+                val inst            = Input (UInt(32.W))
+                val branch          = Input (Bool())
+                val branch_target   = Input (UInt(32.W))
+            }
         }
         val next = new Bundle{
             val valid           = Output(Bool())
             val ready           = Input (Bool())
+            val PC              = Output(UInt(32.W))
             val alu_result      = Output(UInt(32.W))
             val reg_op          = Output(UInt(Regop.op_width.W))
             val reg_rd          = Output(UInt(5.W))
             val mem_op          = Output(UInt(Memop.op_width.W))
             val mem_src         = Output(UInt(32.W))
+            val debug = new Bundle{
+                val inst            = Output(UInt(32.W))
+                val branch          = Output(Bool())
+                val branch_target   = Output(UInt(32.W))
+            }
         }
         val forward = new Bundle{
             val reg_wdata       = Output(UInt(32.W))
@@ -43,6 +55,7 @@ class EXU extends Module{
     io.next.valid               := valid
 
     //latching signals
+    val reg_PC                  = Reg(UInt(32.W))
     val reg_alu_src1            = Reg(UInt(32.W))
     val reg_alu_src2            = Reg(UInt(32.W))
     val reg_alu_op              = Reg(UInt(ALUop.op_width.W))
@@ -50,7 +63,9 @@ class EXU extends Module{
     val reg_reg_rd              = Reg(UInt(5.W))
     val reg_mem_op              = Reg(UInt(Memop.op_width.W))
     val reg_mem_src             = Reg(UInt(32.W))
+    val reg_debug               = Reg(new debug)
     when(will_in){
+        reg_PC                  := io.before.PC
         reg_alu_src1            := io.before.alu_src1
         reg_alu_src2            := io.before.alu_src2
         reg_alu_op              := io.before.alu_op  
@@ -58,6 +73,7 @@ class EXU extends Module{
         reg_reg_rd              := io.before.reg_rd
         reg_mem_op              := io.before.mem_op  
         reg_mem_src             := io.before.mem_src
+        reg_debug               := io.before.debug
     }
 
     //calculate
@@ -69,11 +85,13 @@ class EXU extends Module{
     alu_out                     := u_alu.io.alu_out
 
     //output
+    io.next.PC                  := reg_PC
     io.next.alu_result          := alu_out
     io.next.reg_op              := reg_reg_op
     io.next.reg_rd              := reg_reg_rd
     io.next.mem_op              := reg_mem_op
     io.next.mem_src             := reg_mem_src
+    io.next.debug               := reg_debug
 
     //forwarding
     io.forward.reg_wdata        := alu_out
