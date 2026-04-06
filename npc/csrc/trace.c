@@ -111,7 +111,7 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
     // should be "j" instruction, not a call, ignore it
     return;
   }
-  DEBUG_PRINT(ftrace,T,"deep%2d [%10s@0x%08x]%s call deep%2d[%10s@0x%08x]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc,((rd != 0) ? "" : "tail"), (int)ftrace_call_depth+1, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  DEBUG_PRINT(ftrace,T,"deep%2d [%10s@0x%08x]%s call deep%2d[%10s@0x%08x]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc,((rd != 0) ? "" : "tail"), ((rd!=0)?(int)ftrace_call_depth+1:(int)ftrace_call_depth), ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   if (ftrace_call_depth < FTRACE_MAX_CALL_DEPTH) {
     if (rd != 0) {
       ftrace_call_stack[ftrace_call_depth] = pc+4;
