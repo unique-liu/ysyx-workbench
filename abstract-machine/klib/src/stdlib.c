@@ -38,7 +38,7 @@ void *malloc(size_t size) {
   allocated += size;
 
 #if !(defined(__ISA_NATIVE__) && defined(__NATIVE_USE_KLIB__))
-  panic("Not implemented");
+  // panic("Not implemented");
 #endif
   return ret;
 }
