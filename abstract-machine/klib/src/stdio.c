@@ -35,6 +35,11 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
           i++;
           break;
 
+        case 'c':
+          out[j++]=va_arg(ap,int);
+          i++;
+          break;
+
         case 's':
           str=va_arg(ap,char *);
           strcpy(out+j,str);
@@ -60,7 +65,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
           break;
 
         default:
-          return -1;
+          assert(0);
       }
     }else {
       out[j]=fmt[i];
