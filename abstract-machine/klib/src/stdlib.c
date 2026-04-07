@@ -35,7 +35,7 @@ void *malloc(size_t size) {
   //   panic() -> putchar() -> (glibc) -> malloc() -> panic()
   static unsigned int allocated = 0;
   void *ret = heap.start + allocated;
-  allocated += size;
+  allocated += (size%8) ? (size/8+1)*8 : size;
 
 #if !(defined(__ISA_NATIVE__) && defined(__NATIVE_USE_KLIB__))
   // panic("Not implemented");
