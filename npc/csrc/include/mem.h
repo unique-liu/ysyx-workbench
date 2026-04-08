@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <exec.h>
 #include <debug.h>
+#include <device.h>
 #define MEM_SIZE_BYTES (64 * 1024 * 1024)
 #define MEM_BASE 0x80000000
 
