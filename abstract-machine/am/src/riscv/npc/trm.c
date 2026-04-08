@@ -1,5 +1,6 @@
 #include <am.h>
 #include <klib-macros.h>
+#include "../riscv.h"
 
 extern char _heap_start;
 int main(const char *args);
