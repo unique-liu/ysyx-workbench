@@ -102,18 +102,21 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 
 void *numtodecimal(void *dst, int num) {
   char temp[20];
-  int i = 0;
+  int i = 0,negative = 0;
   if (num == 0) {
     temp[i++] = '0';
   } else {
     if (num < 0) {
-      temp[i++] = '-';
+      negative = 1;
       num = -num;
     }
     while (num > 0) {
       temp[i++] = (num % 10) + '0';
       num /= 10;
     }
+  }
+  if (negative) {
+    temp[i++] = '-';
   }
   for (int j = 0; j < i; j++) {
     ((char *)dst)[j] = temp[i - j - 1];
