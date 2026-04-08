@@ -18,7 +18,10 @@ uint64_t get_time() {
 }
 int init_device() {
   // Initialize devices if needed
-
+  // print device information
+  for (int i = 0; i < DEVICE_NUM; i++) {
+    DEBUG_PRINT(dtrace, T, "Device %d: %s at [0x%08x ~ 0x%08x)\n", i, device_map[i].name, device_map[i].addr, device_map[i].len+device_map[i].addr);
+  } 
   return 0;
 }
 int in_device(int addr){
