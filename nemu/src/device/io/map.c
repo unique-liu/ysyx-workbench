@@ -53,18 +53,30 @@ void init_map() {
 }
 
 word_t map_read(paddr_t addr, int len, IOMap *map) {
+  IFDEF(CONFIG_DTRACE,
+    log_write("[dtrace]:  read [%s@" FMT_PADDR "], len = %d, data = "  ,map->name ,addr, len);
+  )
   assert(len >= 1 && len <= 8);
   check_bound(map, addr);
   paddr_t offset = addr - map->low;
   invoke_callback(map->callback, offset, len, false); // prepare data to read
   word_t ret = host_read(map->space + offset, len);
+  IFDEF(CONFIG_DTRACE,
+    log_write(FMT_WORD "[S]\n", ret);
+  )
   return ret;
 }
 
 void map_write(paddr_t addr, int len, word_t data, IOMap *map) {
+  IFDEF(CONFIG_DTRACE,
+    log_write("[dtrace]:  write [%s@" FMT_PADDR "], len = %d, data = " FMT_PADDR ,map->name ,addr, len, data);
+  )
   assert(len >= 1 && len <= 8);
   check_bound(map, addr);
   paddr_t offset = addr - map->low;
   host_write(map->space + offset, len, data);
   invoke_callback(map->callback, offset, len, true);
+  IFDEF(CONFIG_DTRACE,
+    log_write("[S]\n");
+  )
 }

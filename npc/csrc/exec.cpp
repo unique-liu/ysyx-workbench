@@ -33,7 +33,7 @@ static void trace_and_difftest() {
     #ifdef CONFIG_WATCHPOINT
     int trigger_wp = check_wp();
     if (trigger_wp!=0) {
-        npc_state.type = NPC_STOP;
+        npc_state.type = NPC_WAITING;
         printf("Hit %d watchpoints.\n", trigger_wp);
     }
     #endif

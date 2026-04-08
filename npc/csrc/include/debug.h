@@ -4,6 +4,8 @@
 
 #include <assert.h>
 #include <config.h>
+#include <stdio.h>
+
 
 #define LOG_PATH_T "logs/log-trace.txt"
 #define T log_trace

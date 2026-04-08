@@ -54,7 +54,7 @@ word_t paddr_read(paddr_t addr, int len) {
   word_t ret = 0;
   if (likely(in_pmem(addr))) {
     #ifdef CONFIG_MTRACE
-    log_write("[mtrace]: mem  read " FMT_PADDR ", len = %d, data = " , addr, len);
+    log_write("[mtrace]:  read " FMT_PADDR ", len = %d, data = " , addr, len);
     #endif
     ret = pmem_read(addr, len);
     #ifdef CONFIG_MTRACE
@@ -63,13 +63,13 @@ word_t paddr_read(paddr_t addr, int len) {
     return ret;
   }
   IFDEF(CONFIG_DEVICE, 
-    #ifdef CONFIG_MTRACE
-    log_write("[mtrace]: io   read " FMT_PADDR ", len = %d, data = " , addr, len);
-    #endif
+    // #ifdef CONFIG_MTRACE
+    // log_write("[mtrace]: io   read " FMT_PADDR ", len = %d, data = " , addr, len);
+    // #endif
     ret = mmio_read(addr, len);
-    #ifdef CONFIG_MTRACE
-    log_write(FMT_WORD "[S]\n", ret);
-    #endif
+    // #ifdef CONFIG_MTRACE
+    // log_write(FMT_WORD "[S]\n", ret);
+    // #endif
     return ret);
   out_of_bound(addr);
   return 0;
@@ -79,7 +79,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
 
   if (likely(in_pmem(addr))) { 
     #ifdef CONFIG_MTRACE
-    log_write("[mtrace]: mem write " FMT_PADDR ", len = %d, data = " FMT_WORD , addr, len, data);
+    log_write("[mtrace]: write " FMT_PADDR ", len = %d, data = " FMT_WORD , addr, len, data);
     #endif
     pmem_write(addr, len, data);
     #ifdef CONFIG_MTRACE
@@ -88,13 +88,13 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     return; 
   }
   IFDEF(CONFIG_DEVICE, 
-    #ifdef CONFIG_MTRACE
-    log_write("[mtrace]: io  write " FMT_PADDR ", len = %d, data = " FMT_WORD , addr, len, data);
-    #endif
+    // #ifdef CONFIG_MTRACE
+    // log_write("[mtrace]: io  write " FMT_PADDR ", len = %d, data = " FMT_WORD , addr, len, data);
+    // #endif
     mmio_write(addr, len, data); 
-    #ifdef CONFIG_MTRACE
-    log_write("[S]\n");
-    #endif
+    // #ifdef CONFIG_MTRACE
+    // log_write("[S]\n");
+    // #endif
     return);
   out_of_bound(addr);
 }
