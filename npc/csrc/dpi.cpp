@@ -28,7 +28,9 @@ extern "C" int mem_read(int raddr, int pc) {
   //   halt_system(1);
   //   return 0;
   // }
+  #ifdef CONFIG_MTRACE
   DEBUG_PRINT(cpu, T, "pc: 0x%08x", pc);
+  #endif
   return paddr_read(paddr, 4);
 
 }
@@ -56,7 +58,9 @@ extern "C" void mem_write(int waddr, int wdata, char wmask,int pc) {
   // if ((wmask >> 3) & 1) {
   //   mem[real_addr + 3] = (wdata >> 24) & 0xFF;
   // }
+  #ifdef CONFIG_MTRACE
   DEBUG_PRINT(cpu, T, "pc: 0x%08x", pc);
+  #endif
   paddr_write(paddr, 4, wdata, wmask);
 }
 
