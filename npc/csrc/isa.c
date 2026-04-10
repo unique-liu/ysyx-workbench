@@ -1,4 +1,5 @@
 #include <isa.h>
+#include <exec.h>
 
 CPU_state_t cpu;
 
@@ -33,6 +34,14 @@ int isa_reg_str2val(const char *s, bool *success) {
   if(strcmp(s, "pc") == 0){
     *success = true;
     return cpu.pc;
+  }
+  if(strcmp(s, "ic") == 0){
+    *success = true;
+    return npc_state.inst_count;
+  }
+  if(strcmp(s, "tc") == 0){
+    *success = true;
+    return npc_state.time;
   }
   *success = false;
   return 0;

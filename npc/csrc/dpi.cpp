@@ -67,7 +67,7 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   if (submit==0) {
     return;
   }
-
+  npc_state.inst_count++;
   cpu.pc = pc;
   if (wen && rd != 0) {
     #ifdef CONFIG_RTRACE
