@@ -57,7 +57,7 @@ static long load_img() {
   Log("The image is %s, size = %ld", img_file, size);
 
   fseek(fp, 0, SEEK_SET);
-  printf("test1\n");
+  printf("\ntest1 &mem=0x%lx target=0x%lx\n", (long)mem, (long)guest_to_host(RESET_VECTOR));
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
   printf("test2\n");
   assert(ret == 1);
