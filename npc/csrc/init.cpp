@@ -57,7 +57,9 @@ static long load_img() {
   Log("The image is %s, size = %ld", img_file, size);
 
   fseek(fp, 0, SEEK_SET);
+  printf("test1\n");
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
+  printf("test2\n");
   assert(ret == 1);
 
   fclose(fp);
@@ -198,6 +200,7 @@ int init_all(int argc, char** argv) {
     //     return -1;
     // }
     /* Load the image to memory. This will overwrite the built-in image. */
+    
     long img_size = load_img();
 
     /* Load ELF file for debugging. */
