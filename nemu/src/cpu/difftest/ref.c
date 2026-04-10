@@ -25,7 +25,7 @@ __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction)
     }
   }else {
     for (size_t i = 0; i < n; i++) {
-      paddr_write(addr + i, ((uint8_t *)buf)[i], 1);
+      paddr_write(addr + i, 1, ((uint8_t *)buf)[i]);
     }
   }
 }
