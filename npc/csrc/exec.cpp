@@ -5,7 +5,7 @@ rstate_t npc_state;
 VerilatedContext* contextp;
 VCPUtop* top;
 VerilatedFstC* tfp;
-static int first_submit = 1;
+// static int first_submit = 1;
 
 void exceute_once(){
     top->clock = 0; top->eval();tfp->dump((vluint64_t)npc_state.time);npc_state.time++;
@@ -33,12 +33,12 @@ static void trace_and_difftest() {
 //   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
     #ifdef CONFIG_DIFFTEST
     if (npc_state.inst_submit == 1) {
-        if (first_submit) {
-            difftest_skip_ref();
-            printf("difftest: first instruction submit at pc = 0x%08x\n", cpu.pc);
-            first_submit = 0;
-        }
-        difftest_step(cpu.pc, 0);
+        // if (first_submit) {
+        //     difftest_skip_ref();
+        //     printf("difftest: first instruction submit at pc = 0x%08x\n", cpu.pc);
+        //     first_submit = 0;
+        // }
+        difftest_step(diff_cpu.pc, 0);
         npc_state.inst_submit = 0;
     }
     #endif

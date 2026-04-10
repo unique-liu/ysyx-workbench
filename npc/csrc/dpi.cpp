@@ -80,6 +80,8 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
     #endif
     cpu.gpr[rd] = wdata;
   }
+  isa_reg_copy(&diff_cpu, &cpu);
+  diff_cpu.inst = inst;
   cpu.inst = inst;
 
   #ifdef CONFIG_FTRACE

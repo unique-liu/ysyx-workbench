@@ -86,8 +86,9 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_init(port);
   mem_compare_size = img_size;
   ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), img_size, DIFFTEST_TO_REF);
-  chech_mem(RESET_VECTOR, img_size);
-  // ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF); //不必在此时同步
+  // chech_mem(RESET_VECTOR, img_size);
+  diff_cpu.pc = RESET_VECTOR;
+  ref_difftest_regcpy(&diff_cpu, DIFFTEST_TO_REF);
 }
 
 static void checkregs(CPU_state_t *ref, vaddr_t pc) {

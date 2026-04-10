@@ -3,6 +3,7 @@
 #include <mem.h>
 #include <difftest.h>
 CPU_state_t cpu;
+CPU_state_t diff_cpu;
 
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -60,8 +61,15 @@ static inline bool difftest_check_reg(const char *name, vaddr_t pc, word_t ref, 
 
 bool isa_difftest_checkregs(CPU_state_t *ref_r, vaddr_t pc) {
   for (int i = 0; i < 32; i++) {
-    if (!difftest_check_reg(reg_name(i), pc, ref_r->gpr[i], gpr(i)))
+    if (!difftest_check_reg(reg_name(i), pc, ref_r->gpr[i], diff_gpr(i)))
       return false;
   }
   return true;
+}
+
+void isa_reg_copy(CPU_state_t *dest, CPU_state_t *src) {
+  dest->pc = src->pc;
+  for (int i = 0; i < 32; i++) {
+    dest->gpr[i] = src->gpr[i];
+  }
 }
