@@ -180,7 +180,9 @@ void init_verilator(int argc, char** argv) {
 }
 
 int init_all(int argc, char** argv) {
+    printf("start to init npc...\n");
     DEBUG_INIT();
+    Log("debug has been inited\n");
 
     // 解析命令行参数
     parse_args(argc, argv);
