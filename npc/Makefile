@@ -23,7 +23,7 @@ endif
 
 # 编译选项
 VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include  
-LIBS = -static-libasan $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
+LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
 VERILATOR_FLAGS = --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE)
 # 如需波形跟踪，添加：
 VERILATOR_FLAGS += --trace --trace-fst
