@@ -11,7 +11,6 @@ DEBUG_DECLARE();
 void init_disasm();
 
 static int parse_args(int argc, char *argv[]) {
-    printf("test1\n");
   const struct option table[] = {
     {"batch"    , no_argument      , NULL, 'b'},
     {"log"      , required_argument, NULL, 'l'},
@@ -21,11 +20,8 @@ static int parse_args(int argc, char *argv[]) {
     {"elf"      , required_argument, NULL,  'e' },
     {0          , 0                , NULL,  0 },
   };
-  printf("test2\n");
   int o;
-  printf("test3\n");
   while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:", table, NULL)) != -1) {
-    printf("test4 o=%c/%d\n", o,o);
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -44,7 +40,6 @@ static int parse_args(int argc, char *argv[]) {
         exit(0);
     }
   }
-  printf("test5\n");
   return 0;
 }
 
@@ -190,8 +185,9 @@ int init_all(int argc, char** argv) {
     Log("debug has been inited\n");
 
     // 解析命令行参数
+    Log("start to parse arguments\n");
     parse_args(argc, argv);
-    Log("resolve arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d\n",
+    Log("parse arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d\n",
         log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port);
     // if (argc < 2) {
     //     fprintf(stderr, "Usage: %s <program_file>\n", argv[0]);
@@ -207,14 +203,16 @@ int init_all(int argc, char** argv) {
     //     return -1;
     // }
     /* Load the image to memory. This will overwrite the built-in image. */
-    
+    Log("start to load image\n");
     long img_size = load_img();
     Log("Loaded image file: %s, size: %ld\n", img_file ? img_file : "NULL", img_size);
 
     /* Load ELF file for debugging. */
+    Log("start to load ELF file\n");
     load_elf();
     Log("Loaded ELF file: %s\n", elf_file ? elf_file : "NULL");
 
+    Log("start to init difftest\n");
     init_difftest(diff_so_file, img_size, difftest_port);
     Log("Initialized difftest with reference: %s, image size: %ld, port: %d\n", diff_so_file ? diff_so_file : "NULL", img_size, difftest_port);
 
