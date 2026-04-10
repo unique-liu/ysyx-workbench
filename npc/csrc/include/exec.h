@@ -26,6 +26,7 @@ typedef struct{
     int halt_pc;
     long long inst_count;
     long long time;
+    int inst_submit;
 } rstate_t;
 
 extern rstate_t npc_state;
