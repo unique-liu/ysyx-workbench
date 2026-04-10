@@ -51,7 +51,7 @@ int isa_reg_str2val(const char *s, bool *success) {
 static inline bool difftest_check_reg(const char *name, vaddr_t pc, word_t ref, word_t dut) {
   if (ref != dut) {
     DEBUG_PRINT(diff,T,"%s is different after executing instruction at pc = " FMT_WORD
-        ", right = " FMT_WORD ", wrong = " FMT_WORD ", diff = " FMT_WORD,
+        ", right = " FMT_WORD ", wrong = " FMT_WORD ", diff = " FMT_WORD"\n",
         name, pc, ref, dut, ref ^ dut);
     return false;
   }
