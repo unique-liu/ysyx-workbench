@@ -194,6 +194,7 @@ int init_all(int argc, char** argv) {
     printf("test6\n");
     printf("resolve arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d",
         log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port);
+    printf("test7\n");
     // if (argc < 2) {
     //     fprintf(stderr, "Usage: %s <program_file>\n", argv[0]);
     //     return -1;
