@@ -4,7 +4,7 @@ uint8_t mem[CONFIG_MSIZE];
 
 uint8_t* guest_to_host(paddr_t paddr) { 
   if (paddr >= PMEM_LEFT && paddr < PMEM_RIGHT) {
-    return mem + paddr - CONFIG_MBASE; 
+    return mem + (paddr - CONFIG_MBASE); 
   }
   panic("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]", paddr, PMEM_LEFT, PMEM_RIGHT);
 }
