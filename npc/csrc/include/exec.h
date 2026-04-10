@@ -23,6 +23,7 @@ typedef enum{
 } rstate_types_t;
 typedef struct{
     rstate_types_t type;
+    int halt_pc;
     long long inst_count;
     long long time;
 } rstate_t;

@@ -1,4 +1,5 @@
 #include <exec.h>
+#include <difftest.h>
 
 rstate_t npc_state;
 VerilatedContext* contextp;
@@ -29,6 +30,9 @@ static void trace_and_difftest() {
 
 //   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
 //   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+    #ifdef CONFIG_DIFFTEST
+    difftest_step(0, 0);
+    #endif
 
     #ifdef CONFIG_WATCHPOINT
     int trigger_wp = check_wp();

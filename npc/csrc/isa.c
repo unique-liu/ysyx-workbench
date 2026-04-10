@@ -1,6 +1,7 @@
 #include <isa.h>
 #include <exec.h>
-
+#include <mem.h>
+#include <difftest.h>
 CPU_state_t cpu;
 
 const char *regs[] = {
@@ -45,4 +46,22 @@ int isa_reg_str2val(const char *s, bool *success) {
   }
   *success = false;
   return 0;
+}
+
+static inline bool difftest_check_reg(const char *name, vaddr_t pc, word_t ref, word_t dut) {
+  if (ref != dut) {
+    DEBUG_PRINT(diff,T,"%s is different after executing instruction at pc = " FMT_WORD
+        ", right = " FMT_WORD ", wrong = " FMT_WORD ", diff = " FMT_WORD,
+        name, pc, ref, dut, ref ^ dut);
+    return false;
+  }
+  return true;
+}
+
+bool isa_difftest_checkregs(CPU_state_t *ref_r, vaddr_t pc) {
+  for (int i = 0; i < 32; i++) {
+    if (!difftest_check_reg(reg_name(i), pc, ref_r->gpr[i], gpr(i)))
+      return false;
+  }
+  return true;
 }

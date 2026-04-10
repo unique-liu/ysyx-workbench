@@ -1,29 +1,43 @@
 #include <mem.h>
 
-uint8_t mem[MEM_SIZE_BYTES];
+uint8_t mem[CONFIG_MSIZE];
+
+uint8_t* guest_to_host(paddr_t paddr) { 
+  if (paddr >= PMEM_LEFT && paddr < PMEM_RIGHT) {
+    return mem + paddr - CONFIG_MBASE; 
+  }
+  panic("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]", paddr, PMEM_LEFT, PMEM_RIGHT);
+}
+paddr_t host_to_guest(uint8_t *haddr) { 
+  paddr_t addr = haddr - mem + CONFIG_MBASE;
+  if (addr >= PMEM_LEFT && addr < PMEM_RIGHT) {
+    return addr;
+  }
+  panic("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]", addr, PMEM_LEFT, PMEM_RIGHT);
+}
 
 static int in_pmem(int addr) {
-    if (addr >= MEM_BASE && addr + 4 <= MEM_SIZE_BYTES + MEM_BASE - 1) {
+    if (addr >= PMEM_LEFT && addr + 4 <= PMEM_RIGHT) {
       return 1;
     }
     return 0;
 }
 
 static void out_of_bound(int addr) {
-    printf("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, MEM_BASE, MEM_BASE + MEM_SIZE_BYTES - 1);
-    DEBUG_PRINT(error, T, "address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, MEM_BASE, MEM_BASE + MEM_SIZE_BYTES - 1);
+    printf("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, PMEM_LEFT, PMEM_RIGHT);
+    DEBUG_PRINT(error, T, "address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, PMEM_LEFT, PMEM_RIGHT);
     npc_state.type = NPC_ERROR;
 }
 
 int pmem_read(int addr, int len) {
-  int real_addr = addr - MEM_BASE;
+  int real_addr = addr - PMEM_LEFT;
   int ret = mem[real_addr] | (mem[real_addr + 1] << 8) | (mem[real_addr + 2] << 16) | (mem[real_addr + 3] << 24);
 
   return ret;
 }
 
 void pmem_write(int addr, int len, int wdata,char wmask) {
-  int real_addr = addr - MEM_BASE;
+  int real_addr = addr - PMEM_LEFT;
 if (wmask & 1) {
     mem[real_addr] = wdata & 0xFF;
   }

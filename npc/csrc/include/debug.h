@@ -10,6 +10,7 @@
 #define LOG_PATH_T "logs/log-trace.txt"
 #define T log_trace
 
+#define FMT_WORD "0x%08" PRIx32
 
 #ifdef DEBUG
 
@@ -42,6 +43,22 @@
     fprintf(target,"[t:%llu]["#name"] ",npc_state.time);\
     fprintf(target,fmt,## __VA_ARGS__);\
 }while(0)
+
+#define panic(...) do {\
+    DEBUG_PRINT(error,T,__VA_ARGS__);\
+    assert(0);\
+    } while (0)
+#define Assert(cond,...) do{\
+    if (!(cond)) {\
+        DEBUG_PRINT(assert,T,__VA_ARGS__);\
+        assert(0);\
+    }\
+    }while(0)
+
+#define Log(...) do {\
+    DEBUG_PRINT(info,T,__VA_ARGS__);\
+} while (0)
+
 
 #else
 #define DEBUG_DECLARE()

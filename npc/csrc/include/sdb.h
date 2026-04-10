@@ -40,6 +40,7 @@ int check_wp();
 
 word_t expr(char *e, bool *success);
 
+void sdb_set_batch_mode();
 void sdb_mainloop();
 void init_sdb();
 
