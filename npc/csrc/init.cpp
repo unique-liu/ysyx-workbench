@@ -11,6 +11,7 @@ DEBUG_DECLARE();
 void init_disasm();
 
 static int parse_args(int argc, char *argv[]) {
+    printf("test1\n");
   const struct option table[] = {
     {"batch"    , no_argument      , NULL, 'b'},
     {"log"      , required_argument, NULL, 'l'},
@@ -20,7 +21,9 @@ static int parse_args(int argc, char *argv[]) {
     {"elf"      , required_argument, NULL,  'e' },
     {0          , 0                , NULL,  0 },
   };
+  printf("test2\n");
   int o;
+  printf("test3\n");
   while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
