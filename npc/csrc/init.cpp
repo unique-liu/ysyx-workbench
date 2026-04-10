@@ -191,10 +191,8 @@ int init_all(int argc, char** argv) {
 
     // 解析命令行参数
     parse_args(argc, argv);
-    printf("test6\n");
-    printf("resolve arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d",
+    Log("resolve arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d\n",
         log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port);
-    printf("test7\n");
     // if (argc < 2) {
     //     fprintf(stderr, "Usage: %s <program_file>\n", argv[0]);
     //     return -1;
@@ -211,14 +209,14 @@ int init_all(int argc, char** argv) {
     /* Load the image to memory. This will overwrite the built-in image. */
     
     long img_size = load_img();
-    Log("Loaded image file: %s, size: %ld", img_file ? img_file : "NULL", img_size);
+    Log("Loaded image file: %s, size: %ld\n", img_file ? img_file : "NULL", img_size);
 
     /* Load ELF file for debugging. */
     load_elf();
-    Log("Loaded ELF file: %s", elf_file ? elf_file : "NULL");
+    Log("Loaded ELF file: %s\n", elf_file ? elf_file : "NULL");
 
     init_difftest(diff_so_file, img_size, difftest_port);
-    Log("Initialized difftest with reference: %s, image size: %ld, port: %d", diff_so_file ? diff_so_file : "NULL", img_size, difftest_port);
+    Log("Initialized difftest with reference: %s, image size: %ld, port: %d\n", diff_so_file ? diff_so_file : "NULL", img_size, difftest_port);
 
     // 初始化 sdb
     init_sdb();
