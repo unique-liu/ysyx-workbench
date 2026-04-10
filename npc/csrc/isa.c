@@ -11,11 +11,11 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
-void isa_reg_display() {
+void isa_reg_display(CPU_state_t *r) {
   printf("----- register info -----\n");
-  printf("pc:\t0x%08x\n", cpu.pc);
+  printf("pc:\t0x%08x\n", r->pc);
   for(int i = 0; i < 32; i++){
-    printf("%s:0x%08x\t", regs[i], cpu.gpr[i]);
+    printf("%s:0x%08x\t", regs[i], r->gpr[i]);
     if(i % 4 == 3) printf("\n");
   }
   printf("----- register info end -----\n");

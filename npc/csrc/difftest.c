@@ -94,7 +94,11 @@ static void checkregs(CPU_state_t *ref, vaddr_t pc) {
   if (!isa_difftest_checkregs(ref, pc)) {
     npc_state.type = NPC_ERROR;
     npc_state.halt_pc = pc;
-    isa_reg_display();
+    printf("dut cpu:\n");
+    isa_reg_display(&cpu);
+    printf("ref cpu:\n");
+    isa_reg_display(ref);
+
   }
 }
 

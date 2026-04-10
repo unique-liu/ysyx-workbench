@@ -35,7 +35,7 @@ static void trace_and_difftest() {
     if (npc_state.inst_submit == 1) {
         if (first_submit) {
             difftest_skip_ref();
-            printf("difftest: first instruction commit at pc = 0x%08x\n", cpu.pc);
+            printf("difftest: first instruction submit at pc = 0x%08x\n", cpu.pc);
             first_submit = 0;
         }
         difftest_step(cpu.pc, 0);

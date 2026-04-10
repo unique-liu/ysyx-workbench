@@ -152,7 +152,7 @@ static int cmd_info(char *args){
     return 0;
   }
   if(strcmp(arg, "r") == 0){
-    isa_reg_display();
+    isa_reg_display(&cpu);
   }
   else if(strcmp(arg, "w") == 0){
     display_wp();
