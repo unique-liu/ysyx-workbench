@@ -56,6 +56,7 @@
     }while(0)
 
 #define Log(...) do {\
+    printf(__VA_ARGS__);\
     DEBUG_PRINT(info,T,__VA_ARGS__);\
 } while (0)
 
