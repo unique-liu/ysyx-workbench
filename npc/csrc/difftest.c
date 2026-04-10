@@ -27,7 +27,7 @@ void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 
 static bool is_skip_ref = false;
 static int skip_dut_nr_inst = 0;
-
+static int mem_compare_size = 0;
 // this is used to let ref skip instructions which
 // can not produce consistent behavior with NEMU
 void difftest_skip_ref() {
@@ -84,8 +84,10 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
       "If it is not necessary, you can turn it off in menuconfig.", ref_so_file);
 
   ref_difftest_init(port);
+  mem_compare_size = img_size;
   ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), img_size, DIFFTEST_TO_REF);
-  ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+  chech_mem(RESET_VECTOR, img_size);
+  // ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF); //不必在此时同步
 }
 
 static void checkregs(CPU_state_t *ref, vaddr_t pc) {
@@ -123,6 +125,19 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 
   checkregs(&ref_r, pc);
+}
+
+void chech_mem(paddr_t addr, size_t n){
+  uint8_t ref_buf;
+  for(int i = 0; i < n;i++){
+    ref_difftest_memcpy(addr,&ref_buf,1,DIFFTEST_TO_DUT);
+    if (ref_buf != *guest_to_host(addr)) {
+      DEBUG_PRINT(diff,T,"Memory is different at address " FMT_WORD ", right = " FMT_WORD ", wrong = " FMT_WORD "\n",
+          addr, ref_buf, *guest_to_host(addr));
+      npc_state.type = NPC_ERROR;
+      return;
+    }
+  }
 }
 #else
 void init_difftest(char *ref_so_file, long img_size, int port) { }
