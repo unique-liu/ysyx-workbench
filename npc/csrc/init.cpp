@@ -192,7 +192,7 @@ int init_all(int argc, char** argv) {
     // 解析命令行参数
     parse_args(argc, argv);
     printf("test6\n");
-    Log("resolve arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d",
+    printf("resolve arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d",
         log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port);
     // if (argc < 2) {
     //     fprintf(stderr, "Usage: %s <program_file>\n", argv[0]);
