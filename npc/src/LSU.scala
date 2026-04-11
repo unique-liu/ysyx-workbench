@@ -87,10 +87,18 @@ class LSU extends Module{
     }
 
     //memio
+    val alu_result_2 = io.before.alu_result(1,0)
     mem_mask                    := 0.U
     switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
-        is("b01".U){mem_mask := "b0001".U}
-        is("b10".U){mem_mask := "b0011".U}
+        is("b01".U){
+            switch(alu_result_2){
+                is("b00".U){mem_mask := "b0001".U}
+                is("b01".U){mem_mask := "b0010".U}
+                is("b10".U){mem_mask := "b0100".U}
+                is("b11".U){mem_mask := "b1000".U}
+            }
+        }
+        is("b10".U){mem_mask := Mux(alu_result_2 === "b00".U, "b0011".U, "b1100".U)}
         is("b11".U){mem_mask := "b1111".U}
     }
     io.memio.clock              := clock.asBool
@@ -99,7 +107,12 @@ class LSU extends Module{
     io.memio.raddr              := io.before.alu_result
     io.memio.wen                := ~io.before.mem_op(Memop.load_bit) & (io.before.mem_op =/= Memop.noop) & will_in
     io.memio.waddr              := io.before.alu_result
-    io.memio.wdata              := io.before.mem_src
+    io.memio.wdata              := 0.U
+    switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
+        is("b01".U){io.memio.wdata := Cat(io.before.mem_src(7,0),io.before.mem_src(7,0),io.before.mem_src(7,0),io.before.mem_src(7,0))}
+        is("b10".U){io.memio.wdata := Cat(io.before.mem_src(15,0),io.before.mem_src(15,0))}
+        is("b11".U){io.memio.wdata := io.before.mem_src}
+    }
     io.memio.wmask              := mem_mask
 
     //output

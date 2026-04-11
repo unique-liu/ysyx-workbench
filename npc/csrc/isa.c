@@ -60,6 +60,9 @@ static inline bool difftest_check_reg(const char *name, vaddr_t pc, word_t ref, 
 }
 
 bool isa_difftest_checkregs(CPU_state_t *ref_r, vaddr_t pc) {
+  if (!difftest_check_reg("pc", pc, ref_r->pc, diff_cpu.pc)) {
+    return false;
+  }
   for (int i = 0; i < 32; i++) {
     if (!difftest_check_reg(reg_name(i), pc, ref_r->gpr[i], diff_gpr(i)))
       return false;

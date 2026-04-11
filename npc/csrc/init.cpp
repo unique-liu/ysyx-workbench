@@ -171,12 +171,14 @@ void sigint_handler(int signum) {
 
 void init_verilator(int argc, char** argv) {
     contextp = new VerilatedContext;
-    tfp = new VerilatedFstC;
     contextp->commandArgs(argc, argv);
     top = new VCPUtop{contextp};
     Verilated::traceEverOn(true);
+    #ifdef CONFIG_FST
+    tfp = new VerilatedFstC;
     top->trace(tfp, 99);
     tfp->open("logs/dump.fst");
+    #endif
 }
 
 int init_all(int argc, char** argv) {
@@ -232,10 +234,13 @@ int init_all(int argc, char** argv) {
 }
 
 int finish_all() {
+    #ifdef CONFIG_FST
     tfp->close();
+    delete tfp;
+    #endif
     top->final();
     delete top;
-    delete tfp;
+    
     delete contextp;
 
     int ret = 0;

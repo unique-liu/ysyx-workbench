@@ -119,7 +119,7 @@ class IDU extends Module{
 
     //branch control
     val branch_ctrl              = Module(new branch_ctrl)
-    branch_taken                 := branch_ctrl.io.take_branch//there have some problem, fix in the future
+    branch_taken                 := branch_ctrl.io.take_branch & valid//there have some problem, fix in the future
     branch_ctrl.io.src1          := rs1_data
     branch_ctrl.io.src2          := rs2_data
     branch_ctrl.io.pc            := regPC

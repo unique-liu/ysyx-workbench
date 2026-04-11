@@ -13,6 +13,7 @@
 typedef int vaddr_t ;
 typedef int paddr_t ;
 
+extern int mem_pc_now;
 extern uint8_t mem[CONFIG_MSIZE];
 
 /* convert the guest physical address in the guest program to host virtual address in NEMU */
@@ -21,5 +22,7 @@ uint8_t* guest_to_host(paddr_t paddr);
 paddr_t host_to_guest(uint8_t *haddr);
 int paddr_read(int addr, int len);
 void paddr_write(int addr, int len, int wdata, char wmask);
+
+int use_device_pc_checkout(int pc);
 
 #endif

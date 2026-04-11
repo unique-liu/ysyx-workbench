@@ -67,7 +67,8 @@ BINARY = $(VERILATOR_DIR)/Vtop
 IMG ?=
 DIFF = $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 ELF = $(IMG:.bin=.elf)
-NPC_EXEC := $(BINARY) --e=$(ELF) --d=$(DIFF) $(IMG)
+ARGS ?=
+NPC_EXEC := $(BINARY) $(ARGS) --e=$(ELF) --d=$(DIFF) $(IMG)
 sim-env: $(BINARY)
 
 sim: sim-env

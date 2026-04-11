@@ -15,5 +15,7 @@
 #define CONFIG_MBASE 0x80000000
 #define CONFIG_PC_RESET_OFFSET 0 
 
+// #define CONFIG_FST //开启波形文件生成
+
 
 #endif // CONFIG_H
