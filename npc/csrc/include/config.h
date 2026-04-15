@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 #define DEBUG // 开启调试模式，启用日志记录等功能
-#define CONFIG_DEVICE // 开启设备模拟功能
+// #define CONFIG_DEVICE // 开启设备模拟功能
 // #define CONFIG_ITRACE // 开启指令跟踪功能
 // #define CONFIG_MTRACE // 开启内存访问日志记录功能
 // #define CONFIG_FTRACE // 开启函数调用跟踪功能 

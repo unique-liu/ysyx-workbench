@@ -24,6 +24,7 @@ typedef enum{
 typedef struct{
     rstate_types_t type;
     int halt_pc;
+    int halt_ret;
     long long inst_count;
     long long time;
     int inst_submit;

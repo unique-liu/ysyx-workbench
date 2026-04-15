@@ -7,12 +7,15 @@
 
 extern "C" void halt_system(char is_error) {
   if (is_error) {
-    printf("\033[31mHalt with error\033[0m\n");
     npc_state.type = NPC_ERROR;
   } else {
-    printf("\033[32mHalt correctly\033[0m\n");
     npc_state.type = NPC_HALT;
   }
+  npc_state.halt_pc = cpu.pc+4;//ebreak never submit, but always have a mv inst before, which is the last inst
+  bool success;
+  npc_state.halt_ret = isa_reg_str2val("a0", &success);
+  assert(success);
+  Log("Halt with error=%d ret=%d at pc = " FMT_WORD "\n", is_error, npc_state.halt_ret, npc_state.halt_pc);
 }
 extern "C" int mem_read(int raddr, int pc) {
   // 总是读取地址为`raddr & ~0x3u`的4字节返回

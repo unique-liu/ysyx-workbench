@@ -246,7 +246,13 @@ int finish_all() {
     int ret = 0;
     switch (npc_state.type) {
         case NPC_HALT:
-            printf("[SUCCEED] Halt by instruction\n");
+            if (npc_state.halt_ret) {
+              printf("\033[31m[FAILED] Hit Bad Trap\033[0m\n");
+              ret = -1;
+            }else {
+              printf("\033[32m[SUCCEED] Hit Good Trap\033[0m\n");
+            }
+            
             break;
         case NPC_STOP:
             printf("[SUCCEED] Halt by interupt or command q\n");
