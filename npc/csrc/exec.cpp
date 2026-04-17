@@ -1,5 +1,9 @@
 #include <exec.h>
 #include <difftest.h>
+#include <sdb.h>
+#include <isa.h>
+#include <trace.h>
+#include <shoot.h>
 
 rstate_t npc_state;
 VerilatedContext* contextp;
@@ -10,13 +14,17 @@ static int first_submit = 1;
 void exceute_once(){
     top->clock = 0; top->eval();
     #ifdef CONFIG_FST 
-    tfp->dump((vluint64_t)npc_state.time);
+    if (npc_state.trace_on==TRACE_ON) {
+        tfp->dump((vluint64_t)npc_state.time);
+    }
     #endif 
     npc_state.time++;
     
     top->clock = 1; top->eval();
     #ifdef CONFIG_FST 
-    tfp->dump((vluint64_t)npc_state.time);
+    if (npc_state.trace_on==TRACE_ON) {
+        tfp->dump((vluint64_t)npc_state.time);
+    }
     #endif 
     npc_state.time++;
 }
@@ -59,6 +67,12 @@ static void trace_and_difftest() {
     if (trigger_wp!=0) {
         npc_state.type = NPC_WAITING;
         printf("Hit %d watchpoints.\n", trigger_wp);
+    }
+    #endif
+
+    #ifdef CONFIG_AUTOTRACE
+    if (npc_state.trace_on == TRACE_AUTO && npc_state.inst_count % CONFIG_AUTOTRACE_PERIOD == 0 && npc_state.inst_count != 0) {
+        shoot();
     }
     #endif
 }

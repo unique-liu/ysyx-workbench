@@ -19,6 +19,8 @@
 #include <readline/history.h>
 #include <sdb.h>
 #include <macro.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static int is_batch_mode = false;
 static int reseted = 0,quit = 0;
@@ -253,6 +255,19 @@ static int cmd_d(char *args) {
 
 void sdb_set_batch_mode() {
   is_batch_mode = true;
+}
+
+void sdb_set_trace_mode(char *mode){
+  if (strcmp(mode, "on") == 0) {
+    npc_state.trace_on = TRACE_ON;
+  } else if (strcmp(mode, "off") == 0) {
+    npc_state.trace_on = TRACE_OFF;
+  } else if (strcmp(mode, "auto") == 0) {
+    npc_state.trace_on = is_batch_mode ? TRACE_AUTO : TRACE_OFF;
+  }
+  else {
+    printf("Unknown trace mode '%s', use 'on' or 'off'\n", mode);
+  }
 }
 
 void sdb_mainloop() {

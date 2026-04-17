@@ -1,5 +1,20 @@
 #include <init.h>
-
+#include <unistd.h>
+#include <mem.h>
+#include <signal.h>
+#include <exec.h>
+#include <trace.h>
+#include <sdb.h>
+#include <difftest.h>
+#include <getopt.h>
+#include <elf.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <cstring>
+#include <shoot.h>
 
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
@@ -18,16 +33,18 @@ static int parse_args(int argc, char *argv[]) {
     {"port"     , required_argument, NULL, 'p'},
     {"help"     , no_argument      , NULL, 'h'},
     {"elf"      , required_argument, NULL,  'e' },
+    {"trace"    , required_argument, NULL,  't' },
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
       case 'l': log_file = optarg; break;
       case 'd': diff_so_file = optarg; break;
       case 'e': elf_file = optarg; break;
+      case 't': sdb_set_trace_mode(optarg); break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -36,7 +53,7 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-d,--diff=REF_SO        run DiffTest with reference REF_SO\n");
         printf("\t-p,--port=PORT          run DiffTest with port PORT\n");
         printf("\t-e,--elf=ELF            load ELF file for debugging\n");
-        printf("\n");
+        printf("\t-t,--trace=MODE         set trace mode\n");
         exit(0);
     }
   }
@@ -169,11 +186,7 @@ void sigint_handler(int signum) {
     npc_state.type = NPC_WAITING;
 }
 
-void init_verilator(int argc, char** argv) {
-    contextp = new VerilatedContext;
-    contextp->commandArgs(argc, argv);
-    top = new VCPUtop{contextp};
-    Verilated::traceEverOn(true);
+void init_fst(){
     #ifdef CONFIG_FST
     tfp = new VerilatedFstC;
     top->trace(tfp, 99);
@@ -181,8 +194,28 @@ void init_verilator(int argc, char** argv) {
     #endif
 }
 
+void init_verilator(int argc, char** argv) {
+    contextp = new VerilatedContext;
+    contextp->commandArgs(argc, argv);
+    top = new VCPUtop{contextp};
+    Verilated::traceEverOn(true);
+    
+    if (npc_state.trace_on == TRACE_ON) {
+      init_fst();
+    }
+    
+}
+
 int init_all(int argc, char** argv) {
     printf("start to init npc...\n");
+    npc_state.type = NPC_WAITING;
+    npc_state.halt_pc = 0;
+    npc_state.halt_ret = 0;
+    npc_state.inst_count = 0;
+    npc_state.time = 0;
+    npc_state.inst_submit = 0;
+    npc_state.trace_on = TRACE_OFF;
+
     DEBUG_INIT();
     Log("debug has been inited\n");
 
@@ -226,23 +259,14 @@ int init_all(int argc, char** argv) {
 
     init_verilator(argc, argv);
 
-    npc_state.type = NPC_WAITING;
-    npc_state.halt_pc = 0;
-    npc_state.inst_count = 0;
-    npc_state.time = 0;
+    // 初始化快照
+    shoot_init();
+
     return 0;
 }
 
 int finish_all() {
-    #ifdef CONFIG_FST
-    tfp->close();
-    delete tfp;
-    #endif
-    top->final();
-    delete top;
     
-    delete contextp;
-
     int ret = 0;
     switch (npc_state.type) {
         case NPC_HALT:
@@ -276,7 +300,23 @@ int finish_all() {
             ret = -1;
     }
 
-    
+    if (npc_state.type == NPC_HALT && npc_state.halt_ret == 1) {//hit bad trap
+      shoot_weakup();
+    }else {
+      shoot_clear();
+    }
+
+    #ifdef CONFIG_FST
+    if (npc_state.trace_on==TRACE_ON) {
+      tfp->close();
+      delete tfp;
+    }
+    #endif
+    if (i_am_child == 0) {
+      top->final();
+      delete top;
+      delete contextp;
+    }
     DEBUG_END();
 
     return ret;

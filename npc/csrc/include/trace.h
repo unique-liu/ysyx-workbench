@@ -1,15 +1,9 @@
 #ifndef TRACE_H
 #define TRACE_H
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <elf.h>
-#include <assert.h>
-#include <config.h>
-#include <debug.h>
+#include <common.h>
 
-typedef uint32_t word_t ;
+
 
 #define IRINGBUF_SIZE 16
 

@@ -2,6 +2,9 @@
 #include <exec.h>
 #include <mem.h>
 #include <difftest.h>
+#include <stdio.h>
+#include <string.h>
+
 CPU_state_t cpu;
 CPU_state_t diff_cpu;
 

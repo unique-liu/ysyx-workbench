@@ -1,5 +1,7 @@
 #include <trace.h>
 #include <exec.h>
+#include <stdio.h>
+#include <elf.h>
 
 struct function_table func_table[FTRACE_MAX_FUNC_NUM];
 uint64_t ftrace_call_depth = 0; 
@@ -26,7 +28,7 @@ void iringbuf_print() {
 }
 
 void itrace_record(const char *s) {
-  DEBUG_PRINT(itrace,T,"%s\n", s);
+  TRACE(itrace,"%s\n", s);
   iringbuf_record(s);
 }
 //iringbuf end
@@ -111,7 +113,7 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
     // should be "j" instruction, not a call, ignore it
     return;
   }
-  DEBUG_PRINT(ftrace,T,"deep%2d [%10s@0x%08x]%s call deep%2d[%10s@0x%08x]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc,((rd != 0) ? "" : "tail"), ((rd!=0)?(int)ftrace_call_depth+1:(int)ftrace_call_depth), ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  TRACE(ftrace,"deep%2d [%10s@0x%08x]%s call deep%2d[%10s@0x%08x]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc,((rd != 0) ? "" : "tail"), ((rd!=0)?(int)ftrace_call_depth+1:(int)ftrace_call_depth), ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   if (ftrace_call_depth < FTRACE_MAX_CALL_DEPTH) {
     if (rd != 0) {
       ftrace_call_stack[ftrace_call_depth] = pc+4;
@@ -132,7 +134,7 @@ static void ftrace_ret(word_t pc, word_t target) {
   }
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
-  DEBUG_PRINT(ftrace,T,"deep%2d [%10s@0x%08x]  ret deep%2d[%10s@0x%08x]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, target_deep, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
+  TRACE(ftrace,"deep%2d [%10s@0x%08x]  ret deep%2d[%10s@0x%08x]\n", (int)ftrace_call_depth, ((current_idx != -1) ? func_table[current_idx].name : "???"), pc, target_deep, ((target_idx != -1) ? func_table[target_idx].name : "???"), target);
   ftrace_call_depth = target_deep;
 }
 #endif

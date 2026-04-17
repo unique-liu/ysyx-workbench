@@ -19,9 +19,10 @@
  */
 #include <regex.h>
 #include <mem.h>
-#include <debug.h>
+#include <common.h>
 #include <isa.h>
 #include <macro.h>
+#include <exec.h>
 enum {
   TK_NOTYPE = 256, 
   /* TODO: Add more token types */

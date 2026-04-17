@@ -1,4 +1,9 @@
 #include <device.h>
+#include <debug.h>
+#include <exec.h>
+#include <sys/time.h>
+
+
 const mmio_map device_map[DEVICE_NUM] = {
   {"serial", 0x10000000, 0x4},
   {"timer", 0xa0000048, 0x8}
@@ -20,7 +25,7 @@ int init_device() {
   // Initialize devices if needed
   // print device information
   for (int i = 0; i < DEVICE_NUM; i++) {
-    DEBUG_PRINT(dtrace, T, "Device %d: %s at [0x%08x ~ 0x%08x)\n", i, device_map[i].name, device_map[i].addr, device_map[i].len+device_map[i].addr);
+    TRACE(dtrace,"Device %d: %s at [0x%08x ~ 0x%08x)\n", i, device_map[i].name, device_map[i].addr, device_map[i].len+device_map[i].addr);
   } 
   return 0;
 }
@@ -38,7 +43,7 @@ int device_read(int device_id, int addr, int len) {
   switch (device_id) {
   case 0:
     // Handle serial device read
-    DEBUG_PRINT(dtrace, T, "read %s is not implemented\n", device_map[device_id].name);
+    TRACE(dtrace,"read %s is not implemented\n", device_map[device_id].name);
     npc_state.type = NPC_ERROR;
     break;
   case 1:
@@ -51,7 +56,7 @@ int device_read(int device_id, int addr, int len) {
     break;
   default:
     // Handle error
-    DEBUG_PRINT(dtrace, T, "read unkown device at 0x%08x\n", addr);
+    TRACE(dtrace,"read unkown device at 0x%08x\n", addr);
     npc_state.type = NPC_ERROR;
     break;
   }
@@ -66,12 +71,12 @@ int device_write(int device_id, int addr, int len, int wdata, char wmask) {
     break;
   case 1:
     // Handle timer device write
-    DEBUG_PRINT(dtrace, T, "write %s is not implemented\n", device_map[device_id].name);
+    TRACE(dtrace,"write %s is not implemented\n", device_map[device_id].name);
     npc_state.type = NPC_ERROR;
     break;
   default:
     // Handle error
-    DEBUG_PRINT(dtrace, T, "write unkown device at 0x%08x\n", addr);
+    TRACE(dtrace,"write unkown device at 0x%08x\n", addr);
     npc_state.type = NPC_ERROR;
     break;
   }

@@ -1,9 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 #include <stdint.h>
-#include <debug.h>
-#include <exec.h>
-#include <sys/time.h>
+
 #define DEVICE_NUM 2
 
 typedef struct {

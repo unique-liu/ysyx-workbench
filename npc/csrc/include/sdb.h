@@ -16,12 +16,7 @@
 #ifndef __SDB_H__
 #define __SDB_H__
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-
-typedef uint32_t word_t  ;
+#include <common.h>
 
 typedef struct watchpoint {
   int NO;
@@ -41,7 +36,7 @@ int check_wp();
 word_t expr(char *e, bool *success);
 
 void sdb_set_batch_mode();
+void sdb_set_trace_mode(char *mode);
 void sdb_mainloop();
 void init_sdb();
-
 #endif

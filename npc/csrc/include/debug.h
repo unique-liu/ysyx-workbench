@@ -16,6 +16,7 @@
 
 #define DEBUG_DECLARE() FILE *T;
 #define DEBUG_INIT() do {\
+    extern FILE *T;\
     T = fopen(LOG_PATH_T, "w");\
     if (T) {\
         fprintf(T, "Log initialized.\n");\
@@ -24,7 +25,18 @@
     }\
 } while (0)
 
+#define DEBUG_APPEND() do {\
+    extern FILE *T;\
+    T = fopen(LOG_PATH_T, "a");\
+    if (T) {\
+        fprintf(T, "Log continued.\n");\
+    } else {\
+        assert(0);\
+    }\
+} while (0)
+
 #define DEBUG_END() do {\
+    extern FILE *T;\
     if (T) {\
         fprintf(T, "Log ended.\n");\
         fclose(T);\
@@ -42,6 +54,12 @@
     extern FILE *T;\
     fprintf(target,"[t:%llu]["#name"] ",npc_state.time);\
     fprintf(target,fmt,## __VA_ARGS__);\
+}while(0)
+
+#define TRACE(name,...) do{\
+    if (npc_state.trace_on==TRACE_ON) {\
+    DEBUG_PRINT(name,T,__VA_ARGS__);\
+    }\
 }while(0)
 
 #define panic(...) do {\

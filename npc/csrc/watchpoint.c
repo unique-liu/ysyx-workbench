@@ -14,7 +14,7 @@
 ***************************************************************************************/
 
 #include <sdb.h>
-// #include "include/debug.h"
+
 #define NR_WP 32
 
 // typedef struct watchpoint {
@@ -49,7 +49,7 @@ void init_wp_pool() {
 WP* new_wp(){
   if (free_==NULL) {
     printf( "No available watchpoint.\n");
-    exit(1);
+    assert(0);
   }
   WP *wp = free_;
   free_ = free_->next;

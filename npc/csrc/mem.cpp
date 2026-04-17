@@ -1,4 +1,6 @@
 #include <mem.h>
+#include <exec.h>
+#include <device.h>
 
 int mem_pc_now = 0;
 uint8_t mem[CONFIG_MSIZE];
@@ -31,6 +33,7 @@ uint8_t* guest_to_host(paddr_t paddr) {
   if (paddr >= PMEM_LEFT && paddr < PMEM_RIGHT) {
     return mem + (paddr - CONFIG_MBASE); 
   }
+  DEBUG_PRINT(error, T, "g2h address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", paddr, PMEM_LEFT, PMEM_RIGHT);
   panic("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]", paddr, PMEM_LEFT, PMEM_RIGHT);
 }
 paddr_t host_to_guest(uint8_t *haddr) { 
@@ -38,6 +41,7 @@ paddr_t host_to_guest(uint8_t *haddr) {
   if (addr >= PMEM_LEFT && addr < PMEM_RIGHT) {
     return addr;
   }
+  DEBUG_PRINT(error, T, "h2g address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, PMEM_LEFT, PMEM_RIGHT);
   panic("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]", addr, PMEM_LEFT, PMEM_RIGHT);
 }
 
@@ -50,7 +54,7 @@ static int in_pmem(int addr) {
 
 static void out_of_bound(int addr) {
     printf("address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, PMEM_LEFT, PMEM_RIGHT);
-    DEBUG_PRINT(error, T, "address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, PMEM_LEFT, PMEM_RIGHT);
+    DEBUG_PRINT(error, T, "mem address 0x%08x is out of bound of pmem [0x%08x, 0x%08x]\n", addr, PMEM_LEFT, PMEM_RIGHT);
     npc_state.type = NPC_ERROR;
 }
 
@@ -83,7 +87,7 @@ int mmio_read(int addr,int len){
   if (device_id != -1) {
     int ret = device_read(device_id, addr, len);
     #ifdef CONFIG_DTRACE
-    DEBUG_PRINT(dtrace, T, "pc 0x%08x read [%s@0x%08x] with length %d get 0x%08x\n", mem_pc_now, device_map[device_id].name, addr, len, ret);
+    TRACE(dtrace,"pc 0x%08x read [%s@0x%08x] with length %d get 0x%08x\n", mem_pc_now, device_map[device_id].name, addr, len, ret);
     #endif
     #ifdef CONFIG_DIFFTEST
     use_device_pc_in(mem_pc_now);
@@ -98,7 +102,7 @@ int mmio_write(int addr,int len,int wdata,char wmask){
   int device_id = in_device(addr);
   if (device_id != -1) {
     #ifdef CONFIG_DTRACE
-    DEBUG_PRINT(dtrace, T, "pc 0x%08x write [%s@0x%08x] with length %d mask %d save 0x%08x\n", mem_pc_now, device_map[device_id].name, addr, len, wmask, wdata);
+    TRACE(dtrace,"pc 0x%08x write [%s@0x%08x] with length %d mask %d save 0x%08x\n", mem_pc_now, device_map[device_id].name, addr, len, wmask, wdata);
     #endif
     #ifdef CONFIG_DIFFTEST
     use_device_pc_in(mem_pc_now);
@@ -114,7 +118,7 @@ int paddr_read(int addr, int len) {
   if (in_pmem(addr)) {
     ret = pmem_read(addr, len);
     #ifdef CONFIG_MTRACE
-    DEBUG_PRINT(mtrace, T, "pc 0x%08x read 0x%08x with length %d get 0x%08x\n", mem_pc_now, addr, len, ret);
+    TRACE(mtrace,"pc 0x%08x read 0x%08x with length %d get 0x%08x\n", mem_pc_now, addr, len, ret);
     #endif
     return ret;
   }
@@ -131,7 +135,7 @@ void paddr_write(int addr, int len, int wdata, char wmask) {
   if (in_pmem(addr)) { 
     pmem_write(addr, len, wdata, wmask);
     #ifdef CONFIG_MTRACE
-    DEBUG_PRINT(mtrace, T, "pc 0x%08x write 0x%08x with length %d mask %d save 0x%08x\n", mem_pc_now, addr, len, wmask, wdata);
+    TRACE(mtrace,"pc 0x%08x write 0x%08x with length %d mask %d save 0x%08x\n", mem_pc_now, addr, len, wmask, wdata);
     #endif
     return; 
   }

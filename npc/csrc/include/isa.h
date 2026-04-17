@@ -1,12 +1,7 @@
 #ifndef ISA_H
 #define ISA_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-
+#include <common.h>
 
 typedef struct {
   int gpr[32];

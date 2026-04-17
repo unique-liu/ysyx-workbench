@@ -1,9 +1,10 @@
+#include <common.h>
 #include <stdio.h>
-#include <stdint.h>
-#include <debug.h>
 #include <mem.h>
 #include <isa.h>
 #include <difftest.h>
+#include <exec.h>
+#include <trace.h>
 
 extern "C" void halt_system(char is_error) {
   if (is_error) {
@@ -58,7 +59,7 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   cpu.pc = pc;
   if (wen && rd != 0) {
     #ifdef CONFIG_RTRACE
-    DEBUG_PRINT(rtrace,T, "0x%08x: %s = 0x%08x\n", pc, regs[rd], wdata);
+    TRACE(rtrace, "0x%08x: %s = 0x%08x\n", pc, regs[rd], wdata);
     #endif
     cpu.gpr[rd] = wdata;
   }

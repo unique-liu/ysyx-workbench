@@ -1,7 +1,7 @@
 #ifndef DIFFTEST_H
 #define DIFFTEST_H
-#include <config.h>
-#include <debug.h>
+
+#include <common.h>
 enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 
 void difftest_skip_ref();

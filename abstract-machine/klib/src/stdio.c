@@ -32,13 +32,13 @@ int fill_n(char *out,char* src, char c, int min_width) {
   }
 }
 
-int deal_format(char type,char* out,char filler,int min_width, va_list ap) {
+int deal_format(char type,char* out,char filler,int min_width, va_list* ap) {
   int num;
   double f;
   char *str,*temp[30];
   switch (type) {
     case 'd':
-      num=va_arg(ap,int);
+      num=va_arg(*ap,int);
       if (min_width) {
         return fill_n(out, numtodecimal(temp, num), filler, min_width);
       }else {
@@ -47,12 +47,12 @@ int deal_format(char type,char* out,char filler,int min_width, va_list ap) {
       break;
 
     case 'c':
-      out[0]=va_arg(ap,int);
+      out[0]=va_arg(*ap,int);
       return 1;
       break;
 
     case 's':
-      str=va_arg(ap,char *);
+      str=va_arg(*ap,char *);
       if (min_width) {
         return fill_n(out, str, filler, min_width);
       }else {
@@ -62,7 +62,7 @@ int deal_format(char type,char* out,char filler,int min_width, va_list ap) {
       break;
     
     case 'x':
-      num=va_arg(ap,int);
+      num=va_arg(*ap,int);
       if (min_width) {
         return fill_n(out, numtohex(temp, num), filler, min_width);
       }else {
@@ -71,7 +71,7 @@ int deal_format(char type,char* out,char filler,int min_width, va_list ap) {
       break;
 
     case 'f':
-      f=va_arg(ap,double);
+      f=va_arg(*ap,double);
       if (min_width) {
         return fill_n(out, doubletodecimal(temp, f), filler, min_width);
       }else {
@@ -109,7 +109,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         min_width=min_width*10+fmt[i]-'0';
         i++;
       }
-      j+=deal_format(fmt[i],out+j,filler,min_width,ap);
+      j+=deal_format(fmt[i],out+j,filler,min_width,&ap);
       min_width=0;
       filler=' ';
       i++;

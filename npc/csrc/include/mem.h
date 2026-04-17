@@ -1,10 +1,8 @@
 #ifndef MEM_H
 #define MEM_H
 
-#include <stdint.h>
-#include <exec.h>
-#include <debug.h>
-#include <device.h>
+#include <common.h>
+
 
 #define PMEM_LEFT  ((paddr_t)CONFIG_MBASE)
 #define PMEM_RIGHT ((paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1)
