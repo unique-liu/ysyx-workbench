@@ -29,5 +29,8 @@ static inline const char* reg_name(int idx) {
   extern const char* regs[];
   return regs[check_reg_idx(idx)];
 }
-
+int isa_csr_num2idx(word_t num);
+int isa_csr_name2idx(const char *name);
+#define csr(num) (cpu.csr[isa_csr_num2idx(num)])
+#define csr_n(name) (cpu.csr[isa_csr_name2idx(name)])
 #endif

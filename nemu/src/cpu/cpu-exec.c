@@ -44,8 +44,8 @@ void iringbuf_print() {
   int error_idx = (idx - 1 + IRINGBUF_SIZE) % IRINGBUF_SIZE;
   printf("Instruction Ring Buffer (most recent at the top):\n");
   while (idx != error_idx) {
-    idx = (idx + 1) % IRINGBUF_SIZE;
     printf("   %s\n", iringbuf[idx]);
+    idx = (idx + 1) % IRINGBUF_SIZE;
   }
   printf("=> %s\n", iringbuf[error_idx]);
 }

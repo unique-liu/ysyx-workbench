@@ -125,7 +125,7 @@ void *numtodecimal(void *dst, int num) {
   return dst;
 }
 
-void *numtohex(void *dst, int num) {
+void *numtohex(void *dst,unsigned int num) {
   char temp[20];
   int i = 0;
   if (num == 0) {

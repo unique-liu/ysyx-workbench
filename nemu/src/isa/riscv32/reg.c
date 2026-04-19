@@ -22,6 +22,13 @@ const char *regs[] = {
   "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
+const csr_t csr[] = {
+  {0x300, 0, "mstatus"},
+  {0x305, 1, "mtvec"},
+  {0x341, 2, "mepc"},
+  {0x342, 3, "mcause"}
+};
+
 
 void isa_reg_display() {
   printf("----- register info -----\n");
@@ -50,4 +57,22 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   }
   *success = false;
   return 0;
+}
+
+int isa_csr_num2idx(word_t num) {
+  for(int i = 0; i < CSR_COUNT; i++){
+    if(csr[i].num == num){
+      return csr[i].index;
+    }
+  }
+  panic("unsupported csr num = 0x%03x", num);
+}
+
+int isa_csr_name2idx(const char *name) {
+  for(int i = 0; i < CSR_COUNT; i++){
+    if(strcmp(name, csr[i].name) == 0){
+      return csr[i].index;
+    }
+  }
+  panic("unsupported csr name = %s", name);
 }

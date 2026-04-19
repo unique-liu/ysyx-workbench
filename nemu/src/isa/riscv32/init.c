@@ -32,6 +32,8 @@ static void restart() {
 
   /* The zero register is always 0. */
   cpu.gpr[0] = 0;
+
+  cpu.csr[isa_csr_name2idx("mstatus")] = 0x1800; // mstatus
 }
 
 void init_isa() {

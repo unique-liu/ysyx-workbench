@@ -4,10 +4,37 @@
 
 static Context* (*user_handler)(Event, Context*) = NULL;
 
+// static void print_context(Context *ctx) {
+//   /* print using width that matches target XLEN */
+// #if __riscv_xlen == 64
+//   printf("----- context\nmcause = %lu  mstatus = 0x%016lx  mepc = 0x%016lx\n",
+//          (unsigned long)ctx->mcause, (unsigned long)ctx->mstatus, (unsigned long)ctx->mepc);
+//   for (int i = 0; i < 8; i++) {
+//     for (int j = 0; j < 4; j++) {
+//       printf("gpr[%02d] = 0x%016lx  ", i*4 + j, (unsigned long)ctx->gpr[i*4 + j]);
+//     }
+//     printf("\n");
+//   }
+// #else
+//   printf("----- context\nmcause = %d  mstatus = 0x%08x  mepc = 0x%08x  pdir = 0x%08x\n",
+//          (int)ctx->mcause, (unsigned)ctx->mstatus, (unsigned)ctx->mepc, (unsigned)ctx->pdir);
+//   for (int i = 0; i < 8; i++) {
+//     for (int j = 0; j < 4; j++) {
+//       printf("gpr[%02d] = 0x%08x  ", i*4 + j, (unsigned)ctx->gpr[i*4 + j]);
+//     }
+//     printf("\n");
+//   }
+// #endif
+  
+//   printf("----- context end\n");
+// }
+
 Context* __am_irq_handle(Context *c) {
+  // print_context(c);
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
+      case 11: ev.event = EVENT_YIELD; c->mepc += 4;break;
       default: ev.event = EVENT_ERROR; break;
     }
 
