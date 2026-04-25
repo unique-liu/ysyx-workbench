@@ -141,7 +141,7 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000001 ????? ????? 110 ????? 01100 11", rem    , R, R(rd) = (src1 == 0x80000000 && (int32_t)src2 == -1) ? 0 : (src2 != 0) ? (int32_t)src1 % (int32_t)src2 : src1);
   INSTPAT("0000001 ????? ????? 111 ????? 01100 11", remu   , R, R(rd) = (src2 != 0) ? src1 % src2 : src1);
   //----- RV32M Standard Extension end
-  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = isa_raise_intr(11, s->pc));//suppose nemu only support ecall from M-mode
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = isa_raise_intr(-1, s->pc));//suppose nemu only support ecall from M-mode
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, s->dnpc = isa_return_intr());//suppose nemu only support ecall from M-mode
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));

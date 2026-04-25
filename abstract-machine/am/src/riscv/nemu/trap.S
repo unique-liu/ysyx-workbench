@@ -53,18 +53,15 @@ __am_asm_trap:
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
 
-  li t0, 0xdeadbeef
-  STORE t0, 0(sp) // for debugging
-  STORE t0 , OFFSET_SP(sp) // for debugging
-  STORE t0, OFFSET_PDIR(sp) // for debugging
-
-  # set mstatus.MPRV to pass difftest
+  # set mstatus.MPRV to pass difftest 
   li a0, (1 << 17)
   or t1, t1, a0
   csrw mstatus, t1
 
+  STORE sp, OFFSET_PDIR(sp) //store the current page table address for later use
   mv a0, sp
   call __am_irq_handle
+  mv sp, a0 //use the sp returned by __am_irq_handle as context 
 
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)

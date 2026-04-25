@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 #include "../local-include/reg.h"
+#include "../local-include/csr.h"
 #include <isa.h>
 const trap_code_t trap_code[] = {
   {0, "Instruction address misaligned"},
@@ -27,6 +28,7 @@ const trap_code_t trap_code[] = {
   {9, "Environment call from S-mode"},
   {11, "Environment call from M-mode"}
 };
+char privilege = CSR_PRIV_M;
 
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   /* TODO: Trigger an interrupt/exception with ``NO''.
@@ -36,7 +38,28 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   log_write("[etrace]: intr NO = %d, epc = " FMT_WORD "mtvec = " FMT_WORD "\n", NO, epc, csr_n("mtvec"));
   #endif
   csr_n("mepc") = epc;
-  csr_n("mcause") = NO;
+
+  if (NO == -1) {
+    switch (privilege) {
+      case CSR_PRIV_U:
+        csr_n("mcause") = 8;
+        break;
+      case CSR_PRIV_S:
+        csr_n("mcause") = 9;
+        break;
+      case CSR_PRIV_M:
+        csr_n("mcause") = 11;
+        break;
+    }
+  }else {
+    csr_n("mcause") = NO;
+  }
+  
+
+  mstatus_t* mstatus = (mstatus_t*)(&csr_n("mstatus"));
+  mstatus->MPIE = mstatus->MIE;
+  mstatus->MIE = 0;
+  mstatus->MPP = privilege;
   return csr_n("mtvec");
 }
 
@@ -44,6 +67,11 @@ word_t isa_return_intr(){
   #ifdef CONFIG_ETRACE
   log_write("[etrace]: mret, mepc = " FMT_WORD "\n", csr_n("mepc"));
   #endif
+  mstatus_t* mstatus = (mstatus_t*)(&csr_n("mstatus"));
+  privilege = mstatus->MPP;
+  mstatus->MIE = mstatus->MPIE;
+  mstatus->MPIE = 1;
+  mstatus->MPP = CSR_PRIV_M;
   return csr_n("mepc");
 }
 
