@@ -112,22 +112,25 @@ object Branchop{
     val b_jalr      = BitPat(jalr)
 }
 object Srcop{
-    val op_width    = 4
+    val op_width    = 5
     val reg_bit     = 0
     val imm_bit     = 1
     val pc_bit      = 2
     val four_bit    = 3
-    val use_zero    = "b0000".U(op_width.W)
-    val use_reg     = "b0001".U(op_width.W)
-    val use_imm     = "b0010".U(op_width.W)
-    val use_pc      = "b0100".U(op_width.W)
-    val use_four    = "b1000".U(op_width.W)
+    val csr_bit     = 4
+    val use_zero    = "b00000".U(op_width.W)
+    val use_reg     = "b00001".U(op_width.W)
+    val use_imm     = "b00010".U(op_width.W)
+    val use_pc      = "b00100".U(op_width.W)
+    val use_four    = "b01000".U(op_width.W)
+    val use_csr     = "b10000".U(op_width.W)
     //following the the bitpattern of above
     val b_use_zero  = BitPat(use_zero)
     val b_use_reg   = BitPat(use_reg)
     val b_use_imm   = BitPat(use_imm)
     val b_use_pc    = BitPat(use_pc)
     val b_use_four  = BitPat(use_four)
+    val b_use_csr   = BitPat(use_csr)
 }
 object Specialop{
     val op_width    = 2
@@ -137,6 +140,31 @@ object Specialop{
     val b_noop      = BitPat(noop)
     val b_halt_error = BitPat(halt_error)
     val b_halt_normal = BitPat(halt_normal)
+}
+object CSRop{
+    val op_width    = 5
+    val imm_bit     = 2
+    val int_bit     = 3
+    val special_bit = 4
+    val noop        = "b00000".U(op_width.W)
+    val csrrw       = "b00001".U(op_width.W)
+    val csrrs       = "b00010".U(op_width.W)
+    val csrrc       = "b00011".U(op_width.W)
+    val csrrwi      = "b00101".U(op_width.W)
+    val csrrsi      = "b00110".U(op_width.W)
+    val csrrci      = "b00111".U(op_width.W)
+    val ecall       = "b01000".U(op_width.W)
+    val mret        = "b01010".U(op_width.W)
+    val ebreak      = "b10000".U(op_width.W)
+    val inv_inst    = "b10001".U(op_width.W)
+    //following the the bitpattern of above
+    val b_noop      = BitPat(noop)
+    val b_csrrw     = BitPat(csrrw)
+    val b_csrrs     = BitPat(csrrs)
+    val b_csrrc     = BitPat(csrrc)
+    val b_csrrwi    = BitPat(csrrwi)
+    val b_csrrsi    = BitPat(csrrsi)
+    val b_csrrci    = BitPat(csrrci)
 }
 object InstCode{
     //R-type: func7|rs2|rs1|func3|rd|opcode
@@ -170,7 +198,15 @@ object InstCode{
     val lbu         = BitPat("b????????????_?????_100_?????_0000011")
     val lhu         = BitPat("b????????????_?????_101_?????_0000011")
 
+    val csrrw       = BitPat("b????????????_?????_001_?????_1110011")
+    val csrrs       = BitPat("b????????????_?????_010_?????_1110011")
+    val csrrc       = BitPat("b????????????_?????_011_?????_1110011")
+    val csrrwi      = BitPat("b????????????_?????_101_?????_1110011")
+    val csrrsi      = BitPat("b????????????_?????_110_?????_1110011")
+    val csrrci      = BitPat("b????????????_?????_111_?????_1110011")
+    val ecall       = BitPat("b000000000000_00000_000_00000_1110011")
     val ebreak      = BitPat("b000000000001_00000_000_00000_1110011")
+    val mret        = BitPat("b001100000010_00000_000_00000_1110011")
 
     //S-type: imm[11:5]|rs2|rs1|func3|imm[4:0]|opcode
     val sb          = BitPat("b???????_?????_?????_000_?????_0100011")
@@ -192,6 +228,7 @@ object InstCode{
     //J-type: imm[20|10:1|11|19:12]|rd|opcode
     val jal         = BitPat("b????????????????????_?????_1101111")
 }
+
 object IFUS{
     val state_width = 3
     val s_init_b    = 0

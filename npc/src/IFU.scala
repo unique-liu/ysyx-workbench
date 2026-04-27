@@ -27,6 +27,10 @@ class IFU (initPC:Int=0)extends Module{
             val wdata           = Output(UInt(32.W))
             val wmask           = Output(UInt(4.W))
         }
+        val csr_flush = new Bundle{
+            val flush           = Input (Bool())
+            val target          = Input (UInt(32.W))
+        }
     })
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
@@ -66,7 +70,9 @@ class IFU (initPC:Int=0)extends Module{
     val regPC                   = RegInit(initPC.U(32.W))
     val reginst                 = RegInit(0.U(32.W))
     val nextPC                  = Wire(UInt(32.W))
-    when(io.next.ifbranch){
+    when(io.csr_flush.flush){
+        nextPC                  := io.csr_flush.target
+    }.elsewhen(io.next.ifbranch){
         nextPC                  := io.next.branchPC
     }.otherwise{
         nextPC                  := regPC + 4.U
@@ -74,7 +80,7 @@ class IFU (initPC:Int=0)extends Module{
     when(will_in){
         regPC                   := nextPC
     }
-    when(!will_in){
+    when(!will_in){//stall, hold the instruction
         reginst                 := io.memio.rdata
     }
 

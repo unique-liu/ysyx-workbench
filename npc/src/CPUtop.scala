@@ -13,6 +13,7 @@ class CPUtop extends Module{
     val u_exu                           = Module(new EXU())
     val u_lsu                           = Module(new LSU())
     val u_wbu                           = Module(new WBU())
+    val u_csr                           = Module(new CSR())
 
     u_ifu.io.before.valid               := true.B
     u_ifu.io.next                       <> u_idu.io.before
@@ -30,4 +31,12 @@ class CPUtop extends Module{
     u_idu.io.EXU_forward                <> u_exu.io.forward
     u_idu.io.LSU_forward                <> u_lsu.io.forward
     u_idu.io.WBU_forward                <> u_wbu.io.forward
+
+    u_ifu.io.csr_flush                  <> u_csr.io.csr_flush
+    u_idu.io.csr_read                   <> u_csr.io.csr_read
+    u_idu.io.flush                      := u_csr.io.csr_flush.flush
+    u_exu.io.flush                      := u_csr.io.csr_flush.flush
+    u_lsu.io.flush                      := u_csr.io.csr_flush.flush
+    u_wbu.io.flush                      := u_csr.io.csr_flush.flush
+    u_wbu.io.CSR                        <> u_csr.io.CSR
 }

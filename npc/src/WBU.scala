@@ -17,6 +17,7 @@ class WBU extends Module{
                 val branch          = Input (Bool())
                 val branch_target   = Input (UInt(32.W))
             }
+            val CSR_info        = Input (new CSR_info)
         }
         val next = new Bundle{
             val valid           = Output(Bool())
@@ -32,16 +33,25 @@ class WBU extends Module{
             val reg_rd          = Output(UInt(5.W))
             val reg_useable     = Output(Bool())
         }
+        val CSR     = new Bundle{
+            val valid           = Output(Bool())
+            val PC              = Output(UInt(32.W))
+            val info            = Output(new CSR_info)
+        }
+        val flush           = Input(Bool())
     })
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
     val will_out                = Wire(Bool())
     val will_in                 = Wire(Bool())
-    when(will_in){
+    when(io.flush){
+        valid                   := 0.U(1.W)
+    }.elsewhen(will_in){
         valid                   := 1.U(1.W)
     }.elsewhen(will_out){
         valid                   := 0.U(1.W)
     }
+
     will_out                    := io.next.ready & io.next.valid
     will_in                     := io.before.valid & io.before.ready
     io.before.ready             := !valid | will_out
@@ -54,6 +64,7 @@ class WBU extends Module{
     val reg_reg_rd              = Reg(UInt(5.W))
     val reg_mem_result          = Reg(UInt(32.W))   
     val reg_debug               = Reg(new debug)
+    val reg_CSR_info            = Reg(new CSR_info)
 
     when(will_in){
         reg_PC                  := io.before.PC
@@ -62,6 +73,7 @@ class WBU extends Module{
         reg_reg_rd              := io.before.reg_rd
         reg_mem_result          := io.before.mem_result
         reg_debug               := io.before.debug
+        reg_CSR_info            := io.before.CSR_info
     }
 
     //regfile write back
@@ -87,5 +99,10 @@ class WBU extends Module{
     u_debugio.io.target         := reg_debug.branch_target
     u_debugio.io.rs1            := reg_debug.inst(19,15)
     u_debugio.io.branch         := reg_debug.branch
+
+    //CSR
+    io.CSR.valid                := valid
+    io.CSR.PC                   := reg_PC
+    io.CSR.info                 := reg_CSR_info
 
 }

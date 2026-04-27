@@ -18,6 +18,7 @@ class EXU extends Module{
                 val branch          = Input (Bool())
                 val branch_target   = Input (UInt(32.W))
             }
+            val CSR_info        = Input (new CSR_info)
         }
         val next = new Bundle{
             val valid           = Output(Bool())
@@ -33,22 +34,27 @@ class EXU extends Module{
                 val branch          = Output(Bool())
                 val branch_target   = Output(UInt(32.W))
             }
+            val CSR_info        = Output(new CSR_info)
         }
         val forward = new Bundle{
             val reg_wdata       = Output(UInt(32.W))
             val reg_rd          = Output(UInt(5.W))
             val reg_useable     = Output(Bool())
         }
+        val flush           = Input(Bool())
     })
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
     val will_out                = Wire(Bool())
     val will_in                 = Wire(Bool())
-    when(will_in){
+    when(io.flush){
+        valid                   := 0.U(1.W)
+    }.elsewhen(will_in){
         valid                   := 1.U(1.W)
     }.elsewhen(will_out){
         valid                   := 0.U(1.W)
     }
+
     will_out                    := io.next.ready & io.next.valid
     will_in                     := io.before.valid & io.before.ready
     io.before.ready             := !valid | will_out
@@ -64,6 +70,7 @@ class EXU extends Module{
     val reg_mem_op              = Reg(UInt(Memop.op_width.W))
     val reg_mem_src             = Reg(UInt(32.W))
     val reg_debug               = Reg(new debug)
+    val reg_CSR_info            = Reg(new CSR_info)
     when(will_in){
         reg_PC                  := io.before.PC
         reg_alu_src1            := io.before.alu_src1
@@ -74,6 +81,7 @@ class EXU extends Module{
         reg_mem_op              := io.before.mem_op  
         reg_mem_src             := io.before.mem_src
         reg_debug               := io.before.debug
+        reg_CSR_info            := io.before.CSR_info
     }
 
     //calculate
@@ -92,6 +100,7 @@ class EXU extends Module{
     io.next.mem_op              := reg_mem_op
     io.next.mem_src             := reg_mem_src
     io.next.debug               := reg_debug
+    io.next.CSR_info            := reg_CSR_info
 
     //forwarding
     io.forward.reg_wdata        := alu_out

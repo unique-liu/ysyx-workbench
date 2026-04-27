@@ -62,7 +62,7 @@ class IDU extends Module{
     val rs1_stall               = Wire(Bool())
     val rs2_stall               = Wire(Bool())
     val branch_taken            = Wire(Bool())
-
+    val will_halt               = Wire(Bool())
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
     val will_out                = Wire(Bool())
@@ -76,8 +76,8 @@ class IDU extends Module{
     }
     will_out                    := io.next.ready & io.next.valid 
     will_in                     := io.before.valid & io.before.ready
-    io.before.ready             := (!valid | will_out) 
-    io.next.valid               := valid & !rs1_stall & !rs2_stall
+    io.before.ready             := (!valid | will_out) & !will_halt
+    io.next.valid               := valid & !will_halt & !rs1_stall & !rs2_stall
 
     //latching signals
     val regPC                   = RegInit(0.U(32.W))
@@ -159,12 +159,18 @@ class IDU extends Module{
     }
     io.next.mem_src              := rs2_data
 
-    //CSR related
-    io.csr_read.addr             := Mux(inst_decoder.io.csr_op(CSRop.special_bit) | inst_decoder.io.csr_op(CSRop.int_bit), 0.U, imm(11, 0))
-    io.next.CSR_info.addr        := Mux(inst_decoder.io.csr_op(CSRop.special_bit) | inst_decoder.io.csr_op(CSRop.int_bit), 0.U, imm(11, 0))
-    io.next.CSR_info.wdata       := Mux(inst_decoder.io.csr_op(CSRop.imm_bit),Cat(Fill(32 - rs1.getWidth,0.U),rs1),rs1_data)
-    io.next.CSR_info.op          := inst_decoder.io.csr_op
-    
+    // //terminater   this will be moved to CSR 
+    // val special_op               = inst_decoder.io.special_op
+    // will_halt                    := (special_op === Specialop.halt_error || special_op === Specialop.halt_normal) & valid
+    // val is_error_halt            = special_op === Specialop.halt_error
+    // val halt_counter             = RegInit(10.U(32.W))
+    // when(will_halt){
+    //     halt_counter              := halt_counter - 1.U
+    // }
+    // val u_specialio                = Module(new SpecialIO)
+    // u_specialio.io.halt           := (halt_counter === 0.U) & valid
+    // u_specialio.io.error          := is_error_halt & valid
+
     //normal output
     io.next.PC                    := regPC
     io.next.debug.inst            := regInst
@@ -182,7 +188,7 @@ class inst_decoder extends Module{
         val branch_op           = Output(UInt(Branchop.op_width.W))
         val src1_op             = Output(UInt(Srcop.op_width.W))
         val src2_op             = Output(UInt(Srcop.op_width.W))
-        val special_op          = Output(UInt(Specialop.op_width.W))
+        // val special_op          = Output(UInt(Specialop.op_width.W))
         val csr_op              = Output(UInt(CSRop.op_width.W))
     })
 
@@ -190,7 +196,8 @@ class inst_decoder extends Module{
     def concatBitPat(parts: UInt*): BitPat = {
         if (parts.isEmpty) BitPat("b")
         val expected = InstType.type_width + ALUop.op_width + Regop.op_width + Memop.op_width +
-        Branchop.op_width + Srcop.op_width + Srcop.op_width + Specialop.op_width + CSRop.op_width
+        Branchop.op_width + Srcop.op_width + Srcop.op_width + //Specialop.op_width +
+        CSRop.op_width
         require(parts.map(_.getWidth).sum == expected, s"width mismatch")
         val bitStr = parts.reverse.map { p =>
             p.litOption match {
@@ -239,7 +246,7 @@ class inst_decoder extends Module{
             InstCode.csrrw   -> concatBitPat(InstType.I, ALUop.add, Regop.w_alu, Memop.noop    , Branchop.noop, Srcop.use_csr , Srcop.use_zero,Specialop.noop, CSRop.csrrw),
             InstCode.csrrs   -> concatBitPat(InstType.I, ALUop.add, Regop.w_alu, Memop.noop    , Branchop.noop, Srcop.use_csr , Srcop.use_zero,Specialop.noop, CSRop.csrrs),
             InstCode.ecall   -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.noop, Srcop.use_zero, Srcop.use_zero,Specialop.noop, CSRop.ecall),
-            InstCode.ebreak  -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.noop, Srcop.use_zero, Srcop.use_zero,Specialop.noop, CSRop.ebreak),
+            InstCode.ebreak  -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.noop, Srcop.use_zero, Srcop.use_zero,Specialop.halt_normal, CSRop.ebreak),
             InstCode.mret    -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.noop, Srcop.use_zero, Srcop.use_zero,Specialop.noop, CSRop.mret),
             //S-type
             InstCode.sb      -> concatBitPat(InstType.S, ALUop.add, Regop.noop , Memop.s_byte  , Branchop.noop, Srcop.use_reg , Srcop.use_imm ,Specialop.noop, CSRop.noop),
@@ -259,7 +266,7 @@ class inst_decoder extends Module{
             InstCode.jal     -> concatBitPat(InstType.J, ALUop.add, Regop.w_alu, Memop.noop    , Branchop.jal , Srcop.use_pc  , Srcop.use_four ,Specialop.noop, CSRop.noop)
         ),
 
-        concatBitPat(InstType.Invalid, ALUop.add, Regop.noop, Memop.noop, Branchop.noop, Srcop.use_zero, Srcop.use_zero, Specialop.noop, CSRop.inv_inst)
+        concatBitPat(InstType.Invalid, ALUop.add, Regop.noop, Memop.noop, Branchop.noop, Srcop.use_zero, Srcop.use_zero, Specialop.halt_error, CSRop.noop)
 
     )
 
@@ -280,8 +287,8 @@ class inst_decoder extends Module{
     start                         = start + Srcop.op_width
     io.src2_op                    := decoded(start + Srcop.op_width - 1, start)
     start                         = start + Srcop.op_width
-    io.special_op                 := decoded(start + Specialop.op_width - 1, start) 
-    start                         = start + Specialop.op_width
+    // io.special_op                 := decoded(start + Specialop.op_width - 1, start) 
+    // start                         = start + Specialop.op_width
     io.csr_op                     := decoded(start + CSRop.op_width - 1, start)
 }
 
