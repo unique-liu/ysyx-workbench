@@ -2,9 +2,10 @@ import chisel3._
 import chisel3.util._
 
 class CSR_info extends Bundle{
-    val addr    = UInt(12.W)
-    val wdata   = UInt(32.W)
-    val op      = UInt(CSRop.op_width.W)
+    val addr        = UInt(12.W)
+    val wdata       = UInt(32.W)
+    val op          = UInt(CSRop.op_width.W)
+    val exception   = Bool()
 }
 class CSR extends Module{
     val io = IO(new Bundle{
@@ -29,38 +30,38 @@ class CSR extends Module{
 
     val mstatus = new Bundle{
         val d = new mstatusDEF                      //define
-        val f = new RegMultifield(d.field_widths)   //function
-        val r = f.init(d.total_width,d.init_val)    //register
+        val f = new RegMultifield(d.field_widths,d.total_width)   //function
+        val r = f.init(d.init_val)    //register
     }
     val mtvec = new Bundle{
         val d = new mtvecDEF
-        val f = new RegMultifield(d.field_widths)
-        val r = f.init(d.total_width,d.init_val)
+        val f = new RegMultifield(d.field_widths,d.total_width)
+        val r = f.init(d.init_val)
     }
     val mepc = new Bundle{
         val d = new mepcDEF
-        val f = new RegMultifield(d.field_widths)
-        val r = f.init(d.total_width,d.init_val)
+        val f = new RegMultifield(d.field_widths,d.total_width)
+        val r = f.init(d.init_val)
     }
     val mcause = new Bundle{
         val d = new mcauseDEF
-        val f = new RegMultifield(d.field_widths)
-        val r = f.init(d.total_width,d.init_val)
+        val f = new RegMultifield(d.field_widths,d.total_width)
+        val r = f.init(d.init_val)
     }
     val mcycle = new Bundle{
         val d = new mcycleDEF
-        val f = new RegMultifield(d.field_widths)
-        val r = f.init(d.total_width,d.init_val)
+        val f = new RegMultifield(d.field_widths,d.total_width)
+        val r = f.init(d.init_val)
     }
     val mvendorid = new Bundle{
         val d = new mvendoridDEF
-        val f = new RegMultifield(d.field_widths)
-        val r = f.init(d.total_width,d.init_val)
+        val f = new RegMultifield(d.field_widths,d.total_width)
+        val r = f.init(d.init_val)
     }
     val marchid = new Bundle{
         val d = new marchidDEF
-        val f = new RegMultifield(d.field_widths)
-        val r = f.init(d.total_width,d.init_val)
+        val f = new RegMultifield(d.field_widths,d.total_width)
+        val r = f.init(d.init_val)
     }
 
     //read
@@ -110,11 +111,15 @@ class CSR extends Module{
     }.elsewhen(valid & (io.CSR.info.op === CSRop.ecall)){
         mcause.r := mcause_val
     }
-    //mcycle
+    //mcycle   really writeable? 
     when(valid & (io.CSR.info.addr === CSRCode.mcycle)){
-        mcycle.r(31,0) := io.CSR.info.wdata
+        mcycle.r := mcycle.f.write_f(mcycle.r, Seq(
+            (mcycle.d.mcycle, io.CSR.info.wdata)
+        ))
     }.elsewhen(valid & (io.CSR.info.addr === CSRCode.mcycleh)){
-        mcycle.r(63,32) := io.CSR.info.wdata
+        mcycle.r := mcycle.f.write_f(mcycle.r, Seq(
+            (mcycle.d.mcycleh, io.CSR.info.wdata)
+        ))
     }.otherwise(
         mcycle.r := mcycle.r + 1.U
     )
@@ -132,7 +137,7 @@ class CSR extends Module{
 
     //special instructions handling
     val u_specialio                 = Module(new SpecialIO)
-    u_specialio.io.halt             := io.CSR.valid & io.CSR.info.op(CSRop.int_bit) 
+    u_specialio.io.halt             := io.CSR.valid & io.CSR.info.op(CSRop.special_bit) 
     u_specialio.io.error            := io.CSR.info.op(0)
 
 }

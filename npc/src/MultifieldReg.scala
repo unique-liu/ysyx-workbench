@@ -3,8 +3,8 @@ import chisel3.util._
 import scala.annotation.meta.field
 import os.write
 
-class RegMultifield (field_widths: Seq[Int]){
-    def init(width: Int, initval: Seq[Int]): UInt = {
+class RegMultifield (field_widths: Seq[Int],width:Int){
+    def init(initval: Seq[BigInt]): UInt = {
         require(field_widths.sum == width, "Sum must equal width")
         require(field_widths.length == initval.length, "Length must match")
         val initBits = Cat(initval.zip(field_widths).map { case (v, w) => v.U(w.W) }.reverse)
@@ -18,27 +18,52 @@ class RegMultifield (field_widths: Seq[Int]){
     }
 
     def write_m(reg: UInt, wdata: UInt, mask: UInt): UInt = {
-        require(mask.getWidth == reg.getWidth, "Mask width must match register width")
+        require(mask.getWidth == width, "Mask width must match register width")
         (reg & ~mask) | (wdata & mask)
     }
     
+    // def write_f(reg: UInt, fid_and_wdata: Seq[(Int, UInt)]): UInt = {
+    //     for (i <- fid_and_wdata.indices) {
+    //         val (field_idx, wdata) = fid_and_wdata(i)
+    //         require(field_idx < field_widths.length, s"Field index ${field_idx} out of range")
+    //         require(wdata.getWidth == field_widths(field_idx), s"Data width for field ${field_idx} must be ${field_widths(field_idx)}")
+    //     }
+    //     val total_wdata = Wire(UInt(width.W))
+    //     val mask = Wire(UInt(width.W))
+    //     //generate total_wdata and mask
+    //     total_wdata := 0.U
+    //     mask := 0.U
+    //     for (i <- fid_and_wdata.indices) {
+    //         val (field_idx, wdata) = fid_and_wdata(i)
+    //         val offset = field_widths.take(field_idx).sum
+    //         total_wdata := total_wdata | (wdata << offset)
+    //         mask := mask | (Fill(wdata.getWidth, 1.U) << offset)
+    //     }
+
+    //     this.write_m(reg, total_wdata, mask)
+    // }
     def write_f(reg: UInt, fid_and_wdata: Seq[(Int, UInt)]): UInt = {
         for (i <- fid_and_wdata.indices) {
             val (field_idx, wdata) = fid_and_wdata(i)
             require(field_idx < field_widths.length, s"Field index ${field_idx} out of range")
             require(wdata.getWidth == field_widths(field_idx), s"Data width for field ${field_idx} must be ${field_widths(field_idx)}")
         }
-        val total_wdata = Wire(UInt(reg.getWidth.W))
-        val mask = Wire(UInt(reg.getWidth.W))
-        //generate total_wdata and mask
-        total_wdata := 0.U
-        mask := 0.U
-        for (i <- fid_and_wdata.indices) {
-            val (field_idx, wdata) = fid_and_wdata(i)
+
+        // 关键：用 Scala 变量先计算出最终值，不产生组合环
+        var final_wdata = 0.U(width.W)
+        var final_mask = 0.U(width.W)
+
+        for ((field_idx, wdata) <- fid_and_wdata) {
             val offset = field_widths.take(field_idx).sum
-            total_wdata := total_wdata | (wdata << offset)
-            mask := mask | (Fill(wdata.getWidth, 1.U) << offset)
+            final_wdata = final_wdata | (wdata << offset)  // Scala 变量赋值，不是电路信号！
+            final_mask = final_mask | (Fill(wdata.getWidth, 1.U) << offset)
         }
+
+        // 最后只给 Wire 赋值 1 次，无环路
+        val total_wdata = Wire(UInt(width.W))
+        val mask = Wire(UInt(width.W))
+        total_wdata := final_wdata
+        mask := final_mask
 
         this.write_m(reg, total_wdata, mask)
     }
@@ -46,7 +71,7 @@ class RegMultifield (field_widths: Seq[Int]){
 
 class mstatusDEF{
     val field_widths    = Seq(1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 8, 1)
-    val init_val        = Seq(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    val init_val        = Seq(BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0))
     val total_width     = 32
     val WPRI0           = 0
     val SIE             = 1
@@ -73,7 +98,7 @@ class mstatusDEF{
 
 class mtvecDEF{
     val field_widths    = Seq(2, 30)
-    val init_val        = Seq(0, 0)
+    val init_val        = Seq(BigInt(0), BigInt(0))
     val total_width     = 32
     val mode            = 0
     val base            = 1
@@ -81,14 +106,14 @@ class mtvecDEF{
 
 class mepcDEF{
     val field_widths    = Seq(32)
-    val init_val        = Seq(0)
+    val init_val        = Seq(BigInt(0))
     val total_width     = 32
     val mepc            = 0
 }
 
 class mcauseDEF{
     val field_widths    = Seq(1, 31)
-    val init_val        = Seq(0, 0)
+    val init_val        = Seq(BigInt(0), BigInt(0))
     val total_width     = 32
     val interrupt       = 0
     val exception_code   = 1
@@ -96,7 +121,7 @@ class mcauseDEF{
 
 class mcycleDEF{
     val field_widths    = Seq(32,32)
-    val init_val        = Seq(0,0)
+    val init_val        = Seq(BigInt(0), BigInt(0))
     val total_width     = 64
     val mcycle           = 0
     val mcycleh          = 1
@@ -104,14 +129,14 @@ class mcycleDEF{
 
 class mvendoridDEF{
     val field_widths    = Seq(32)
-    val init_val        = Seq(0x79737978)
+    val init_val        = Seq(BigInt("79737978", 16))
     val total_width     = 32
     val mvendorid       = 0
 }
 
 class marchidDEF{
     val field_widths    = Seq(32)
-    val init_val        = Seq(0xdeadbeef)
+    val init_val        = Seq(BigInt("DEADBEEF", 16))
     val total_width     = 32
     val marchid         = 0
 }

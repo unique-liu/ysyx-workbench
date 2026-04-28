@@ -38,7 +38,7 @@ extern "C" void mem_write(int waddr, int wdata, char wmask,int pc) {
 }
 
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen,word_t target,int rs1,int branch) {
+extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen,word_t target,int rs1,int jump) {
   // 同步函数, 同步提交指令到cpu
   // DEBUG_PRINT(test, T, "submit = %d", submit);
   if (submit==0) {
@@ -66,7 +66,7 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   cpu.inst = inst;
 
   #ifdef CONFIG_FTRACE
-  if (branch) {
+  if (jump) {
     ftrace_enter(pc, target,rd ,rs1);
   }
   #endif

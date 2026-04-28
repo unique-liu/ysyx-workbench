@@ -10,7 +10,7 @@ module DebugIO (
     input   [4:0 ] io_rs1,
     input          io_branch
 );
-    import "DPI-C" function  void sync_cpu(input int pc,input int inst,input int submit, input int rd, input int wdata, input int wen,input int target,input int rs1,input int branch);
+    import "DPI-C" function  void sync_cpu(input int pc,input int inst,input int submit, input int rd, input int wdata, input int wen,input int target,input int rs1,input int jump);
 
     always @(posedge io_clock) begin
         if (io_submit) begin

@@ -164,11 +164,12 @@ class IDU extends Module{
     io.next.CSR_info.addr        := Mux(inst_decoder.io.csr_op(CSRop.special_bit) | inst_decoder.io.csr_op(CSRop.int_bit), 0.U, imm(11, 0))
     io.next.CSR_info.wdata       := Mux(inst_decoder.io.csr_op(CSRop.imm_bit),Cat(Fill(32 - rs1.getWidth,0.U),rs1),rs1_data)
     io.next.CSR_info.op          := inst_decoder.io.csr_op
+    io.next.CSR_info.exception   := inst_decoder.io.csr_op(CSRop.int_bit) | inst_decoder.io.csr_op(CSRop.special_bit)
     
     //normal output
     io.next.PC                    := regPC
     io.next.debug.inst            := regInst
-    io.next.debug.branch          := branch_taken
+    io.next.debug.branch          := branch_taken & inst_decoder.io.branch_op(Branchop.jump_bit)//this is used to control ftrace, so only jump instruction
     io.next.debug.branch_target   := branch_ctrl.io.branch_target
 }
 

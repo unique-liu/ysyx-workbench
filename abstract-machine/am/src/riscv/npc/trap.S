@@ -36,6 +36,7 @@ f(30) f(31)
 #define OFFSET_CAUSE  ((NR_REGS + 0) * XLEN)
 #define OFFSET_STATUS ((NR_REGS + 1) * XLEN)
 #define OFFSET_EPC    ((NR_REGS + 2) * XLEN)
+#define OFFSET_PDIR   ((NR_REGS + 3) * XLEN)
 
 .align 3
 .globl __am_asm_trap
@@ -52,8 +53,15 @@ __am_asm_trap:
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
 
+  # set mstatus.MPRV to pass difftest 
+  li a0, (1 << 17)
+  or t1, t1, a0
+  csrw mstatus, t1
+
+  STORE sp, OFFSET_PDIR(sp) //store the current page table address for later use
   mv a0, sp
   call __am_irq_handle
+  mv sp, a0 //use the sp returned by __am_irq_handle as context 
 
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)
@@ -64,3 +72,31 @@ __am_asm_trap:
 
   addi sp, sp, CONTEXT_SIZE
   mret
+
+
+# old __am_asm_trap:
+# __am_asm_trap:
+#   addi sp, sp, -CONTEXT_SIZE
+
+#   MAP(REGS, PUSH)
+
+#   csrr t0, mcause
+#   csrr t1, mstatus
+#   csrr t2, mepc
+
+#   STORE t0, OFFSET_CAUSE(sp)
+#   STORE t1, OFFSET_STATUS(sp)
+#   STORE t2, OFFSET_EPC(sp)
+
+#   mv a0, sp
+#   call __am_irq_handle
+
+#   LOAD t1, OFFSET_STATUS(sp)
+#   LOAD t2, OFFSET_EPC(sp)
+#   csrw mstatus, t1
+#   csrw mepc, t2
+
+#   MAP(REGS, POP)
+
+#   addi sp, sp, CONTEXT_SIZE
+#   mret

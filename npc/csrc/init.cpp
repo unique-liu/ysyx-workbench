@@ -66,12 +66,12 @@ static long load_img() {
   }
 
   FILE *fp = fopen(img_file, "rb");
-  Assert(fp, "Can not open '%s'", img_file);
+  Assert(fp, "Can not open '%s'\n", img_file);
 
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
 
-  Log("The image is %s, size = %ld", img_file, size);
+  Log("The image is %s, size = %ld\n", img_file, size);
 
   fseek(fp, 0, SEEK_SET);
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
@@ -88,12 +88,12 @@ static long load_elf() {
   }
 
   FILE *fp = fopen(elf_file, "rb");
-  Assert(fp, "Can not open '%s'", elf_file);
+  Assert(fp, "Can not open '%s'\n", elf_file);
 
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
 
-  Log("The ELF file is %s, size = %ld", elf_file, size);
+  Log("The ELF file is %s, size = %ld\n", elf_file, size);
 
   fseek(fp, 0, SEEK_SET);
   int ret = init_function_table(fp);

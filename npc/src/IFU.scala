@@ -59,7 +59,7 @@ class IFU (initPC:Int=0)extends Module{
             ifus                := IFUS.s_wait
         }
     }.elsewhen(ifus === IFUS.s_wait){
-        when(will_in){
+        when(will_in | io.csr_flush.flush){
             ifus                := IFUS.s_ready
         }.otherwise{
             ifus                := IFUS.s_wait

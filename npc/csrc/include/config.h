@@ -9,11 +9,11 @@
 #define CONFIG_DTRACE // 开启设备模拟功能
 #define CONFIG_RTRACE // 开启寄存器访问日志记录功能
 // #define CONFIG_WATCHPOINT // 开启监视点功能
-#define CONFIG_DIFFTEST// 开启差分测试功能
+// #define CONFIG_DIFFTEST// 开启差分测试功能
 #define CONFIG_AUTOTRACE // 开启自动跟踪功能
 #define CONFIG_AUTOTRACE_PERIOD 10000 // 自动跟踪的周期，单位为指令数
 
-#define CONFIG_MSIZE (64 * 1024 * 1024)
+#define CONFIG_MSIZE 0x8000004
 #define CONFIG_MBASE 0x80000000
 #define CONFIG_PC_RESET_OFFSET 0 
 

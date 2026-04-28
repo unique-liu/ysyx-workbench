@@ -34,6 +34,7 @@ class LSU extends Module{
                 val branch_target   = Output(UInt(32.W))
             }
             val CSR_info        = Output(new CSR_info)
+            val exception       = Input (Bool())
         }
         val memio = new Bundle{
             val clock           = Output(Bool())
@@ -56,6 +57,8 @@ class LSU extends Module{
     })
     //dclarations
     val mem_mask                = Wire(UInt(4.W))
+    val have_exception          = Wire(Bool())
+        
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
     val will_out                = Wire(Bool())
@@ -111,9 +114,9 @@ class LSU extends Module{
     }
     io.memio.clock              := clock.asBool
     io.memio.PC                 := io.before.PC
-    io.memio.ren                := io.before.mem_op(Memop.load_bit) & will_in
+    io.memio.ren                := io.before.mem_op(Memop.load_bit) & will_in & !have_exception
     io.memio.raddr              := io.before.alu_result
-    io.memio.wen                := ~io.before.mem_op(Memop.load_bit) & (io.before.mem_op =/= Memop.noop) & will_in
+    io.memio.wen                := ~io.before.mem_op(Memop.load_bit) & (io.before.mem_op =/= Memop.noop) & will_in & !have_exception
     io.memio.waddr              := io.before.alu_result
     io.memio.wdata              := 0.U
     switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
@@ -146,4 +149,6 @@ class LSU extends Module{
     io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
     io.forward.reg_useable      := valid
 
+    //CSR
+    have_exception              := io.next.exception | reg_CSR_info.exception //LSU or WBU can raise exception, so do not real access memory
 }

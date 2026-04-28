@@ -18,6 +18,7 @@ class WBU extends Module{
                 val branch_target   = Input (UInt(32.W))
             }
             val CSR_info        = Input (new CSR_info)
+            val exception       = Output(Bool())
         }
         val next = new Bundle{
             val valid           = Output(Bool())
@@ -77,7 +78,7 @@ class WBU extends Module{
     }
 
     //regfile write back
-    io.regfile.wen              := reg_reg_op(Regop.write_bit) & valid
+    io.regfile.wen              := reg_reg_op(Regop.write_bit) & valid & !reg_CSR_info.exception
     io.regfile.waddr            := reg_reg_rd
     io.regfile.wdata            := Mux(reg_reg_op(Regop.mem_bit),reg_mem_result,reg_alu_result)
 
@@ -104,5 +105,7 @@ class WBU extends Module{
     io.CSR.valid                := valid
     io.CSR.PC                   := reg_PC
     io.CSR.info                 := reg_CSR_info
+
+    io.before.exception         := reg_CSR_info.exception
 
 }
