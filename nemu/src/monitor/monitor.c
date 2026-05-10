@@ -68,7 +68,7 @@ static long load_img() {
 }
 extern int init_function_table(FILE * fp);
 static long load_elf() {
-  if (elf_file == NULL) {
+  if (elf_file == NULL || strcmp(elf_file, "") == 0) {
     Log("No ELF file is given. Skip loading ELF.");
     return 0;
   }
