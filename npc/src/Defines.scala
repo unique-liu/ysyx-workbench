@@ -229,12 +229,22 @@ object InstCode{
     val jal         = BitPat("b????????????????????_?????_1101111")
 }
 
-object IFUS{
-    val state_width = 3
-    val s_init_b    = 0
-    val s_wait_b    = 1
-    val s_ready_b   = 2
-    val s_init      = "b001".U(state_width.W)//wait pc to be update, current pc is not valid
-    val s_wait      = "b010".U(state_width.W)//pc and inst are mismatch, need to use saved inst
-    val s_ready     = "b100".U(state_width.W)//pc and inst are valid, ready to output
+object IFUop{
+    val width           = 3
+    val save_pc_b       = 0
+    val save_inst_b     = 1
+    val axi_arvalid_b   = 2
+    val no_op           = "b000".U(width.W)
+    val save_pc         = "b001".U(width.W)
+    val save_inst       = "b010".U(width.W)
+
+}
+object LSUop{
+    val width           = 2
+    val mem_op_bit      = 0
+    val reg_op_bit      = 1
+
+    val no_op           = "b00".U(width.W)
+    val mem_op          = "b01".U(width.W)
+    val reg_op          = "b10".U(width.W)
 }

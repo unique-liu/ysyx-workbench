@@ -22,7 +22,7 @@ class CPUtop extends Module{
     u_lsu.io.next                       <> u_wbu.io.before
     u_wbu.io.next.ready                 := true.B
 
-    u_ifu.io.memio                      <> u_i_mem.io
+    // u_ifu.io.memio                      <> u_i_mem.io
     u_lsu.io.memio                      <> u_d_mem.io
 
     u_idu.io.regfile                    <> u_regfile.io.read

@@ -1,4 +1,5 @@
 import chisel3._
+import chisel3.util._
 import chisel3.ExtModule
 
 
@@ -15,5 +16,194 @@ class MemIO extends ExtModule {
     val wdata = Input (UInt(32.W))
     val wmask = Input (UInt(4.W))
   })
+
+}
+
+class Mem_AXI extends Module {
+  val io = IO(new Bundle {
+    // Debug interface
+    val PC    = Input (UInt(32.W))
+
+    // AXI4-Lite interface
+    val axi = Flipped(new AXI4Lite)
+  })
+  // aw
+  val aw_fsm = RegInit(AXI_FSM.aw_idle)
+  val aw_addr = RegInit(0.U(32.W))
+  val aw_PC = RegInit(0.U(32.W))// for debug
+  switch(aw_fsm){
+    is(AXI_FSM.aw_idle){
+      when(io.axi.awvalid){//ready is ensured by its assignment
+        aw_fsm := AXI_FSM.aw_wait
+        aw_addr := io.axi.awaddr
+        aw_PC := io.PC
+      }
+    }
+    is(AXI_FSM.aw_wait){
+      when(write_done){//wait for work done
+        aw_fsm := AXI_FSM.aw_idle
+        aw_addr := 0.U(32.W)
+        aw_PC := 0.U(32.W)
+      }
+    }
+  }
+  io.axi.awready := (aw_fsm === AXI_FSM.aw_idle)
+
+  //w
+  val w_fsm = RegInit(AXI_FSM.w_idle)
+  val w_data = RegInit(0.U(32.W))
+  val w_strb = RegInit(0.U(4.W))
+  switch(w_fsm){
+    is(AXI_FSM.w_idle){
+      when(io.axi.wvalid){
+        w_fsm := AXI_FSM.w_wait
+        w_data := io.axi.wdata
+        w_strb := io.axi.wstrb
+      }
+    }
+    is(AXI_FSM.w_wait){
+      when(write_done){//wait for work done
+        w_fsm := AXI_FSM.w_idle
+        w_data := 0.U(32.W)
+        w_strb := 0.U(4.W)
+      }
+    }
+  }
+  io.axi.wready := (w_fsm === AXI_FSM.w_idle)
+
+  //ar
+  val ar_fsm = RegInit(AXI_FSM.ar_idle)
+  val ar_addr = RegInit(0.U(32.W))
+  val ar_PC = RegInit(0.U(32.W))// for debug
+  switch(ar_fsm){
+    is(AXI_FSM.ar_idle){
+      when(io.axi.arvalid){
+        ar_fsm := AXI_FSM.ar_wait   
+        ar_addr := io.axi.araddr
+        ar_PC := io.PC
+      }
+    }
+    is(AXI_FSM.ar_wait){
+      when(read_done){//wait for rdata
+        ar_fsm := AXI_FSM.ar_idle
+        ar_addr := 0.U(32.W)
+        ar_PC := 0.U(32.W)
+      }
+    }
+  }
+  io.axi.arready := (ar_fsm === AXI_FSM.ar_idle)
+
+  //r
+  val r_fsm = RegInit(AXI_FSM.r_idle)
+  val r_data = RegInit(0.U(32.W))
+  val r_resp = RegInit(0.U(2.W))
+  val read_done = Wire(Bool())
+
+
+  // read_done := false.B
+  switch(r_fsm){
+    is(AXI_FSM.r_idle){
+      when(ar_fsm === AXI_FSM.ar_wait){
+        r_fsm := AXI_FSM.r_wait
+      }
+    }
+    is(AXI_FSM.r_wait){
+      when(read_done){
+        r_fsm := AXI_FSM.r_resp
+        // r_data := 0.U(32.W) //TODO: read data from mem
+        // r_resp := 0.U(2.W) //TODO: set response
+      }
+    }
+    is(AXI_FSM.r_resp){
+      when(io.axi.rready){
+        r_fsm := AXI_FSM.r_idle
+        // r_data := 0.U(32.W)
+        // r_resp := 0.U(2.W)
+      }
+    }
+  }
+  io.axi.rvalid := (r_fsm === AXI_FSM.r_resp)
+  io.axi.rdata := r_data
+  io.axi.rresp := r_resp
+
+  //b
+  val b_fsm = RegInit(AXI_FSM.b_idle)
+  val b_resp = RegInit(0.U(2.W))
+  val write_done = Wire(Bool())
+
+  // write_done := false.B
+  switch(b_fsm){
+    is(AXI_FSM.b_idle){
+      when(aw_fsm === AXI_FSM.aw_wait && w_fsm === AXI_FSM.w_wait){
+        b_fsm := AXI_FSM.b_wait 
+      }
+    }
+    is(AXI_FSM.b_wait){
+      when(write_done){
+        b_fsm := AXI_FSM.b_resp
+        // b_resp := 0.U(2.W) //TODO: set response
+      }
+    }
+    is(AXI_FSM.b_resp){
+      when(io.axi.bready){
+        b_fsm := AXI_FSM.b_idle
+        // b_resp := 0.U(2.W)
+      }
+    }
+  }
+  io.axi.bvalid := (b_fsm === AXI_FSM.b_resp)
+  io.axi.bresp := b_resp
+
+  // memory interface logic
+  val m_idle :: m_get :: m_wait :: Nil  = Enum(3)
+  val mem_fsm = RegInit(m_idle)
+  val mem_latch = RegInit(0.U(4.W))
+  val mem_reading = RegInit(false.B)
+  val mem_writing = RegInit(false.B)
+
+  val memio = Module(new MemIO())
+  memio.io.clock := clock.asBool
+  memio.io.PC := Mux(ar_fsm === AXI_FSM.ar_wait, ar_PC, aw_PC)
+  memio.io.ren := (ar_fsm === AXI_FSM.ar_wait) && (mem_fsm === m_idle)
+  memio.io.raddr := ar_addr
+  memio.io.wen := (aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait) && (mem_fsm === m_idle)
+  memio.io.waddr := aw_addr
+  memio.io.wdata := w_data
+  memio.io.wmask := w_strb
+
+  // delay for memio, simulating memory access latency
+  val lfsr = Module(new LFSR(4))
+
+  read_done := false.B
+  write_done := false.B
+  switch(mem_fsm){
+    is(m_idle){
+      when(ar_fsm === AXI_FSM.ar_wait){
+        mem_fsm := m_wait
+        mem_reading := 1.B
+      }.elsewhen((aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait)){
+        mem_fsm := m_wait
+        mem_writing := 1.B
+      }
+    }
+    is(m_get){
+      r_data := memio.io.rdata
+      r_resp := 0.U(2.W) //TODO: set response
+      b_resp := 0.U(2.W) //TODO: set response
+      mem_latch := lfsr.io.out
+      mem_fsm := m_wait
+    }
+    is(m_wait){
+      when(mem_latch === 0.U){
+        read_done := mem_reading
+        write_done := mem_writing
+        mem_reading := false.B
+        mem_writing := false.B
+        mem_fsm := m_idle
+      }.otherwise{
+        mem_latch := mem_latch - 1.U
+      }
+    }
+  }
 
 }

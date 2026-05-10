@@ -48,6 +48,7 @@ class LSU extends Module{
             val wdata           = Output(UInt(32.W))
             val wmask           = Output(UInt(4.W))
         }
+        val axi = new AXI4Lite
         val forward = new Bundle{
             val reg_wdata       = Output(UInt(32.W))
             val reg_rd          = Output(UInt(5.W))
@@ -76,12 +77,60 @@ class LSU extends Module{
     io.before.ready             := !valid | will_out
     io.next.valid               := valid
 
+    //state machine
+    val idle :: wait_mem :: ready :: wait_error_mem :: Nil = Enum(4)
+    val lsus                    = RegInit(idle)
+    val op                      = Wire(UInt(LSUop.width.W))
+    op                          := LSUop.no_op
+    switch(lsus){
+        is(idle){
+            when(!valid && !io.before.valid){
+                lsus                := idle
+                op                  := LSUop.no_op
+            }.elsewhen(io.before.valid && (io.before.mem_op =/= Memop.noop)){
+                lsus                := wait_mem
+                op                  := LSUop.no_op
+
+            }.elsewhen(io.before.valid && io.before.mem_op === Memop.noop){
+                lsus                := ready
+                op                  := LSUop.no_op
+            }
+        }
+        is(wait_mem){
+            when(changePC && !io.axi.rvalid){
+                lsus                := wait_error_inst
+                op                  := LSUop.save_pc
+            }.elsewhen(changePC && io.axi.rvalid){
+                lsus                := idle
+                op                  := LSUop.save_pc
+            }.elsewhen(io.axi.rvalid && !will_out){
+                lsus                := ready
+                op                  := LSUop.save_inst
+            }.elsewhen(io.axi.rvalid && will_out){
+                lsus                := idle
+                op                  := LSUop.save_inst | LSUop.save_pc
+            }
+        }
+        is(ready){
+            when(will_out | changePC){
+                lsus                := idle
+                op                  := LSUop.save_pc
+            }
+        }
+        is(wait_error_inst){
+            when(io.axi.rvalid){
+                lsus                := idle
+            }
+        }
+    }
+
     //latching signals
     val reg_PC                  = Reg(UInt(32.W))
     val reg_alu_result          = Reg(UInt(32.W))
     val reg_reg_op              = Reg(UInt(Regop.op_width.W))
     val reg_reg_rd              = Reg(UInt(5.W))
     val reg_mem_op              = Reg(UInt(Memop.op_width.W))
+    val reg_mem_src             = Reg(UInt(32.W))
     val reg_mem_mask            = Reg(UInt(4.W))
     val reg_debug               = Reg(new debug)
     val reg_CSR_info            = Reg(new CSR_info)
@@ -92,10 +141,12 @@ class LSU extends Module{
         reg_reg_op              := io.before.reg_op  
         reg_reg_rd              := io.before.reg_rd
         reg_mem_op              := io.before.mem_op
-        reg_mem_mask            := mem_mask
+        reg_mem_src             := io.before.mem_src
+        reg_mem_mask            := mem_mask//will be removed after
         reg_debug               := io.before.debug
         reg_CSR_info            := io.before.CSR_info
     }
+
 
     //memio
     val alu_result_2 = io.before.alu_result(1,0)
