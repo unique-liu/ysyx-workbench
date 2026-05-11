@@ -16,8 +16,8 @@ class IFU (initPC:Int=0)extends Module{
             val branchPC        = Input (UInt(32.W))
             val ifbranch        = Input (Bool())
         }
-        val axi_PC              = Output(UInt(32.W))
-        val axi = new AXI4Lite
+        val sram_PC              = Output(UInt(32.W))
+        val sram                = new SRAM
         val csr_flush = new Bundle{
             val flush           = Input (Bool())
             val target          = Input (UInt(32.W))
@@ -31,6 +31,7 @@ class IFU (initPC:Int=0)extends Module{
         //PC and inst
     val regPC                   = RegInit(initPC.U(32.W))
     val reginst                 = RegInit(0.U(32.W))
+    val resp                    = RegInit(0.U(2.W))
     val nextPC                  = Wire(UInt(32.W))
     val changePC                = Wire(Bool())
 
@@ -46,43 +47,40 @@ class IFU (initPC:Int=0)extends Module{
     will_out                    := io.next.ready & io.next.valid
     will_in                     := io.before.valid & io.before.ready
     io.before.ready             := !valid | will_out
-    io.next.valid               := (ifus === ready) | (ifus === wait_inst & !changePC & io.axi.rvalid)
+    io.next.valid               := (ifus === ready && !changePC) | (ifus === wait_inst & !changePC & io.sram.ret_valid)
 
     //state machine
-    // val idle :: wait_inst :: ready :: wait_error_inst :: Nil = Enum(4)
-    // val ifus                    = RegInit(idle)
-    // val op                      = Wire(UInt(IFUop.width.W))
     op                          := IFUop.no_op
     switch(ifus){
-        is(idle){
-            when(io.axi.arready){
+        is(idle){//wait to send request
+            when(io.sram.req_ready){
                 ifus                := wait_inst
                 op                  := Mux(changePC, IFUop.save_pc, IFUop.no_op)
             }
         }
-        is(wait_inst){
-            when(changePC && !io.axi.rvalid){
+        is(wait_inst){//wait for instruction
+            when(changePC && !io.sram.ret_valid){
                 ifus                := wait_error_inst
                 op                  := IFUop.save_pc
-            }.elsewhen(changePC && io.axi.rvalid){
+            }.elsewhen(changePC && io.sram.ret_valid){
                 ifus                := idle
                 op                  := IFUop.save_pc
-            }.elsewhen(io.axi.rvalid && !will_out){
+            }.elsewhen(io.sram.ret_valid && !will_out){
                 ifus                := ready
                 op                  := IFUop.save_inst
-            }.elsewhen(io.axi.rvalid && will_out){
+            }.elsewhen(io.sram.ret_valid && will_out){
                 ifus                := idle
                 op                  := IFUop.save_inst | IFUop.save_pc
             }
         }
-        is(ready){
+        is(ready){//wait for next stage to take the instruction
             when(will_out | changePC){
                 ifus                := idle
                 op                  := IFUop.save_pc
             }
         }
-        is(wait_error_inst){
-            when(io.axi.rvalid){
+        is(wait_error_inst){//wait the return of the wrong instruction
+            when(io.sram.ret_valid){
                 ifus                := idle
             }
         }
@@ -90,10 +88,6 @@ class IFU (initPC:Int=0)extends Module{
 
 
     //PC and inst
-    // val regPC                   = RegInit(initPC.U(32.W))
-    // val reginst                 = RegInit(0.U(32.W))
-    // val nextPC                  = Wire(UInt(32.W))
-    // val changePC                = Wire(Bool())
     changePC                    := io.csr_flush.flush || io.next.ifbranch
     when(io.csr_flush.flush){
         nextPC                  := io.csr_flush.target
@@ -106,22 +100,19 @@ class IFU (initPC:Int=0)extends Module{
         regPC                   := nextPC
     }
     when(op(IFUop.save_inst_b)){
-        reginst                 := io.axi.rdata
+        reginst                 := io.sram.rdata
+        resp                    := io.sram.resp
     }
 
     io.next.PC                  := regPC
-    io.next.inst                := Mux((ifus === ready), reginst, io.axi.rdata)
+    io.next.inst                := Mux((ifus === ready), reginst, io.sram.rdata)
     
-    //axi
-    io.axi_PC                   := 0.U(32.W) //to show this is IF
-    io.axi.arvalid              := (ifus === idle)
-    io.axi.araddr               := Mux(changePC, nextPC, regPC)
-    io.axi.awvalid              := false.B  //no use
-    io.axi.awaddr               := 0.U      //no use
-    io.axi.wvalid               := false.B  //no use
-    io.axi.wdata                := 0.U      //no use
-    io.axi.wstrb                := 0.U      //no use
-    io.axi.rready               := (ifus === wait_inst) | (ifus === wait_error_inst)
-    io.axi.bready               := false.B  //no use
-
+    //sram
+    io.sram_PC                   := 0.U(32.W)
+    io.sram.req_ren             := (ifus === idle)
+    io.sram.req_wen             := false.B  //no use
+    io.sram.addr                := Mux(changePC, nextPC, regPC)
+    io.sram.wdata               := 0.U      //no use
+    io.sram.wmask               := 0.U      //no use
+    io.sram.ret_ready          := (ifus === wait_inst) | (ifus === wait_error_inst)
 }

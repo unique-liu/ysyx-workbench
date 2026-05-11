@@ -241,10 +241,10 @@ object IFUop{
 }
 object LSUop{
     val width           = 2
-    val mem_op_bit      = 0
-    val reg_op_bit      = 1
+    val save_info_bit   = 0
+    val save_ret_bit    = 1
 
     val no_op           = "b00".U(width.W)
-    val mem_op          = "b01".U(width.W)
-    val reg_op          = "b10".U(width.W)
+    val save_info       = "b01".U(width.W)
+    val save_ret        = "b10".U(width.W)
 }

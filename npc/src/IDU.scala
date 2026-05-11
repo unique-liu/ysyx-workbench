@@ -70,7 +70,7 @@ class IDU extends Module{
     when(io.flush){
         valid                   := 0.U(1.W)
     }.elsewhen(will_in){
-        valid                   := Mux(branch_taken,0.U(1.W),1.U(1.W))
+        valid                   := 1.U(1.W)
     }.elsewhen(will_out){
         valid                   := 0.U(1.W)
     }

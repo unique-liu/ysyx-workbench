@@ -36,19 +36,8 @@ class LSU extends Module{
             val CSR_info        = Output(new CSR_info)
             val exception       = Input (Bool())
         }
-        val memio = new Bundle{
-            val clock           = Output(Bool())
-            val PC              = Output(UInt(32.W))
-            val ren             = Output(Bool())
-            val raddr           = Output(UInt(32.W))
-            val rdata           = Input (UInt(32.W))
-
-            val wen             = Output(Bool())
-            val waddr           = Output(UInt(32.W))
-            val wdata           = Output(UInt(32.W))
-            val wmask           = Output(UInt(4.W))
-        }
-        val axi = new AXI4Lite
+        val sram_PC              = Output(UInt(32.W))
+        val sram = new SRAM
         val forward = new Bundle{
             val reg_wdata       = Output(UInt(32.W))
             val reg_rd          = Output(UInt(5.W))
@@ -75,50 +64,55 @@ class LSU extends Module{
     will_out                    := io.next.ready & io.next.valid
     will_in                     := io.before.valid & io.before.ready
     io.before.ready             := !valid | will_out
-    io.next.valid               := valid
+    io.next.valid               := valid & (lsus === ready)
 
     //state machine
-    val idle :: wait_mem :: ready :: wait_error_mem :: Nil = Enum(4)
+    val idle :: send_addr :: wait_mem :: ready :: wait_error_mem :: Nil = Enum(5)
     val lsus                    = RegInit(idle)
     val op                      = Wire(UInt(LSUop.width.W))
     op                          := LSUop.no_op
     switch(lsus){
         is(idle){
-            when(!valid && !io.before.valid){
+            when(will_in && (io.before.mem_op =/= Memop.noop)){
+                lsus                := send_addr
+                op                  := LSUop.no_op
+            }.elsewhen(will_in && (io.before.mem_op === Memop.noop)){
+                lsus                := ready
+                op                  := LSUop.no_op
+            }
+        }
+        is(send_addr){
+            when(io.flush){
                 lsus                := idle
                 op                  := LSUop.no_op
-            }.elsewhen(io.before.valid && (io.before.mem_op =/= Memop.noop)){
+            }.elsewhen(io.sram.req_ready){
                 lsus                := wait_mem
-                op                  := LSUop.no_op
-
-            }.elsewhen(io.before.valid && io.before.mem_op === Memop.noop){
-                lsus                := ready
                 op                  := LSUop.no_op
             }
         }
         is(wait_mem){
-            when(changePC && !io.axi.rvalid){
-                lsus                := wait_error_inst
-                op                  := LSUop.save_pc
-            }.elsewhen(changePC && io.axi.rvalid){
+            when(io.flush && !io.sram.ret_valid){
+                lsus                := wait_error_mem
+                op                  := LSUop.no_op
+            }.elsewhen(io.flush && io.sram.ret_valid){
                 lsus                := idle
-                op                  := LSUop.save_pc
-            }.elsewhen(io.axi.rvalid && !will_out){
+                op                  := LSUop.no_op
+            }.elsewhen(io.sram.ret_valid && !will_out){
                 lsus                := ready
-                op                  := LSUop.save_inst
-            }.elsewhen(io.axi.rvalid && will_out){
+                op                  := LSUop.save_ret
+            }.elsewhen(io.sram.ret_valid && will_out){
                 lsus                := idle
-                op                  := LSUop.save_inst | LSUop.save_pc
+                op                  := LSUop.save_ret
             }
         }
         is(ready){
-            when(will_out | changePC){
+            when(will_out | io.flush){
                 lsus                := idle
-                op                  := LSUop.save_pc
+                op                  := LSUop.no_op
             }
         }
-        is(wait_error_inst){
-            when(io.axi.rvalid){
+        is(wait_error_mem){
+            when(io.sram.ret_valid){
                 lsus                := idle
             }
         }
@@ -142,13 +136,13 @@ class LSU extends Module{
         reg_reg_rd              := io.before.reg_rd
         reg_mem_op              := io.before.mem_op
         reg_mem_src             := io.before.mem_src
-        reg_mem_mask            := mem_mask//will be removed after
+        reg_mem_mask            := mem_mask
         reg_debug               := io.before.debug
         reg_CSR_info            := io.before.CSR_info
     }
 
 
-    //memio
+    //preparing wmask
     val alu_result_2 = io.before.alu_result(1,0)
     mem_mask                    := 0.U
     switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
@@ -163,19 +157,27 @@ class LSU extends Module{
         is("b10".U){mem_mask := Mux(alu_result_2 === "b00".U, "b0011".U, "b1100".U)}
         is("b11".U){mem_mask := "b1111".U}
     }
-    io.memio.clock              := clock.asBool
-    io.memio.PC                 := io.before.PC
-    io.memio.ren                := io.before.mem_op(Memop.load_bit) & will_in & !have_exception
-    io.memio.raddr              := io.before.alu_result
-    io.memio.wen                := ~io.before.mem_op(Memop.load_bit) & (io.before.mem_op =/= Memop.noop) & will_in & !have_exception
-    io.memio.waddr              := io.before.alu_result
-    io.memio.wdata              := 0.U
-    switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
-        is("b01".U){io.memio.wdata := Cat(io.before.mem_src(7,0),io.before.mem_src(7,0),io.before.mem_src(7,0),io.before.mem_src(7,0))}
-        is("b10".U){io.memio.wdata := Cat(io.before.mem_src(15,0),io.before.mem_src(15,0))}
-        is("b11".U){io.memio.wdata := io.before.mem_src}
+
+    //sram
+    io.sram_PC                  := reg_PC
+    io.sram.req_ren             := (lsus === send_addr) & reg_mem_op(Memop.load_bit) & !have_exception & !io.flush
+    io.sram.req_wen             := (lsus === send_addr) & !reg_mem_op(Memop.load_bit) & (reg_mem_op =/= Memop.noop) & !have_exception & !io.flush
+    io.sram.addr                := reg_alu_result
+    io.sram.wdata               := 0.U
+    switch(reg_mem_op(Memop.half_bit,Memop.byte_bit)){
+        is("b01".U){io.sram.wdata := Cat(reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0))}
+        is("b10".U){io.sram.wdata := Cat(reg_mem_src(15,0),reg_mem_src(15,0))}
+        is("b11".U){io.sram.wdata := reg_mem_src}
     }
-    io.memio.wmask              := mem_mask
+    io.sram.wmask               := reg_mem_mask
+    io.sram.ret_ready := (lsus === wait_mem) | (lsus === wait_error_mem)
+
+    val ret_rdata               = Reg(UInt(32.W))
+    val ret_resp                = Reg(Bool())
+    when(op(LSUop.save_ret_bit)){
+        ret_rdata               := io.sram.rdata
+        ret_resp                := io.sram.ret_valid
+    }
 
     //output
     io.next.PC                  := reg_PC
@@ -185,8 +187,8 @@ class LSU extends Module{
     io.next.debug               := reg_debug
     io.next.CSR_info            := reg_CSR_info
 
-    val mem_out_aligned         = io.memio.rdata >> Cat(reg_alu_result(1,0),0.U(3.W))
-    io.next.mem_result          := 0.U
+    val mem_out_aligned         = Mux(op(LSUop.save_ret_bit),io.sram.rdata,ret_rdata) >> Cat(reg_alu_result(1,0),0.U(3.W))
+    io.next.mem_result          := 0.U(32.W)
     switch(reg_mem_op){
         is(Memop.l_byte_u){io.next.mem_result      := Cat(0.U(24.W),mem_out_aligned(7,0))}
         is(Memop.l_byte_s){io.next.mem_result      := Cat(Fill(24,mem_out_aligned(7)),mem_out_aligned(7,0))}
@@ -198,7 +200,7 @@ class LSU extends Module{
     //forwarding
     io.forward.reg_wdata        := Mux(reg_reg_op(Regop.mem_bit),io.next.mem_result,reg_alu_result)
     io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
-    io.forward.reg_useable      := valid
+    io.forward.reg_useable      := io.next.valid
 
     //CSR
     have_exception              := io.next.exception | reg_CSR_info.exception //LSU or WBU can raise exception, so do not real access memory
