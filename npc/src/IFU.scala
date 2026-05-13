@@ -25,15 +25,15 @@ class IFU (initPC:Int=0)extends Module{
     })
     //declare
         //state machine
-    val idle :: wait_inst :: ready :: wait_error_inst :: Nil = Enum(4)
-    val ifus                    = RegInit(idle)
-    val op                      = Wire(UInt(IFUop.width.W))
+        val idle :: wait_inst :: ready :: wait_error_inst :: Nil = Enum(4)
+        val ifus                    = RegInit(idle)
+        val op                      = Wire(UInt(IFUop.width.W))
         //PC and inst
-    val regPC                   = RegInit(initPC.U(32.W))
-    val reginst                 = RegInit(0.U(32.W))
-    val resp                    = RegInit(0.U(2.W))
-    val nextPC                  = Wire(UInt(32.W))
-    val changePC                = Wire(Bool())
+        val regPC                   = RegInit((initPC.toLong & 0xffffffffL).U(32.W))
+        val reginst                 = RegInit(0.U(32.W))
+        val resp                    = RegInit(0.U(2.W))
+        val nextPC                  = Wire(UInt(32.W))
+        val changePC                = Wire(Bool())
 
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))

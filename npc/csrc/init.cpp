@@ -266,13 +266,14 @@ int init_all(int argc, char** argv) {
 }
 
 int finish_all() {
-    
+    int weak_shoot = 0;
     int ret = 0;
     switch (npc_state.type) {
         case NPC_HALT:
             if (npc_state.halt_ret) {
               printf("\033[31m[FAILED] Hit Bad Trap\033[0m\n");
               ret = -1;
+              weak_shoot = 1;
             }else {
               printf("\033[32m[SUCCEED] Hit Good Trap\033[0m\n");
             }
@@ -291,6 +292,7 @@ int finish_all() {
             #endif
             printf("[FAILED] Halt with error at pc = " FMT_WORD "\n", npc_state.halt_pc);
             ret = -1;
+            weak_shoot = 1;
             break;
         default:
             #ifdef CONFIG_ITRACE
@@ -300,7 +302,7 @@ int finish_all() {
             ret = -1;
     }
 
-    if (npc_state.type == NPC_HALT && npc_state.halt_ret == 1) {//hit bad trap
+    if (weak_shoot) {//hit bad trap
       shoot_weakup();
     }else {
       shoot_clear();

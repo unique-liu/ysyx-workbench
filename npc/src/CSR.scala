@@ -142,28 +142,3 @@ class CSR extends Module{
 
 }
 
-// class CSR_mstatus extends Bundle{
-//     val WPRI0 = Bool()//0
-//     val SIE   = Bool()//1
-//     val WPRI1 = Bool()//2
-//     val MIE   = Bool()//3
-//     val WPRI2 = Bool()//4
-//     val SPIE  = Bool()//5
-//     val UBE   = Bool()//6
-//     val MPIE  = Bool()//7
-//     val SPP   = Bool()//8
-//     val VS    = UInt(2.W)//10:9
-//     val MPP   = UInt(2.W)//12:11
-//     val FS    = UInt(2.W)//14:13
-//     val XS    = UInt(2.W)//16:15
-//     val MPRV  = Bool()//17
-//     val SUM   = Bool()//18
-//     val MXR   = Bool()//19
-//     val TVM   = Bool()//20
-//     val TW    = Bool()//21
-//     val TSR   = Bool()//22
-//     val WPRI3 = UInt(8.W)//30:23
-//     val SD    = Bool()//31
-
-// }
-

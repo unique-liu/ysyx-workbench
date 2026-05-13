@@ -57,8 +57,9 @@ object SRAM_AXIop{
     val set_awv_bit     = 2
     val set_wv_bit      = 3
     val set_arv_bit     = 4
-    val clear_aww_bit   = 5
-    val set_ready_bit   = 6
+    val set_ready_bit   = 5
+    val clear_aww_bit   = 6
+    
     val no_op           = "b0000000".U(width.W)
     val save_info       = "b0000001".U(width.W)
     val save_ret        = "b0000010".U(width.W)
@@ -77,28 +78,41 @@ class SRAM_AXI extends Module{
         val axi_PC          = Output(UInt(32.W))
         val axi             = new AXI4Lite
     })   
+    //declarations
+        //state machine
+        val idle :: have_req_w :: have_req_r :: wait_resp :: wait_ret :: Nil = Enum(5)
+        val op            = Wire(UInt(SRAM_AXIop.width.W))
+        val fsm           = RegInit(idle)
+        val is_read       = RegInit(false.B)
+        //info
+        val reg_PC        = RegInit(0.U(32.W))
+        val reg_addr      = RegInit(0.U(32.W))
+        val reg_wdata     = RegInit(0.U(32.W))
+        val reg_wmask     = RegInit(0.U(4.W))
+        //axi
+        val aw_sent       = RegInit(false.B)
+        val w_sent        = RegInit(false.B) 
+        val ready         = RegInit(false.B)
+
+
     //state machine
-    val idle :: have_req_w :: have_req_r :: wait_resp :: wait_ret :: Nil = Enum(5)
-    val op            = Wire(UInt(SRAM_AXIop.width.W))
-    val fsm           = RegInit(idle)
-    val is_read       = RegInit(false.B)
     op                := SRAM_AXIop.no_op
     switch(fsm){
         is(idle){
             when(io.sram.req_ren){// have read request
                 fsm := Mux(io.axi.arready,wait_resp,have_req_r)
-                op  := SRAM_AXIop.save_info | SRAM_AXIop.set_arv
+                op  := SRAM_AXIop.save_info | SRAM_AXIop.set_arv | Mux(io.axi.arready, SRAM_AXIop.set_ready, SRAM_AXIop.no_op)
                 is_read := true.B
             }.elsewhen(io.sram.req_wen){// have write request
                 fsm := Mux(io.axi.awready && io.axi.wready,wait_resp,have_req_w)
-                op  := SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv | Mux(io.axi.awvalid && io.axi.awready, SRAM_AXIop.clear_aww, SRAM_AXIop.no_op)
+                op  := SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv | Mux(io.axi.awready && io.axi.wready, SRAM_AXIop.clear_aww | SRAM_AXIop.set_ready, SRAM_AXIop.no_op)
                 is_read := false.B
             }
         }
         is(have_req_w){
             when((aw_sent | io.axi.awready) && (w_sent | io.axi.wready)){
                 fsm := wait_resp
-                op  := SRAM_AXIop.set_awv | SRAM_AXIop.set_wv | SRAM_AXIop.clear_aww
+                op  := SRAM_AXIop.set_awv | SRAM_AXIop.set_wv | SRAM_AXIop.clear_aww | SRAM_AXIop.set_ready
             }.otherwise{
                 op  := SRAM_AXIop.set_awv | SRAM_AXIop.set_wv
             }
@@ -106,6 +120,8 @@ class SRAM_AXI extends Module{
         is(have_req_r){
             when(io.axi.arready){
                 fsm := wait_resp
+                op  := SRAM_AXIop.set_arv | SRAM_AXIop.set_ready
+            }.otherwise{
                 op  := SRAM_AXIop.set_arv
             }
         }
@@ -113,11 +129,11 @@ class SRAM_AXI extends Module{
             when((io.axi.rvalid || io.axi.bvalid)){
                 when(io.sram.req_ren && io.sram.ret_ready){// have read request
                     fsm := Mux(io.axi.arready,wait_resp,have_req_r)
-                    op  := SRAM_AXIop.save_ret | SRAM_AXIop.set_ready | SRAM_AXIop.save_info | SRAM_AXIop.set_arv
+                    op  := SRAM_AXIop.save_ret | SRAM_AXIop.save_info | SRAM_AXIop.set_arv
                     is_read := true.B
                 }.elsewhen(io.sram.req_wen && io.sram.ret_ready){// have write request
                     fsm := Mux(io.axi.awready && io.axi.wready,wait_resp,have_req_w)
-                    op  := SRAM_AXIop.save_ret | SRAM_AXIop.set_ready | SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv
+                    op  := SRAM_AXIop.save_ret | SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv
                     is_read := false.B
                 }.otherwise{
                     fsm := Mux(io.sram.ret_ready,idle,wait_ret)
@@ -134,10 +150,6 @@ class SRAM_AXI extends Module{
     }
 
     //info
-    val reg_PC        = RegInit(0.U(32.W))
-    val reg_addr      = RegInit(0.U(32.W))
-    val reg_wdata     = RegInit(0.U(32.W))
-    val reg_wmask     = RegInit(0.U(4.W))
     when(op(SRAM_AXIop.save_info_bit)){
         reg_PC        := io.PC
         reg_addr      := io.sram.addr
@@ -155,9 +167,6 @@ class SRAM_AXI extends Module{
     }
 
     //axi
-    val aw_sent       = RegInit(false.B)
-    val w_sent        = RegInit(false.B) 
-    val ready         = RegInit(false.B)
     io.axi_PC                   := Mux(op(SRAM_AXIop.save_info_bit), io.PC, reg_PC)
     io.axi.awvalid              := op(SRAM_AXIop.set_awv_bit) && !aw_sent
     io.axi.awaddr               := Mux(op(SRAM_AXIop.save_info_bit), io.sram.addr, reg_addr)

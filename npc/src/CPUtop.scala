@@ -10,7 +10,7 @@ class CPUtop extends Module{
     val u_d_mem                         = Module(new Mem_AXI())
     val u_i_switch                      = Module(new SRAM_AXI())
     val u_d_switch                      = Module(new SRAM_AXI())
-    val u_ifu                           = Module(new IFU(initPC=0x7fff_fffc))
+    val u_ifu                           = Module(new IFU(initPC=0x80000000))
     val u_idu                           = Module(new IDU())
     val u_exu                           = Module(new EXU())
     val u_lsu                           = Module(new LSU())

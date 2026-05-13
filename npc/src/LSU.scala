@@ -46,8 +46,30 @@ class LSU extends Module{
         val flush           = Input(Bool())
     })
     //dclarations
-    val mem_mask                = Wire(UInt(4.W))
-    val have_exception          = Wire(Bool())
+        //state machine
+        val idle :: send_addr :: wait_mem :: ready :: wait_error_mem :: Nil = Enum(5)
+        val lsus                    = RegInit(idle)
+        val op                      = Wire(UInt(LSUop.width.W))
+        //latching signals
+        val reg_PC                  = Reg(UInt(32.W))
+        val reg_alu_result          = Reg(UInt(32.W))
+        val reg_reg_op              = Reg(UInt(Regop.op_width.W))
+        val reg_reg_rd              = Reg(UInt(5.W))
+        val reg_mem_op              = Reg(UInt(Memop.op_width.W))
+        val reg_mem_src             = Reg(UInt(32.W))
+        val reg_mem_mask            = Reg(UInt(4.W))
+        val reg_debug               = Reg(new debug)
+        val reg_CSR_info            = Reg(new CSR_info)
+        //preparing mask
+        val alu_result_2 = io.before.alu_result(1,0)
+        val mem_mask                = Wire(UInt(4.W))
+        //sram
+        val ret_rdata               = RegInit(0.U(32.W))
+        val ret_resp                = RegInit(0.U(2.W))
+        //output
+        val mem_out_aligned         = Wire(UInt(32.W))
+        //CSR
+        val have_exception          = Wire(Bool())
         
     //fluiding control signals
     val valid                   = RegInit(0.U(1.W))
@@ -67,9 +89,6 @@ class LSU extends Module{
     io.next.valid               := valid & (lsus === ready)
 
     //state machine
-    val idle :: send_addr :: wait_mem :: ready :: wait_error_mem :: Nil = Enum(5)
-    val lsus                    = RegInit(idle)
-    val op                      = Wire(UInt(LSUop.width.W))
     op                          := LSUop.no_op
     switch(lsus){
         is(idle){
@@ -97,16 +116,22 @@ class LSU extends Module{
             }.elsewhen(io.flush && io.sram.ret_valid){
                 lsus                := idle
                 op                  := LSUop.no_op
-            }.elsewhen(io.sram.ret_valid && !will_out){
+            }.elsewhen(io.sram.ret_valid){
                 lsus                := ready
-                op                  := LSUop.save_ret
-            }.elsewhen(io.sram.ret_valid && will_out){
-                lsus                := idle
                 op                  := LSUop.save_ret
             }
         }
         is(ready){
-            when(will_out | io.flush){
+            when(io.flush){
+                lsus                := idle
+                op                  := LSUop.no_op
+            }.elsewhen(will_in && (io.before.mem_op =/= Memop.noop)){
+                lsus                := send_addr
+                op                  := LSUop.no_op
+            }.elsewhen(will_in && (io.before.mem_op === Memop.noop)){
+                lsus                := ready
+                op                  := LSUop.no_op
+            }.elsewhen(will_out){
                 lsus                := idle
                 op                  := LSUop.no_op
             }
@@ -119,16 +144,6 @@ class LSU extends Module{
     }
 
     //latching signals
-    val reg_PC                  = Reg(UInt(32.W))
-    val reg_alu_result          = Reg(UInt(32.W))
-    val reg_reg_op              = Reg(UInt(Regop.op_width.W))
-    val reg_reg_rd              = Reg(UInt(5.W))
-    val reg_mem_op              = Reg(UInt(Memop.op_width.W))
-    val reg_mem_src             = Reg(UInt(32.W))
-    val reg_mem_mask            = Reg(UInt(4.W))
-    val reg_debug               = Reg(new debug)
-    val reg_CSR_info            = Reg(new CSR_info)
-    
     when(will_in){
         reg_PC                  := io.before.PC
         reg_alu_result          := io.before.alu_result
@@ -143,7 +158,6 @@ class LSU extends Module{
 
 
     //preparing wmask
-    val alu_result_2 = io.before.alu_result(1,0)
     mem_mask                    := 0.U
     switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
         is("b01".U){
@@ -172,11 +186,9 @@ class LSU extends Module{
     io.sram.wmask               := reg_mem_mask
     io.sram.ret_ready := (lsus === wait_mem) | (lsus === wait_error_mem)
 
-    val ret_rdata               = Reg(UInt(32.W))
-    val ret_resp                = Reg(Bool())
     when(op(LSUop.save_ret_bit)){
         ret_rdata               := io.sram.rdata
-        ret_resp                := io.sram.ret_valid
+        ret_resp                := io.sram.resp
     }
 
     //output
@@ -187,7 +199,7 @@ class LSU extends Module{
     io.next.debug               := reg_debug
     io.next.CSR_info            := reg_CSR_info
 
-    val mem_out_aligned         = Mux(op(LSUop.save_ret_bit),io.sram.rdata,ret_rdata) >> Cat(reg_alu_result(1,0),0.U(3.W))
+    mem_out_aligned             := Mux(op(LSUop.save_ret_bit),io.sram.rdata,ret_rdata) >> Cat(reg_alu_result(1,0),0.U(3.W))
     io.next.mem_result          := 0.U(32.W)
     switch(reg_mem_op){
         is(Memop.l_byte_u){io.next.mem_result      := Cat(0.U(24.W),mem_out_aligned(7,0))}

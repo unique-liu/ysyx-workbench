@@ -27,10 +27,29 @@ class Mem_AXI extends Module {
     // AXI4-Lite interface
     val axi = Flipped(new AXI4Lite)
   })
+  // declarations
+    // aw
+    val aw_fsm = RegInit(AXI_FSM.aw_idle)
+    val aw_addr = RegInit(0.U(32.W))
+    val aw_PC = RegInit(0.U(32.W))// for debug
+    // w
+    val w_fsm = RegInit(AXI_FSM.w_idle)
+    val w_data = RegInit(0.U(32.W))
+    val w_strb = RegInit(0.U(4.W))
+    // ar
+    val ar_fsm = RegInit(AXI_FSM.ar_idle)
+    val ar_addr = RegInit(0.U(32.W))
+    val ar_PC = RegInit(0.U(32.W))// for debug
+    // r
+    val r_fsm = RegInit(AXI_FSM.r_idle)
+    val r_data = RegInit(0.U(32.W))
+    val r_resp = RegInit(0.U(2.W))
+    val read_done = Wire(Bool())
+    // b
+    val b_fsm = RegInit(AXI_FSM.b_idle)
+    val b_resp = RegInit(0.U(2.W))
+    val write_done = Wire(Bool())
   // aw
-  val aw_fsm = RegInit(AXI_FSM.aw_idle)
-  val aw_addr = RegInit(0.U(32.W))
-  val aw_PC = RegInit(0.U(32.W))// for debug
   switch(aw_fsm){
     is(AXI_FSM.aw_idle){
       when(io.axi.awvalid){//ready is ensured by its assignment
@@ -50,9 +69,6 @@ class Mem_AXI extends Module {
   io.axi.awready := (aw_fsm === AXI_FSM.aw_idle)
 
   //w
-  val w_fsm = RegInit(AXI_FSM.w_idle)
-  val w_data = RegInit(0.U(32.W))
-  val w_strb = RegInit(0.U(4.W))
   switch(w_fsm){
     is(AXI_FSM.w_idle){
       when(io.axi.wvalid){
@@ -72,9 +88,6 @@ class Mem_AXI extends Module {
   io.axi.wready := (w_fsm === AXI_FSM.w_idle)
 
   //ar
-  val ar_fsm = RegInit(AXI_FSM.ar_idle)
-  val ar_addr = RegInit(0.U(32.W))
-  val ar_PC = RegInit(0.U(32.W))// for debug
   switch(ar_fsm){
     is(AXI_FSM.ar_idle){
       when(io.axi.arvalid){
@@ -94,13 +107,6 @@ class Mem_AXI extends Module {
   io.axi.arready := (ar_fsm === AXI_FSM.ar_idle)
 
   //r
-  val r_fsm = RegInit(AXI_FSM.r_idle)
-  val r_data = RegInit(0.U(32.W))
-  val r_resp = RegInit(0.U(2.W))
-  val read_done = Wire(Bool())
-
-
-  // read_done := false.B
   switch(r_fsm){
     is(AXI_FSM.r_idle){
       when(ar_fsm === AXI_FSM.ar_wait){
@@ -110,15 +116,11 @@ class Mem_AXI extends Module {
     is(AXI_FSM.r_wait){
       when(read_done){
         r_fsm := AXI_FSM.r_resp
-        // r_data := 0.U(32.W) //TODO: read data from mem
-        // r_resp := 0.U(2.W) //TODO: set response
       }
     }
     is(AXI_FSM.r_resp){
       when(io.axi.rready){
         r_fsm := AXI_FSM.r_idle
-        // r_data := 0.U(32.W)
-        // r_resp := 0.U(2.W)
       }
     }
   }
@@ -127,11 +129,6 @@ class Mem_AXI extends Module {
   io.axi.rresp := r_resp
 
   //b
-  val b_fsm = RegInit(AXI_FSM.b_idle)
-  val b_resp = RegInit(0.U(2.W))
-  val write_done = Wire(Bool())
-
-  // write_done := false.B
   switch(b_fsm){
     is(AXI_FSM.b_idle){
       when(aw_fsm === AXI_FSM.aw_wait && w_fsm === AXI_FSM.w_wait){
@@ -141,13 +138,11 @@ class Mem_AXI extends Module {
     is(AXI_FSM.b_wait){
       when(write_done){
         b_fsm := AXI_FSM.b_resp
-        // b_resp := 0.U(2.W) //TODO: set response
       }
     }
     is(AXI_FSM.b_resp){
       when(io.axi.bready){
         b_fsm := AXI_FSM.b_idle
-        // b_resp := 0.U(2.W)
       }
     }
   }
@@ -179,10 +174,10 @@ class Mem_AXI extends Module {
   switch(mem_fsm){
     is(m_idle){
       when(ar_fsm === AXI_FSM.ar_wait){
-        mem_fsm := m_wait
+        mem_fsm := m_get
         mem_reading := 1.B
       }.elsewhen((aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait)){
-        mem_fsm := m_wait
+        mem_fsm := m_get
         mem_writing := 1.B
       }
     }
