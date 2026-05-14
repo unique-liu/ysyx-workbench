@@ -90,7 +90,9 @@ int mmio_read(int addr,int len){
     TRACE(dtrace,"pc 0x%08x read [%s@0x%08x] with length %d get 0x%08x\n", mem_pc_now, device_map[device_id].name, addr, len, ret);
     #endif
     #ifdef CONFIG_DIFFTEST
-    use_device_pc_in(mem_pc_now);
+    if(npc_state.difftest_on == DIFF_ON) {
+      use_device_pc_in(mem_pc_now);
+    }
     #endif
     return ret;
   }
@@ -105,7 +107,9 @@ int mmio_write(int addr,int len,int wdata,char wmask){
     TRACE(dtrace,"pc 0x%08x write [%s@0x%08x] with length %d mask %d save 0x%08x\n", mem_pc_now, device_map[device_id].name, addr, len, wmask, wdata);
     #endif
     #ifdef CONFIG_DIFFTEST
-    use_device_pc_in(mem_pc_now);
+    if(npc_state.difftest_on == DIFF_ON) {
+      use_device_pc_in(mem_pc_now);
+    }
     #endif
     return device_write(device_id, addr, len, wdata, wmask);
   }

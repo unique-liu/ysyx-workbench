@@ -23,6 +23,10 @@ typedef enum{
     TRACE_OFF,
     TRACE_AUTO
 } trace_t;
+typedef enum{
+    DIFF_OFF,
+    DIFF_ON,
+} diff_t;
 typedef struct{
     rstate_types_t type;//current state of npc
     int halt_pc;//the pc of the instruction (not accurate) that cause the halt, may be 0 if the halt is not caused by an instruction
@@ -31,6 +35,7 @@ typedef struct{
     long long time;//clk up and down equals 2 time units
     int inst_submit;
     trace_t trace_on;//whether to print trace log, default 1, can be set by shooting mode
+    diff_t difftest_on;//whether to do difftest, default 0, can be set by shooting mode
 } rstate_t;
 
 extern rstate_t npc_state;

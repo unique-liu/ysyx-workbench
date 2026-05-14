@@ -49,11 +49,14 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
 
   // 同步寄存器状态到diff_cpu: 需要让pc是当前寄存器状态对应的下一条指令的地址
   #ifdef CONFIG_DIFFTEST
-  isa_reg_copy(&diff_cpu, &cpu);
-  if (use_device_pc_checkout(diff_cpu.pc)) {// 如果当前pc需要设备访问检查，则跳过检查
-    difftest_skip_ref();
+  if (npc_state.difftest_on == DIFF_ON) {
+    isa_reg_copy(&diff_cpu, &cpu);
+    if (use_device_pc_checkout(diff_cpu.pc)) {// 如果当前pc需要设备访问检查，则跳过检查
+      difftest_skip_ref();
+    }
+    diff_cpu.pc = pc;
   }
-  diff_cpu.pc = pc;
+  
   #endif
 
   cpu.pc = pc;

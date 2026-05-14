@@ -49,16 +49,19 @@ static void trace_and_difftest() {
 //   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
 //   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
     #ifdef CONFIG_DIFFTEST
-    if (first_submit && npc_state.inst_submit) {
-        first_submit = 0;
-    }else if (npc_state.inst_submit == 1) {
-        // if (first_submit) {
-        //     difftest_skip_ref();
-        //     printf("difftest: first instruction submit at pc = 0x%08x\n", cpu.pc);
-        //     first_submit = 0;
-        // }
-        difftest_step(diff_cpu.pc, 0);
-        npc_state.inst_submit = 0;
+    if (npc_state.difftest_on == DIFF_ON) {
+        if (first_submit && npc_state.inst_submit) {
+            first_submit = 0;
+            npc_state.inst_submit = 0;
+        }else if (npc_state.inst_submit == 1) {
+            // if (first_submit) {
+            //     difftest_skip_ref();
+            //     printf("difftest: first instruction submit at pc = 0x%08x\n", cpu.pc);
+            //     first_submit = 0;
+            // }
+            difftest_step(diff_cpu.pc, 0);
+            npc_state.inst_submit = 0;
+        }
     }
     #endif
 

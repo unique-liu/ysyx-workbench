@@ -68,7 +68,7 @@ IMG ?=
 DIFF = $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 ELF = $(IMG:.bin=.elf)
 ARGS ?=
-NPC_EXEC := $(BINARY) $(ARGS) --e=$(ELF) --d=$(DIFF) $(IMG)
+NPC_EXEC := $(BINARY) $(ARGS) --elf=$(ELF) --diff=$(DIFF) $(IMG)
 sim-env: $(BINARY)
 
 sim: sim-env

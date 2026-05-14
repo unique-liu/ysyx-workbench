@@ -34,10 +34,11 @@ static int parse_args(int argc, char *argv[]) {
     {"help"     , no_argument      , NULL, 'h'},
     {"elf"      , required_argument, NULL,  'e' },
     {"trace"    , required_argument, NULL,  't' },
+    {"diff_on"  , required_argument, NULL,  'D' },
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -45,6 +46,7 @@ static int parse_args(int argc, char *argv[]) {
       case 'd': diff_so_file = optarg; break;
       case 'e': elf_file = optarg; break;
       case 't': sdb_set_trace_mode(optarg); break;
+      case 'D': sdb_set_difftest_mode(optarg); break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -54,6 +56,7 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-p,--port=PORT          run DiffTest with port PORT\n");
         printf("\t-e,--elf=ELF            load ELF file for debugging\n");
         printf("\t-t,--trace=MODE         set trace mode\n");
+        printf("\t-D,--diff_on=MODE       set difftest mode\n");
         exit(0);
     }
   }
@@ -104,82 +107,6 @@ static long load_elf() {
   return size;
 }
 
-// bool load_program_elf(const std::string& filename) {
-//     //loading function table for ftrace
-//     if (filename.c_str() == NULL) {
-//         return false;
-//     }
-//     FILE *fp = fopen(filename.c_str(), "rb");
-//     if (!fp) {
-//         return false;
-//     }
-//     int ret = init_function_table(fp);
-//     assert(ret >= 0);
-//     DEBUG_PRINT(init,T,"Loaded %d functions from ELF file.\n", ret);
-//     fclose(fp);
-//     //function table loading end
-
-//     int fd = open(filename.c_str(), O_RDONLY);
-//     if (fd < 0) {
-//         fprintf(stderr, "Error: Cannot open ELF file: %s\n", filename.c_str());
-//         return false;
-//     }
-
-//     struct stat st;
-//     fstat(fd, &st);
-//     //used for program loading
-//     uint8_t* file_data = (uint8_t*)mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-//     close(fd);
-//     if (file_data == MAP_FAILED) {
-//         fprintf(stderr, "Error: mmap failed for ELF file\n");
-//         return false;
-//     }
-
-//     // 检查 ELF 头
-//     Elf32_Ehdr* ehdr = (Elf32_Ehdr*)file_data;
-//     if (ehdr->e_type != ET_EXEC) {
-//         fprintf(stderr, "Error: File is not an executable ELF (type %d)\n", ehdr->e_type);
-//         munmap(file_data, st.st_size);
-//         return false;
-//     }
-
-//     // 遍历程序头表
-//     Elf32_Phdr* phdr = (Elf32_Phdr*)(file_data + ehdr->e_phoff);
-//     bool any_loaded = false;
-//     for (int i = 0; i < ehdr->e_phnum; i++) {
-//         if (phdr[i].p_type == PT_LOAD) {
-//             uint32_t vaddr = phdr[i].p_vaddr;
-//             uint32_t memsz = phdr[i].p_memsz;
-//             uint32_t filesz = phdr[i].p_filesz;
-//             uint32_t offset = phdr[i].p_offset;
-
-//             // 检查段是否在模拟内存范围内
-//             if (vaddr < PMEM_LEFT || (vaddr + memsz) > (PMEM_RIGHT)) {
-//                 fprintf(stderr, "Warning: Segment at 0x%08x (size 0x%x) out of memory range, skipping\n",
-//                         vaddr, memsz);
-//                 continue;
-//             }
-
-//             // 计算在 mem 数组中的偏移（字节）
-//             uint32_t array_offset = vaddr - PMEM_LEFT;
-//             // 复制初始化数据
-//             memcpy(mem + array_offset, file_data + offset, filesz);
-//             // 如果 memsz > filesz，剩余部分清零（BSS）
-//             if (memsz > filesz) {
-//                 memset(mem + array_offset + filesz, 0, memsz - filesz);
-//             }
-//             printf("Loaded segment at 0x%08x (size %d bytes)\n", vaddr, memsz);
-//             any_loaded = true;
-//         }
-//     }
-
-//     munmap(file_data, st.st_size);
-//     if (!any_loaded) {
-//         fprintf(stderr, "Error: No loadable segments found in ELF\n");
-//         return false;
-//     }
-//     return true;
-// }
 
 void sigint_handler(int signum) {
     printf("halt with interupt\n");
@@ -206,8 +133,7 @@ void init_verilator(int argc, char** argv) {
     
 }
 
-int init_all(int argc, char** argv) {
-    printf("start to init npc...\n");
+void init_npc_state(){
     npc_state.type = NPC_WAITING;
     npc_state.halt_pc = 0;
     npc_state.halt_ret = 0;
@@ -215,6 +141,12 @@ int init_all(int argc, char** argv) {
     npc_state.time = 0;
     npc_state.inst_submit = 0;
     npc_state.trace_on = TRACE_OFF;
+    npc_state.difftest_on = DIFF_OFF;
+}
+
+int init_all(int argc, char** argv) {
+    printf("start to init npc...\n");
+    init_npc_state();
 
     DEBUG_INIT();
     Log("debug has been inited\n");
@@ -247,9 +179,17 @@ int init_all(int argc, char** argv) {
     load_elf();
     Log("Loaded ELF file: %s\n", elf_file ? elf_file : "NULL");
 
-    Log("start to init difftest\n");
-    init_difftest(diff_so_file, img_size, difftest_port);
-    Log("Initialized difftest with reference: %s, image size: %ld, port: %d\n", diff_so_file ? diff_so_file : "NULL", img_size, difftest_port);
+    #ifdef CONFIG_DIFFTEST
+    if (npc_state.difftest_on == DIFF_ON) {
+      Log("start to init difftest\n");
+      init_difftest(diff_so_file, img_size, difftest_port);
+      Log("Initialized difftest with reference: %s, image size: %ld, port: %d\n", diff_so_file ? diff_so_file : "NULL", img_size, difftest_port);
+    }else {
+      Log("DiffTest is not enabled by arguments, skip initializing difftest.\n");
+    }
+    #else
+    Log("DiffTest is not enabled by CONFIG_DIFFTEST.\n");
+    #endif
 
     // 初始化 sdb
     init_sdb();

@@ -262,13 +262,28 @@ void sdb_set_trace_mode(char *mode){
     npc_state.trace_on = TRACE_ON;
   } else if (strcmp(mode, "off") == 0) {
     npc_state.trace_on = TRACE_OFF;
+  #ifdef CONFIG_AUTOTRACE
   } else if (strcmp(mode, "auto") == 0) {
     npc_state.trace_on = is_batch_mode ? TRACE_AUTO : TRACE_OFF;
   }
+  #endif
   else {
-    printf("Unknown trace mode '%s', use 'on' or 'off'\n", mode);
+    printf("Unknown trace mode '%s', use 'on' or 'off' maybe CONFIG_AUTOTRACE was not defined\n", mode);
   }
 }
+
+void sdb_set_difftest_mode(char *mode){
+  if (strcmp(mode, "on") == 0) {
+    npc_state.difftest_on = DIFF_ON;
+    #ifndef CONFIG_DIFFTEST
+    printf("Warning: DiffTest is not enabled in this build. Please enable CONFIG_DIFFTEST in config.h to use this feature.\n");
+    #endif
+  } else if (strcmp(mode, "off") == 0) {
+    npc_state.difftest_on = DIFF_OFF;
+  } else {
+    printf("Unknown difftest mode '%s', use 'on' or 'off'\n", mode);
+  }
+} 
 
 void sdb_mainloop() {
   if (is_batch_mode) {

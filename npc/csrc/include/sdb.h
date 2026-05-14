@@ -37,6 +37,7 @@ word_t expr(char *e, bool *success);
 
 void sdb_set_batch_mode();
 void sdb_set_trace_mode(char *mode);
+void sdb_set_difftest_mode(char *mode);
 void sdb_mainloop();
 void init_sdb();
 #endif
