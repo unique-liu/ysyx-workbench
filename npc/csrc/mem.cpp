@@ -12,7 +12,8 @@ int use_device_pc_tail = 0;
 void use_device_pc_in(int pc) {
     if ((use_device_pc_head + 1) % QUEUE_SIZE == use_device_pc_tail) {
         printf("use_device_pc queue is full!\n");
-        assert(0);
+        npc_state.type = NPC_ERROR;
+        npc_state.halt_pc = pc;
     }else {
         use_device_pc[use_device_pc_head] = pc;
         use_device_pc_head = (use_device_pc_head + 1) % QUEUE_SIZE;
@@ -21,7 +22,7 @@ void use_device_pc_in(int pc) {
 int use_device_pc_checkout(int pc) {
      if (use_device_pc_head == use_device_pc_tail) {
         return 0; // queue is empty
-    }else if(pc == use_device_pc[use_device_pc_tail]) {
+    }else if(pc!=0 && pc == use_device_pc[use_device_pc_tail]) {
         use_device_pc_tail = (use_device_pc_tail + 1) % QUEUE_SIZE;
         return 1; // checkout success
     }else {

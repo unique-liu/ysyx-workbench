@@ -90,7 +90,7 @@ void execute(int n){
             npc_state.type = NPC_WAITING;
             break;
         }
-        if (npc_state.time >= MAX_TIME) {
+        if (npc_state.time >= npc_state.time_limit) {
             printf("\033[31mTime out\033[0m\n");
             npc_state.type = NPC_TIMEOUT;
             break;

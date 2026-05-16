@@ -36,6 +36,7 @@ typedef struct{
     int inst_submit;
     trace_t trace_on;//whether to print trace log, default 1, can be set by shooting mode
     diff_t difftest_on;//whether to do difftest, default 0, can be set by shooting mode
+    long long time_limit;//the maximum time allowed for execution, default MAX_TIME, can be set by arguments
 } rstate_t;
 
 extern rstate_t npc_state;

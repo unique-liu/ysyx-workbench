@@ -35,10 +35,11 @@ static int parse_args(int argc, char *argv[]) {
     {"elf"      , required_argument, NULL,  'e' },
     {"trace"    , required_argument, NULL,  't' },
     {"diff_on"  , required_argument, NULL,  'D' },
+    {"time"     , required_argument, NULL,  'T' },
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:T:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -47,6 +48,7 @@ static int parse_args(int argc, char *argv[]) {
       case 'e': elf_file = optarg; break;
       case 't': sdb_set_trace_mode(optarg); break;
       case 'D': sdb_set_difftest_mode(optarg); break;
+      case 'T': sscanf(optarg, "%lld", &npc_state.time_limit); break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -57,6 +59,7 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-e,--elf=ELF            load ELF file for debugging\n");
         printf("\t-t,--trace=MODE         set trace mode\n");
         printf("\t-D,--diff_on=MODE       set difftest mode\n");
+        printf("\t-T,--time=TIME          set time limit\n");
         exit(0);
     }
   }
@@ -142,6 +145,7 @@ void init_npc_state(){
     npc_state.inst_submit = 0;
     npc_state.trace_on = TRACE_OFF;
     npc_state.difftest_on = DIFF_OFF;
+    npc_state.time_limit = MAX_TIME;
 }
 
 int init_all(int argc, char** argv) {
