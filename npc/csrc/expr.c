@@ -38,6 +38,7 @@ enum {
   TK_OR,  // logical or
   TK_REG, // register
   TK_DEREF, // dereference operator
+  TK_NEG,   // unary minus operator
 };
 
 static struct rule {
@@ -206,6 +207,7 @@ int find_main_operator(int p, int q) {
   int main_op = -1;
   int min_precedence = 100; // a large number
   int parentheses_count = 0;
+  bool only_one_argument = true; // there is only NEG or DEREF operator in the expression
 
   for (int i = p; i <= q; i++) {
     if (tokens[i].type == '(') {
@@ -217,16 +219,18 @@ int find_main_operator(int p, int q) {
       int precedence;
       switch (tokens[i].type) {
         case TK_DEREF: precedence = 50; break; // dereference operator has the highest precedence
-        case '*': case '/': precedence = 49; break;
-        case '+': case '-': precedence = 48; break;
-        case TK_GE: case TK_GT: case TK_LE: case TK_LT: precedence = 47; break;
-        case TK_EQ: case TK_NEQ: precedence = 46; break;
-        case TK_AND: precedence = 45; break;
-        case TK_OR: precedence = 44; break;
+        case TK_NEG: precedence = 50; break; // unary minus operator has the highest precedence
+
+        case '*': case '/': precedence = 49; only_one_argument = false;break;
+        case '+': case '-': precedence = 48; only_one_argument = false;break;
+        case TK_GE: case TK_GT: case TK_LE: case TK_LT: precedence = 47; only_one_argument = false;break;
+        case TK_EQ: case TK_NEQ: precedence = 46; only_one_argument = false;break;
+        case TK_AND: precedence = 45; only_one_argument = false;break;
+        case TK_OR: precedence = 44; only_one_argument = false;break;
 
         default: continue; // skip non-operator tokens
       }
-      if (precedence <= min_precedence) { // right associative
+      if ((precedence < min_precedence) || (precedence == min_precedence && !only_one_argument)) { // right associative for operators with the same precedence, choose the rightmost one as the main operator, except for NEG and DEREF which are unary operators and should be evaluated first
         min_precedence = precedence;
         main_op = i;
       }
@@ -257,7 +261,7 @@ void tokens_to_string(int p, int q, char *buf, int buf_size) {
       case TK_OR: pos += snprintf(buf + pos, buf_size - pos, "[||] ");break;
       case TK_DEREF:pos += snprintf(buf + pos, buf_size - pos, "[DER:*] ");break;
       default:
-        pos += snprintf(buf + pos, buf_size - pos, "unkown_token_type_%d ", tokens[i].type);
+        pos += snprintf(buf + pos, buf_size - pos, "[?:%d] ", tokens[i].type);
         break;
     }
   }
@@ -336,6 +340,16 @@ word_t eval(int p, int q, bool *error) {
       return paddr_read(addr, sizeof(word_t));
     }
 
+    if (tokens[op].type == TK_NEG) {
+      word_t val = eval(op + 1, q, &suberror);
+      if (suberror == true) {
+        *error = true;
+        return 0;
+      }
+      *error = false;
+      return -val;
+    }
+
     int val1 = eval(p, op - 1,&suberror);
     if (suberror == true) {
       *error = true;
@@ -385,6 +399,11 @@ word_t expr(char *e, bool *success) {
   for (int i = 0; i < nr_token; i ++) {
     if (tokens[i].type == '*' && (i == 0 || !(tokens[i-1].type==TK_DECIMAL||tokens[i-1].type==TK_HEX||tokens[i-1].type==TK_REG||tokens[i-1].type==')') ) ) {
       tokens[i].type = TK_DEREF;
+    }
+  }
+  for (int i = 0; i < nr_token; i ++) {
+    if(tokens[i].type == '-' && (i == 0 || !(tokens[i-1].type==TK_DECIMAL||tokens[i-1].type==TK_HEX||tokens[i-1].type==TK_REG||tokens[i-1].type==')') ) ) {
+      tokens[i].type = TK_NEG;
     }
   }
 
