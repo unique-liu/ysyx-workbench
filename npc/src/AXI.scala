@@ -1,6 +1,5 @@
 import chisel3._
 import chisel3.util._
-import os.read
 
 class AXI4Lite extends Bundle {
   val awvalid = Output(Bool())
@@ -199,5 +198,181 @@ class SRAM_AXI extends Module{
     io.sram.ret_valid           := (fsm === wait_ret) | op(SRAM_AXIop.save_ret_bit)
     io.sram.rdata               := Mux(fsm === wait_ret,reg_rdata,io.axi.rdata)
     io.sram.resp                := Mux(fsm === wait_ret,reg_resp, Mux(is_read, io.axi.rresp, io.axi.bresp))
+
+}
+
+
+
+class AXI_Crossbar extends Module{
+    val io = IO(new Bundle{
+        val ifu_PC      = Input(UInt(32.W))
+        val ifu_axi     = Flipped(new AXI4Lite)
+        val lsu_PC      = Input(UInt(32.W))
+        val lsu_axi     = Flipped(new AXI4Lite)
+        val mem_rPC     = Output(UInt(32.W))
+        val mem_wPC     = Output(UInt(32.W))
+        val mem_axi     = new AXI4Lite
+        // val uart_axi    = new AXI4Lite
+        // val clint_axi   = new AXI4Lite
+    })
+    //fast address decoding
+    def in_range(addr:UInt, begin:UInt):Bool = {
+        // val match_len = 8
+        // addr(31,32-match_len) === begin(31,32-match_len)
+
+        // to test, always match
+        true.B
+    }
+    def slave_get_master_r(slave:AXI4Lite,void:Int, master:AXI4Lite): Unit = {
+        if(void == 1){
+            slave.arvalid   := false.B
+            slave.araddr    := 0.U(32.W)
+            slave.rready    := false.B
+        }else{
+            slave.arvalid   := master.arvalid
+            slave.araddr    := master.araddr
+            slave.rready    := master.rready
+        }
+    }
+    def slave_get_master_w(slave:AXI4Lite,void:Int, master:AXI4Lite): Unit = {
+        if(void == 1){
+            slave.awvalid   := false.B
+            slave.awaddr    := 0.U(32.W)
+            slave.wvalid    := false.B
+            slave.wdata     := 0.U(32.W)
+            slave.wstrb     := 0.U(4.W)
+            slave.bready    := false.B
+        }else{
+            slave.awvalid   := master.awvalid
+            slave.awaddr    := master.awaddr
+            slave.wvalid    := master.wvalid
+            slave.wdata     := master.wdata
+            slave.wstrb     := master.wstrb
+            slave.bready    := master.bready
+        }
+    }
+    def master_get_slave_r(master:AXI4Lite, void:Int, slave:AXI4Lite): Unit = {
+        if(void == 1){
+            master.arready  := false.B
+            master.rvalid   := false.B
+            master.rdata    := 0.U(32.W)
+            master.rresp    := 0.U(2.W)
+        }else{
+            master.arready  := slave.arready
+            master.rvalid   := slave.rvalid
+            master.rdata    := slave.rdata
+            master.rresp    := slave.rresp
+        }
+    }
+    def master_get_slave_w(master:AXI4Lite, void:Int, slave:AXI4Lite): Unit = {
+        if(void == 1){
+            master.awready  := false.B
+            master.wready   := false.B
+            master.bvalid   := false.B
+            master.bresp    := 0.U(2.W)
+        }else{
+            master.awready  := slave.awready
+            master.wready   := slave.wready
+            master.bvalid   := slave.bvalid
+            master.bresp    := slave.bresp
+        }
+    }
+
+    //mem read: switch between ifu_axi and lsu_axi according to PC
+    val r_idle :: r_ifu :: r_lsu :: Nil = Enum(3)
+    val r_fsm = RegInit(r_idle)
+    io.mem_rPC          := 0.U(32.W) 
+    // io.mem_axi.arvalid  := false.B
+    // io.mem_axi.araddr   := 0.U(32.W)
+    // io.mem_axi.rready   := false.B
+    slave_get_master_r(io.mem_axi, 1, io.ifu_axi)
+    switch(r_fsm){
+        is(r_idle){
+            when(io.ifu_axi.arvalid && in_range(io.ifu_axi.araddr, D_MEM.addr_begin)){
+                r_fsm := r_ifu
+            }.elsewhen(io.lsu_axi.arvalid && in_range(io.lsu_axi.araddr, D_MEM.addr_begin)){
+                r_fsm := r_lsu
+            }
+        }
+        is(r_ifu){
+            io.mem_rPC          := io.ifu_PC
+            // io.mem_axi.arvalid  := io.ifu_axi.arvalid
+            // io.mem_axi.araddr   := io.ifu_axi.araddr
+            // io.mem_axi.rready   := io.ifu_axi.rready
+            slave_get_master_r(io.mem_axi, 0, io.ifu_axi)
+            when(io.ifu_axi.rready && io.ifu_axi.rvalid){
+                when(io.ifu_axi.arvalid && in_range(io.ifu_axi.araddr, D_MEM.addr_begin)){
+                    r_fsm := r_ifu
+                }.elsewhen(io.lsu_axi.arvalid && in_range(io.lsu_axi.araddr, D_MEM.addr_begin)){
+                    r_fsm := r_lsu
+                }.otherwise{
+                    r_fsm := r_idle
+                }
+            }
+        }
+        is(r_lsu){
+            io.mem_rPC          := io.lsu_PC
+            // io.mem_axi.arvalid  := io.lsu_axi.arvalid
+            // io.mem_axi.araddr   := io.lsu_axi.araddr
+            // io.mem_axi.rready   := io.lsu_axi.rready
+            slave_get_master_r(io.mem_axi, 0, io.lsu_axi)
+            when(io.lsu_axi.rready && io.lsu_axi.rvalid){
+                when(io.ifu_axi.arvalid && in_range(io.ifu_axi.araddr, D_MEM.addr_begin)){
+                    r_fsm := r_ifu
+                }.elsewhen(io.lsu_axi.arvalid && in_range(io.lsu_axi.araddr, D_MEM.addr_begin)){
+                    r_fsm := r_lsu
+                }.otherwise{
+                    r_fsm := r_idle
+                }
+            }
+        }
+    }
+
+
+    //mem write: simply forward to mem_axi
+    val w_idle :: w_lsu :: Nil = Enum(2)
+    val w_fsm = RegInit(w_idle)
+
+    io.mem_wPC          := 0.U(32.W)
+    slave_get_master_w(io.mem_axi, 1, io.lsu_axi)
+    switch(w_fsm){
+        is(w_idle){
+            when((io.lsu_axi.awvalid) && in_range(io.lsu_axi.awaddr, D_MEM.addr_begin)){
+                w_fsm := w_lsu
+            }
+        }
+        is(w_lsu){
+            io.mem_wPC          := io.lsu_PC
+            slave_get_master_w(io.mem_axi, 0, io.lsu_axi)
+            when(io.lsu_axi.bready && io.lsu_axi.bvalid){
+                when((io.lsu_axi.awvalid) && in_range(io.lsu_axi.awaddr, D_MEM.addr_begin)){
+                    w_fsm := w_lsu
+                }.otherwise{
+                    w_fsm := w_idle
+                }
+            }
+        }
+    }
+
+
+     
+    //IFU connection
+    when(r_fsm === r_ifu){
+        master_get_slave_r(io.ifu_axi, 0, io.mem_axi)
+    }.otherwise{
+        master_get_slave_r(io.ifu_axi, 1, io.mem_axi)
+    }
+    master_get_slave_w(io.ifu_axi, 1, io.mem_axi)
+    //LSU connection
+    when(r_fsm === r_lsu){
+        master_get_slave_r(io.lsu_axi, 0, io.mem_axi)
+    }.otherwise{
+        master_get_slave_r(io.lsu_axi, 1, io.mem_axi)
+    }
+    when(w_fsm === w_lsu){
+        master_get_slave_w(io.lsu_axi, 0, io.mem_axi)
+    }.otherwise{
+        master_get_slave_w(io.lsu_axi, 1, io.mem_axi)
+    }
 
 }

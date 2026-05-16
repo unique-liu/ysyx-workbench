@@ -22,8 +22,8 @@ class MemIO extends ExtModule {
 class Mem_AXI extends Module {
   val io = IO(new Bundle {
     // Debug interface
-    val PC    = Input (UInt(32.W))
-
+    val rPC    = Input (UInt(32.W))
+    val wPC    = Input (UInt(32.W))
     // AXI4-Lite interface
     val axi = Flipped(new AXI4Lite)
   })
@@ -55,7 +55,7 @@ class Mem_AXI extends Module {
       when(io.axi.awvalid){//ready is ensured by its assignment
         aw_fsm := AXI_FSM.aw_wait
         aw_addr := io.axi.awaddr
-        aw_PC := io.PC
+        aw_PC := io.wPC
       }
     }
     is(AXI_FSM.aw_wait){
@@ -93,7 +93,7 @@ class Mem_AXI extends Module {
       when(io.axi.arvalid){
         ar_fsm := AXI_FSM.ar_wait   
         ar_addr := io.axi.araddr
-        ar_PC := io.PC
+        ar_PC := io.rPC
       }
     }
     is(AXI_FSM.ar_wait){
@@ -203,7 +203,7 @@ class Mem_AXI extends Module {
   u_memio_w.io.PC     := aw_PC
   u_memio_w.io.ren    := false.B
   u_memio_w.io.raddr  := 0.U(32.W)
-  u_memio_w.io.wen    := (aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait) && (mem_fsm_r === m_idle)
+  u_memio_w.io.wen    := (aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait) && (mem_fsm_w === m_idle)
   u_memio_w.io.waddr  := aw_addr
   u_memio_w.io.wdata  := w_data
   u_memio_w.io.wmask  := w_strb

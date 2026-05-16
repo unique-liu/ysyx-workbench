@@ -6,10 +6,12 @@ class CPUtop extends Module{
     })
 
     val u_regfile                       = Module(new Regfile())
-    val u_i_mem                         = Module(new Mem_AXI())
-    val u_d_mem                         = Module(new Mem_AXI())
+    
     val u_i_switch                      = Module(new SRAM_AXI())
     val u_d_switch                      = Module(new SRAM_AXI())
+    val u_crossbar                      = Module(new AXI_Crossbar())
+    val u_mem                         = Module(new Mem_AXI())
+
     val u_ifu                           = Module(new IFU(initPC=0x80000000))
     val u_idu                           = Module(new IDU())
     val u_exu                           = Module(new EXU())
@@ -26,16 +28,20 @@ class CPUtop extends Module{
     u_lsu.io.next                       <> u_wbu.io.before
     u_wbu.io.next.ready                 := true.B
 
-    //memory interface
+    //bus
     u_i_switch.io.PC                    := u_ifu.io.sram_PC
     u_ifu.io.sram                       <> u_i_switch.io.sram
     u_d_switch.io.PC                    := u_lsu.io.sram_PC
     u_lsu.io.sram                       <> u_d_switch.io.sram
 
-    u_i_mem.io.PC                       := u_i_switch.io.axi_PC
-    u_i_switch.io.axi                   <> u_i_mem.io.axi
-    u_d_mem.io.PC                       := u_d_switch.io.axi_PC
-    u_d_switch.io.axi                   <> u_d_mem.io.axi
+    u_crossbar.io.ifu_PC                := u_ifu.io.sram_PC
+    u_crossbar.io.ifu_axi               <> u_i_switch.io.axi
+    u_crossbar.io.lsu_PC                := u_lsu.io.sram_PC
+    u_crossbar.io.lsu_axi               <> u_d_switch.io.axi
+
+    u_mem.io.rPC                        := u_crossbar.io.mem_rPC
+    u_mem.io.wPC                        := u_crossbar.io.mem_wPC
+    u_mem.io.axi                        <> u_crossbar.io.mem_axi
 
     //regfile interface
     u_idu.io.regfile                    <> u_regfile.io.read
