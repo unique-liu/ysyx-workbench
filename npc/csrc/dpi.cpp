@@ -1,6 +1,7 @@
 #include <common.h>
 #include <stdio.h>
 #include <mem.h>
+#include <device.h>
 #include <isa.h>
 #include <difftest.h>
 #include <exec.h>
@@ -35,6 +36,40 @@ extern "C" void mem_write(int waddr, int wdata, char wmask,int pc) {
   mem_pc_now = pc;
   paddr_write( paddr, 4, wdata, wmask);
   mem_pc_now = 0;
+}
+
+extern "C" int read_a_device(int raddr, int pc,int idx) {
+  // 总是读取地址为`raddr & ~0x3u`的4字节返回
+  int paddr = raddr & ~0x3u;
+  mem_pc_now = pc;
+  if (in_device(paddr) != idx) {
+    DEBUG_PRINT(dtrace, T, "Address 0x%08x is not an address of device %d(%s)", paddr, idx, device_map[idx].name);
+    npc_state.type = NPC_ERROR;
+    npc_state.halt_pc = pc;
+    return 0;
+  }else {
+    int ret = mmio_read( paddr, 4);
+    mem_pc_now = 0;
+    return ret;
+  }
+}
+
+extern "C" void write_a_device(int waddr, int wdata, char wmask,int pc,int idx) {
+  // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
+  // `wmask`中每比特表示`wdata`中1个字节的掩码,
+  // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
+  int paddr = waddr & ~0x3u;
+  mem_pc_now = pc;
+  if (in_device(paddr) != idx) {
+    DEBUG_PRINT(dtrace, T, "Address 0x%08x is not an address of device %d(%s)", paddr, idx, device_map[idx].name);
+    npc_state.type = NPC_ERROR;
+    npc_state.halt_pc = pc;
+    return;
+  }else {
+    mmio_write( paddr, 4, wdata, wmask);
+    mem_pc_now = 0;
+    return;
+  }
 }
 
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);

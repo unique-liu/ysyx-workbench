@@ -18,6 +18,10 @@ extern uint8_t mem[CONFIG_MSIZE];
 uint8_t* guest_to_host(paddr_t paddr);
 /* convert the host virtual address in NEMU to guest physical address in the guest program */
 paddr_t host_to_guest(uint8_t *haddr);
+int mmio_read(int addr,int len);
+int mmio_write(int addr,int len,int wdata,char wmask);
+int memory_read(int addr, int len);
+void memory_write(int addr, int len, int wdata, char wmask);
 int paddr_read(int addr, int len);
 void paddr_write(int addr, int len, int wdata, char wmask);
 

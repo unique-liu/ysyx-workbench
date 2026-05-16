@@ -9,6 +9,7 @@ int use_device_pc[QUEUE_SIZE];
 int use_device_pc_head = 0;
 int use_device_pc_tail = 0;
 
+// for device access checkout in difftest, record the pc of instructions that access device, and skip checkout for these instructions
 void use_device_pc_in(int pc) {
     if ((use_device_pc_head + 1) % QUEUE_SIZE == use_device_pc_tail) {
         printf("use_device_pc queue is full!\n");
@@ -82,7 +83,14 @@ if (wmask & 1) {
   }
 }
 
+//read and write with device
 int mmio_read(int addr,int len){
+  #ifndef CONFIG_DEVICE
+  TRACE(dtrace,"read device is not supported\n");
+  out_of_bound(addr);
+  return 0;
+  #endif
+
   int device_id = in_device(addr);
    
   if (device_id != -1) {
@@ -102,6 +110,12 @@ int mmio_read(int addr,int len){
 }
 
 int mmio_write(int addr,int len,int wdata,char wmask){
+  #ifndef CONFIG_DEVICE
+  TRACE(dtrace,"write device is not supported\n");
+  out_of_bound(addr);
+  return 0;
+  #endif
+
   int device_id = in_device(addr);
   if (device_id != -1) {
     #ifdef CONFIG_DTRACE
@@ -114,10 +128,36 @@ int mmio_write(int addr,int len,int wdata,char wmask){
     #endif
     return device_write(device_id, addr, len, wdata, wmask);
   }
-    out_of_bound(addr);
-    return 0;
+  out_of_bound(addr);
+  return 0;
+}
+//read and write with memory
+int memory_read(int addr, int len){
+  int ret = 0;
+  if (in_pmem(addr)) {
+    ret = pmem_read(addr, len);
+    #ifdef CONFIG_MTRACE
+    TRACE(mtrace,"pc 0x%08x read 0x%08x with length %d get 0x%08x\n", mem_pc_now, addr, len, ret);
+    #endif
+    return ret;
+  }
+  out_of_bound(addr);
+  return 0;
 }
 
+void memory_write(int addr, int len, int wdata, char wmask){
+  if (in_pmem(addr)) { 
+    pmem_write(addr, len, wdata, wmask);
+    #ifdef CONFIG_MTRACE
+    TRACE(mtrace,"pc 0x%08x write 0x%08x with length %d mask %d save 0x%08x\n", mem_pc_now, addr, len, wmask, wdata);
+    #endif
+    return; 
+  }
+  out_of_bound(addr);
+}
+
+
+//read and write with memory or device
 int paddr_read(int addr, int len) {
   int ret = 0;
   if (in_pmem(addr)) {
