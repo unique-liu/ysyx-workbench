@@ -151,52 +151,83 @@ class Mem_AXI extends Module {
 
   // memory interface logic
   val m_idle :: m_get :: m_wait :: Nil  = Enum(3)
-  val mem_fsm = RegInit(m_idle)
-  val mem_latch = RegInit(0.U(4.W))
+  // delay for memio, simulating memory access latency
+  val u_lfsr = Module(new LFSR(4))
+
+  //use two memio to support one read and one write at the same time
+  val mem_fsm_r = RegInit(m_idle)
+  val mem_latch_r = RegInit(0.U(4.W))
+  val mem_fsm_w = RegInit(m_idle)
+  val mem_latch_w = RegInit(0.U(4.W))
   val mem_reading = RegInit(false.B)
   val mem_writing = RegInit(false.B)
 
-  val memio = Module(new MemIO())
-  memio.io.clock := clock.asBool
-  memio.io.PC := Mux(ar_fsm === AXI_FSM.ar_wait, ar_PC, aw_PC)
-  memio.io.ren := (ar_fsm === AXI_FSM.ar_wait) && (mem_fsm === m_idle)
-  memio.io.raddr := ar_addr
-  memio.io.wen := (aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait) && (mem_fsm === m_idle)
-  memio.io.waddr := aw_addr
-  memio.io.wdata := w_data
-  memio.io.wmask := w_strb
-
-  // delay for memio, simulating memory access latency
-  val lfsr = Module(new LFSR(4))
+  val u_memio_r = Module(new MemIO())
+  val u_memio_w = Module(new MemIO())
+  // read part
+  u_memio_r.io.clock  := clock.asBool
+  u_memio_r.io.PC     := ar_PC
+  u_memio_r.io.ren    := (ar_fsm === AXI_FSM.ar_wait) && (mem_fsm_r === m_idle)
+  u_memio_r.io.raddr  := ar_addr
+  u_memio_r.io.wen    := false.B
+  u_memio_r.io.waddr  := 0.U(32.W)
+  u_memio_r.io.wdata  := 0.U(32.W)
+  u_memio_r.io.wmask  := 0.U(4.W)
 
   read_done := false.B
-  write_done := false.B
-  switch(mem_fsm){
+  switch(mem_fsm_r){
     is(m_idle){
       when(ar_fsm === AXI_FSM.ar_wait){
-        mem_fsm := m_get
+        mem_fsm_r := m_get
         mem_reading := 1.B
-      }.elsewhen((aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait)){
-        mem_fsm := m_get
+      }
+    }
+    is(m_get){
+      r_data := u_memio_r.io.rdata
+      r_resp := 0.U(2.W) //TODO: set response
+      mem_latch_r := u_lfsr.io.out
+      mem_fsm_r := m_wait
+    }
+    is(m_wait){
+      when(mem_latch_r === 0.U){
+        read_done := 1.B
+        mem_reading := false.B
+        mem_fsm_r := m_idle
+      }.otherwise{
+        mem_latch_r := mem_latch_r - 1.U
+      }
+    }
+  }
+  //write part
+  u_memio_w.io.clock  := clock.asBool
+  u_memio_w.io.PC     := aw_PC
+  u_memio_w.io.ren    := false.B
+  u_memio_w.io.raddr  := 0.U(32.W)
+  u_memio_w.io.wen    := (aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait) && (mem_fsm_r === m_idle)
+  u_memio_w.io.waddr  := aw_addr
+  u_memio_w.io.wdata  := w_data
+  u_memio_w.io.wmask  := w_strb
+
+  write_done := false.B
+  switch(mem_fsm_w){
+    is(m_idle){
+      when((aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait)){
+        mem_fsm_w := m_get
         mem_writing := 1.B
       }
     }
     is(m_get){
-      r_data := memio.io.rdata
-      r_resp := 0.U(2.W) //TODO: set response
       b_resp := 0.U(2.W) //TODO: set response
-      mem_latch := lfsr.io.out
-      mem_fsm := m_wait
+      mem_latch_w := u_lfsr.io.out
+      mem_fsm_w := m_wait
     }
     is(m_wait){
-      when(mem_latch === 0.U){
-        read_done := mem_reading
+      when(mem_latch_w === 0.U){
         write_done := mem_writing
-        mem_reading := false.B
         mem_writing := false.B
-        mem_fsm := m_idle
+        mem_fsm_w := m_idle
       }.otherwise{
-        mem_latch := mem_latch - 1.U
+        mem_latch_w := mem_latch_w - 1.U
       }
     }
   }
