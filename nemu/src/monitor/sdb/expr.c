@@ -125,6 +125,10 @@ static bool make_token(char *e) {
          * to record the token in the array `tokens'. For certain types
          * of tokens, some extra actions should be performed.
          */
+        if (nr_token >= 256) {
+          printf("this expr is too long\n");
+          return false;
+        }
 
         switch (rules[i].token_type) {
           case TK_NOTYPE: break; // do nothing for notype
@@ -176,6 +180,10 @@ bool check_parentheses(int p, int q, bool *error) {
     }
     if (count == 0 && i < q) {
       surrounded_parentheses = 0;
+    }else if (count < 0) {
+      printf("unmatched parentheses.\n");
+      *error = true;
+      return false;
     }
   }
   if (count == 0) {

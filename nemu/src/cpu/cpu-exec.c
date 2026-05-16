@@ -192,7 +192,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
   #ifdef CONFIG_WATCHPOINT
   int trigger_wp = check_wp();
-  if (trigger_wp!=0) {
+  if (trigger_wp!=0 && nemu_state.state == NEMU_RUNNING) {
     nemu_state.state = NEMU_STOP;
     printf("Hit %d watchpoints.\n", trigger_wp);
   }

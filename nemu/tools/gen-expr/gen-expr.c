@@ -83,6 +83,8 @@ int main(int argc, char *argv[]) {
     sscanf(argv[1], "%d", &loop);
   }
   int i;
+  FILE *input_p = fopen("./input", "w");
+  assert(input_p != NULL);
   for (i = 0; i < loop; i ++) {
     buf[0] = '\0';
     buflen = 0;
@@ -106,6 +108,10 @@ int main(int argc, char *argv[]) {
     pclose(fp);
     
     printf("&%u|%s\n", result, buf);
+    
+    fprintf(input_p, "&%u|%s\n", result, buf);
+    
   }
+  fclose(input_p);
   return 0;
 }
