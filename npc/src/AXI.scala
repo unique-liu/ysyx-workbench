@@ -234,16 +234,18 @@ class AXI_Crossbar extends Module{
         val mem_rPC     = Output(UInt(32.W))
         val mem_wPC     = Output(UInt(32.W))
         val mem_axi     = new AXI4Lite
-        // val uart_axi    = new AXI4Lite
-        // val clint_axi   = new AXI4Lite
+        val uart_PC     = Output(UInt(32.W))
+        val uart_axi    = new AXI4Lite
+        val clint_PC    = Output(UInt(32.W))
+        val clint_axi   = new AXI4Lite
     })
     //fast address decoding
     def in_range(addr:UInt, begin:UInt):Bool = {
-        // val match_len = 8
-        // addr(31,32-match_len) === begin(31,32-match_len)
+        val match_len = 8
+        addr(31,32-match_len) === begin(31,32-match_len)
 
         // to test, always match
-        true.B
+        // true.B
     }
     def slave_get_master_r(slave:AXI4Lite,void:Int, master:AXI4Lite): Unit = {
         if(void == 1){
@@ -364,6 +366,74 @@ class AXI_Crossbar extends Module{
             }
         }
     }
+
+    //uart read and write: must be from lsu_axi
+    val u_idle :: u_read :: u_write :: Nil = Enum(3)
+    val u_fsm = RegInit(u_idle)
+    val u_lsu_rhit          = Wire(Bool())
+    val u_lsu_whit          = Wire(Bool())
+    u_lsu_rhit              := in_range(io.lsu_axi.araddr, D_UART.addr_begin)
+    u_lsu_whit              := in_range(io.lsu_axi.awaddr, D_UART.addr_begin)
+    io.uart_PC              := 0.U(32.W)
+    slave_get_master_r(io.uart_axi, 1, io.lsu_axi)
+    slave_get_master_w(io.uart_axi, 1, io.lsu_axi)
+    switch(u_fsm){
+        is(u_idle){
+            when(io.lsu_axi.arvalid && u_lsu_rhit){
+                u_fsm := u_read
+            }.elsewhen(io.lsu_axi.awvalid && u_lsu_whit){
+                u_fsm := u_write
+            }
+        }
+        is(u_read){
+            io.uart_PC          := io.lsu_PC
+            slave_get_master_r(io.uart_axi, 0, io.lsu_axi)
+            when(io.lsu_axi.rready && io.lsu_axi.rvalid){//UART is slow, so there is no need to switch to other master during one transaction
+                u_fsm := u_idle
+            }
+        }
+        is(u_write){
+            io.uart_PC          := io.lsu_PC
+            slave_get_master_w(io.uart_axi, 0, io.lsu_axi)
+            when(io.lsu_axi.bready && io.lsu_axi.bvalid){
+                u_fsm := u_idle
+            }
+        }
+    }
+
+    //CLINT read and write: must be from lsu_axi
+    val c_idle :: c_read :: c_write :: Nil = Enum(3)
+    val c_fsm = RegInit(c_idle)
+    val c_lsu_rhit       = Wire(Bool())
+    val c_lsu_whit       = Wire(Bool())
+    c_lsu_rhit           := in_range(io.lsu_axi.araddr, D_CLINT.addr_begin)
+    c_lsu_whit           := in_range(io.lsu_axi.awaddr, D_CLINT.addr_begin)
+    io.clint_PC          := 0.U(32.W)
+    slave_get_master_r(io.clint_axi, 1, io.lsu_axi)
+    slave_get_master_w(io.clint_axi, 1, io.lsu_axi)
+    switch(c_fsm){
+        is(c_idle){
+            when(io.lsu_axi.arvalid && c_lsu_rhit){
+                c_fsm := c_read
+            }.elsewhen(io.lsu_axi.awvalid && c_lsu_whit){
+                c_fsm := c_write
+            }
+        }
+        is(c_read){
+            io.clint_PC          := io.lsu_PC
+            slave_get_master_r(io.clint_axi, 0, io.lsu_axi)
+            when(io.lsu_axi.rready && io.lsu_axi.rvalid){//CLINT is slow, so there is no need to switch to other master during one transaction
+                c_fsm := c_idle
+            }
+        }
+        is(c_write){
+            io.clint_PC          := io.lsu_PC
+            slave_get_master_w(io.clint_axi, 0, io.lsu_axi)
+            when(io.lsu_axi.bready && io.lsu_axi.bvalid){
+                c_fsm := c_idle
+            }
+        }
+    }
      
     //IFU connection
     when(r_fsm === r_ifu){
@@ -375,11 +445,19 @@ class AXI_Crossbar extends Module{
     //LSU connection
     when(r_fsm === r_lsu){
         master_get_slave_r(io.lsu_axi, 0, io.mem_axi)
+    }.elsewhen(u_fsm === u_read){
+        master_get_slave_r(io.lsu_axi, 0, io.uart_axi)
+    }.elsewhen(c_fsm === c_read){
+        master_get_slave_r(io.lsu_axi, 0, io.clint_axi)
     }.otherwise{
         master_get_slave_r(io.lsu_axi, 1, io.mem_axi)
     }
     when(w_fsm === w_lsu){
         master_get_slave_w(io.lsu_axi, 0, io.mem_axi)
+    }.elsewhen(u_fsm === u_write){
+        master_get_slave_w(io.lsu_axi, 0, io.uart_axi)
+    }.elsewhen(c_fsm === c_write){
+        master_get_slave_w(io.lsu_axi, 0, io.clint_axi)
     }.otherwise{
         master_get_slave_w(io.lsu_axi, 1, io.mem_axi)
     }

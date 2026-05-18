@@ -22,15 +22,15 @@ class MemIO extends ExtModule {
 class Mem_AXI extends Module {
   val io = IO(new Bundle {
     // Debug interface
-    val rPC    = Input (UInt(32.W))
-    val wPC    = Input (UInt(32.W))
+    val rPC     = Input (UInt(32.W))
+    val wPC     = Input (UInt(32.W))
     // AXI4-Lite interface
-    val axi = Flipped(new AXI4Lite)
+    val axi     = Flipped(new AXI4Lite)
   })
   // declarations
-  val r_data = RegInit(0.U(32.W))
-  val r_resp = RegInit(0.U(2.W))
-  val w_resp = RegInit(0.U(2.W))
+  val r_data    = RegInit(0.U(32.W))
+  val r_resp    = RegInit(0.U(2.W))
+  val w_resp    = RegInit(0.U(2.W))
   // axi slave
   val axi_slave = Module(new AXI_Slave())
   axi_slave.io.rPC := io.rPC
@@ -43,9 +43,9 @@ class Mem_AXI extends Module {
   val u_lfsr = Module(new LFSR(4))
 
   //use two memio to support one read and one write at the same time
-  val mem_fsm_r = RegInit(m_idle)
+  val mem_fsm_r   = RegInit(m_idle)
   val mem_latch_r = RegInit(0.U(2.W))
-  val mem_fsm_w = RegInit(m_idle)
+  val mem_fsm_w   = RegInit(m_idle)
   val mem_latch_w = RegInit(0.U(2.W))
 
   val u_memio_r = Module(new MemIO())

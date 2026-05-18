@@ -10,7 +10,9 @@ class CPUtop extends Module{
     val u_i_switch                      = Module(new SRAM_AXI())
     val u_d_switch                      = Module(new SRAM_AXI())
     val u_crossbar                      = Module(new AXI_Crossbar())
-    val u_mem                         = Module(new Mem_AXI())
+    val u_mem                           = Module(new Mem_AXI())
+    val u_uart                          = Module(new UART())
+    val u_clint                         = Module(new CLINT())
 
     val u_ifu                           = Module(new IFU(initPC=0x80000000))
     val u_idu                           = Module(new IDU())
@@ -42,6 +44,14 @@ class CPUtop extends Module{
     u_mem.io.rPC                        := u_crossbar.io.mem_rPC
     u_mem.io.wPC                        := u_crossbar.io.mem_wPC
     u_mem.io.axi                        <> u_crossbar.io.mem_axi
+
+    u_uart.io.rPC                       := u_crossbar.io.uart_PC
+    u_uart.io.wPC                       := u_crossbar.io.uart_PC
+    u_uart.io.axi                       <> u_crossbar.io.uart_axi
+
+    u_clint.io.rPC                      := u_crossbar.io.clint_PC
+    u_clint.io.wPC                      := u_crossbar.io.clint_PC
+    u_clint.io.axi                      <> u_crossbar.io.clint_axi
 
     //regfile interface
     u_idu.io.regfile                    <> u_regfile.io.read
