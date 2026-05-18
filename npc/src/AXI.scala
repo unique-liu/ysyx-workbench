@@ -39,6 +39,28 @@ class SRAM extends Bundle {
     val resp        = Input(UInt(2.W))
 }
 
+class ReadReq extends Bundle {
+    val valid       = Output(Bool())  
+    val addr        = Output(UInt(32.W))
+}
+class ReadResp extends Bundle {
+    val valid       = Input(Bool())
+    val ready       = Output(Bool())
+    val data        = Input(UInt(32.W))
+    val resp        = Input(UInt(2.W))   // AXI4-Lite 响应：0: OKAY, 2: SLVERR, etc.
+}
+class WriteReq extends Bundle {
+    val valid       = Output(Bool())
+    val addr        = Output(UInt(32.W))
+    val data        = Output(UInt(32.W))
+    val strb        = Output(UInt(4.W))
+}
+class WriteResp extends Bundle {
+    val valid       = Input(Bool())
+    val ready       = Output(Bool())
+    val resp        = Input(UInt(2.W))
+}
+
 object AXI_FSM{
     val width = 2;
     val aw_idle :: aw_wait :: Nil = Enum(2)//idle: no aw request, wait: get aw request, wait for work done
@@ -282,9 +304,6 @@ class AXI_Crossbar extends Module{
     val r_idle :: r_ifu :: r_lsu :: Nil = Enum(3)
     val r_fsm = RegInit(r_idle)
     io.mem_rPC          := 0.U(32.W) 
-    // io.mem_axi.arvalid  := false.B
-    // io.mem_axi.araddr   := 0.U(32.W)
-    // io.mem_axi.rready   := false.B
     slave_get_master_r(io.mem_axi, 1, io.ifu_axi)
     switch(r_fsm){
         is(r_idle){
@@ -296,9 +315,6 @@ class AXI_Crossbar extends Module{
         }
         is(r_ifu){
             io.mem_rPC          := io.ifu_PC
-            // io.mem_axi.arvalid  := io.ifu_axi.arvalid
-            // io.mem_axi.araddr   := io.ifu_axi.araddr
-            // io.mem_axi.rready   := io.ifu_axi.rready
             slave_get_master_r(io.mem_axi, 0, io.ifu_axi)
             when(io.ifu_axi.rready && io.ifu_axi.rvalid){
                 when(io.ifu_axi.arvalid && in_range(io.ifu_axi.araddr, D_MEM.addr_begin)){
@@ -312,9 +328,6 @@ class AXI_Crossbar extends Module{
         }
         is(r_lsu){
             io.mem_rPC          := io.lsu_PC
-            // io.mem_axi.arvalid  := io.lsu_axi.arvalid
-            // io.mem_axi.araddr   := io.lsu_axi.araddr
-            // io.mem_axi.rready   := io.lsu_axi.rready
             slave_get_master_r(io.mem_axi, 0, io.lsu_axi)
             when(io.lsu_axi.rready && io.lsu_axi.rvalid){
                 when(io.ifu_axi.arvalid && in_range(io.ifu_axi.araddr, D_MEM.addr_begin)){
@@ -328,11 +341,9 @@ class AXI_Crossbar extends Module{
         }
     }
 
-
     //mem write: simply forward to mem_axi
     val w_idle :: w_lsu :: Nil = Enum(2)
     val w_fsm = RegInit(w_idle)
-
     io.mem_wPC          := 0.U(32.W)
     slave_get_master_w(io.mem_axi, 1, io.lsu_axi)
     switch(w_fsm){
@@ -353,8 +364,6 @@ class AXI_Crossbar extends Module{
             }
         }
     }
-
-
      
     //IFU connection
     when(r_fsm === r_ifu){
@@ -374,5 +383,161 @@ class AXI_Crossbar extends Module{
     }.otherwise{
         master_get_slave_w(io.lsu_axi, 1, io.mem_axi)
     }
+
+}
+
+class AXI_Slave extends Module{
+    val io = IO(new Bundle{
+        val rPC         = Input (UInt(32.W))
+        val wPC         = Input (UInt(32.W))
+        val axi         = Flipped(new AXI4Lite)
+
+        val rPC_out     = Output (UInt(32.W))
+        val r_req       = new ReadReq
+        val r_resp      = new ReadResp
+        val wPC_out     = Output (UInt(32.W))
+        val w_req       = new WriteReq
+        val w_resp      = new WriteResp
+    })
+// declarations
+    // aw
+    val aw_fsm      = RegInit(AXI_FSM.aw_idle)
+    val aw_addr     = RegInit(0.U(32.W))
+    val aw_PC       = RegInit(0.U(32.W))// for debug
+    // w
+    val w_fsm       = RegInit(AXI_FSM.w_idle)
+    val w_data      = RegInit(0.U(32.W))
+    val w_strb      = RegInit(0.U(4.W))
+    // ar
+    val ar_fsm      = RegInit(AXI_FSM.ar_idle)
+    val ar_addr     = RegInit(0.U(32.W))
+    val ar_PC       = RegInit(0.U(32.W))// for debug
+    // r
+    val r_fsm       = RegInit(AXI_FSM.r_idle)
+    val r_data      = Wire(UInt(32.W))
+    val r_resp      = Wire(UInt(2.W))
+    val read_done   = Wire(Bool())
+    // b
+    val b_fsm       = RegInit(AXI_FSM.b_idle)
+    val b_resp      = Wire(UInt(2.W))
+    val write_done  = Wire(Bool())
+  // aw
+  switch(aw_fsm){
+    is(AXI_FSM.aw_idle){
+      when(io.axi.awvalid){//ready is ensured by its assignment
+        aw_fsm := AXI_FSM.aw_wait
+        aw_addr := io.axi.awaddr
+        aw_PC := io.wPC
+      }
+    }
+    is(AXI_FSM.aw_wait){
+      when(write_done){//wait for work done
+        aw_fsm := AXI_FSM.aw_idle
+        aw_addr := 0.U(32.W)
+        aw_PC := 0.U(32.W)
+      }
+    }
+  }
+  io.axi.awready := (aw_fsm === AXI_FSM.aw_idle)
+
+  //w
+  switch(w_fsm){
+    is(AXI_FSM.w_idle){
+      when(io.axi.wvalid){
+        w_fsm := AXI_FSM.w_wait
+        w_data := io.axi.wdata
+        w_strb := io.axi.wstrb
+      }
+    }
+    is(AXI_FSM.w_wait){
+      when(write_done){//wait for work done
+        w_fsm := AXI_FSM.w_idle
+        w_data := 0.U(32.W)
+        w_strb := 0.U(4.W)
+      }
+    }
+  }
+  io.axi.wready := (w_fsm === AXI_FSM.w_idle)
+
+  //ar
+  switch(ar_fsm){
+    is(AXI_FSM.ar_idle){
+      when(io.axi.arvalid){
+        ar_fsm := AXI_FSM.ar_wait   
+        ar_addr := io.axi.araddr
+        ar_PC := io.rPC
+      }
+    }
+    is(AXI_FSM.ar_wait){
+      when(read_done){//wait for rdata
+        ar_fsm := AXI_FSM.ar_idle
+        ar_addr := 0.U(32.W)
+        ar_PC := 0.U(32.W)
+      }
+    }
+  }
+  io.axi.arready := (ar_fsm === AXI_FSM.ar_idle)
+
+  //r
+  switch(r_fsm){
+    is(AXI_FSM.r_idle){
+      when(ar_fsm === AXI_FSM.ar_wait){
+        r_fsm := AXI_FSM.r_wait
+      }
+    }
+    is(AXI_FSM.r_wait){
+      when(read_done){
+        r_fsm := AXI_FSM.r_resp
+      }
+    }
+    is(AXI_FSM.r_resp){
+      when(io.axi.rready){
+        r_fsm := AXI_FSM.r_idle
+      }
+    }
+  }
+  io.axi.rvalid := (r_fsm === AXI_FSM.r_resp)
+  io.axi.rdata := r_data
+  io.axi.rresp := r_resp
+
+  //b
+  switch(b_fsm){
+    is(AXI_FSM.b_idle){
+      when(aw_fsm === AXI_FSM.aw_wait && w_fsm === AXI_FSM.w_wait){
+        b_fsm := AXI_FSM.b_wait 
+      }
+    }
+    is(AXI_FSM.b_wait){
+      when(write_done){
+        b_fsm := AXI_FSM.b_resp
+      }
+    }
+    is(AXI_FSM.b_resp){
+      when(io.axi.bready){
+        b_fsm := AXI_FSM.b_idle
+      }
+    }
+  }
+  io.axi.bvalid := (b_fsm === AXI_FSM.b_resp)
+  io.axi.bresp  := b_resp
+
+  //communication with outside
+  io.rPC_out        := ar_PC
+  io.wPC_out        := aw_PC
+  io.r_req.valid    := (ar_fsm === AXI_FSM.ar_wait)
+  io.r_req.addr     := ar_addr
+  io.w_req.valid    := (aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait)
+  io.w_req.addr     := aw_addr
+  io.w_req.data     := w_data
+  io.w_req.strb     := w_strb
+
+  //outside will preserve data until give ready signal
+  read_done         := io.r_resp.valid 
+  r_data            := io.r_resp.data
+  r_resp            := io.r_resp.resp
+  io.r_resp.ready   := io.axi.rready && io.axi.rvalid
+  write_done        := io.w_resp.valid    
+  b_resp            := io.w_resp.resp
+  io.w_resp.ready   := io.axi.bready && io.axi.bvalid
 
 }
