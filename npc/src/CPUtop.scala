@@ -2,7 +2,13 @@ import chisel3._
 
 class CPUtop extends Module{
     val io = IO(new Bundle{
-        val useless                     = Input(Bool())
+        val useless_wbu                 = Output(Bool())
+        val useless_mem                 = Output(Bool())
+        val useless_csr                 = Output(Bool())
+        val useless_clint               = Output(Bool())
+        val useless_uart                = Output(Bool())
+        val useless_fPC                 = Output(UInt(32.W))
+        val useless_wdata               = Output(UInt(32.W))
     })
 
     val u_regfile                       = Module(new Regfile())
@@ -70,4 +76,13 @@ class CPUtop extends Module{
     u_lsu.io.flush                      := u_csr.io.csr_flush.flush
     u_wbu.io.flush                      := u_csr.io.csr_flush.flush
     u_wbu.io.CSR                        <> u_csr.io.CSR
+
+    //useless output: to avoid yosys optimization
+    io.useless_wbu                      := u_wbu.io.regfile.wen
+    io.useless_mem                      := u_mem.io.axi.rvalid
+    io.useless_csr                      := u_csr.io.csr_flush.flush
+    io.useless_clint                    := u_clint.io.axi.rvalid
+    io.useless_uart                     := u_uart.io.axi.rvalid
+    io.useless_fPC                      := u_csr.io.csr_flush.target
+    io.useless_wdata                    := u_wbu.io.regfile.wdata
 }
