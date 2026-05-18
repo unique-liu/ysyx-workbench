@@ -31,6 +31,7 @@ typedef struct{
     rstate_types_t type;//current state of npc
     int halt_pc;//the pc of the instruction (not accurate) that cause the halt, may be 0 if the halt is not caused by an instruction
     int halt_ret;//0: success, 1: error, only valid when type is NPC_HALT
+    long long real_time;// us calculate real time duration of execution
     long long inst_count;//submitted instruction count
     long long time;//clk up and down equals 2 time units
     int inst_submit;

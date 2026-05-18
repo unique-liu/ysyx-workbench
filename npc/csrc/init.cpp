@@ -140,6 +140,7 @@ void init_npc_state(){
     npc_state.type = NPC_WAITING;
     npc_state.halt_pc = 0;
     npc_state.halt_ret = 0;
+    npc_state.real_time = 0;
     npc_state.inst_count = 0;
     npc_state.time = 0;
     npc_state.inst_submit = 0;
@@ -213,38 +214,42 @@ int finish_all() {
     int weak_shoot = 0;
     int ret = 0;
     switch (npc_state.type) {
-        case NPC_HALT:
-            if (npc_state.halt_ret) {
-              printf("\033[31m[FAILED] Hit Bad Trap\033[0m\n");
-              ret = -1;
-              weak_shoot = 1;
-            }else {
-              printf("\033[32m[SUCCEED] Hit Good Trap\033[0m\n");
-            }
-            
-            break;
-        case NPC_STOP:
-            printf("[SUCCEED] Halt by interupt or command q\n");
-            break;
-        case NPC_TIMEOUT:
-            printf("[FAILED] Halt by timeout\n");
-            ret = -1;
-            break;
-        case NPC_ERROR:
-            #ifdef CONFIG_ITRACE
-            iringbuf_print();
-            #endif
-            printf("[FAILED] Halt with error at pc = " FMT_WORD "\n", npc_state.halt_pc);
+      case NPC_HALT:
+          if (npc_state.halt_ret) {
+            printf("\033[31m[FAILED] Hit Bad Trap\033[0m\n");
             ret = -1;
             weak_shoot = 1;
-            break;
-        default:
-            #ifdef CONFIG_ITRACE
-            iringbuf_print();
-            #endif
-            printf("[UNKNOWN] Unknown halt reason\n");
-            ret = -1;
+          }else {
+            printf("\033[32m[SUCCEED] Hit Good Trap\033[0m\n");
+          }
+          break;
+      case NPC_STOP:
+          printf("\033[32m[SUCCEED] Halt by interupt or command q\033[0m\n");
+          break;
+      case NPC_TIMEOUT:
+          printf("\033[31m[FAILED] Halt by timeout\033[0m\n");
+          ret = -1;
+          break;
+      case NPC_ERROR:
+          #ifdef CONFIG_ITRACE
+          iringbuf_print();
+          #endif
+          printf("\033[31m[FAILED] Halt with error at pc = " FMT_WORD "\033[0m\n", npc_state.halt_pc);
+          ret = -1;
+          weak_shoot = 1;
+          break;
+      default:
+          #ifdef CONFIG_ITRACE
+          iringbuf_print();
+          #endif
+          printf("\033[31m[UNKNOWN] Unknown halt reason\033[0m\n");
+          ret = -1;
     }
+    long long cycle = npc_state.time / 2;
+    printf("\033[34mSimulation Info: time: %lld us, cycle: %lld, inst: %lld, CPms: %lld, CPI: %.2f\033[0m\n",
+      npc_state.real_time, cycle, npc_state.inst_count,
+      npc_state.real_time / 1000 == 0 ? 0 : cycle / (npc_state.real_time / 1000),
+      (float)npc_state.inst_count == 0 ? 0 : cycle / (float)npc_state.inst_count);
 
     if (weak_shoot) {//hit bad trap
       shoot_weakup();

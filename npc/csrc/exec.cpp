@@ -4,6 +4,7 @@
 #include <isa.h>
 #include <trace.h>
 #include <shoot.h>
+#include <sys/time.h>
 
 rstate_t npc_state;
 VerilatedContext* contextp;
@@ -81,7 +82,9 @@ static void trace_and_difftest() {
 }
 
 void execute(int n){
+    struct timeval start, end;
     // reset(10);
+    gettimeofday(&start, NULL);
     while (npc_state.type == NPC_RUNNING) {//running loop
         exceute_once();
         trace_and_difftest();
@@ -96,5 +99,7 @@ void execute(int n){
             break;
         }
     }
+    gettimeofday(&end, NULL);
+    npc_state.real_time += (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
 
 }

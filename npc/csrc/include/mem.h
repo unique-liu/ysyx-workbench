@@ -25,6 +25,7 @@ void memory_write(int addr, int len, int wdata, char wmask);
 int paddr_read(int addr, int len);
 void paddr_write(int addr, int len, int wdata, char wmask);
 
+void use_device_pc_in(int pc);
 int use_device_pc_checkout(int pc);
 
 #endif
