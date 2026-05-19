@@ -24,8 +24,8 @@ class Mem_AXI extends Module {
     // Debug interface
     val rPC     = Input (UInt(32.W))
     val wPC     = Input (UInt(32.W))
-    // AXI4 interface
-    val axi     = Flipped(new AXI4)
+    // AXI4-Lite interface
+    val axi     = Flipped(new AXI4Lite)
   })
   // declarations
   val r_data    = RegInit(0.U(32.W))

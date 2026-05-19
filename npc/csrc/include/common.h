@@ -6,5 +6,6 @@
 #include <debug.h>
 
 typedef uint32_t word_t;
+#define VCPUtop VCPUtop
 
 #endif

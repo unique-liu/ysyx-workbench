@@ -23,7 +23,8 @@ extern "C" int mem_read(int raddr, int pc) {
   // 总是读取地址为`raddr & ~0x3u`的4字节返回
   int paddr = raddr & ~0x3u;
   mem_pc_now = pc;
-  int ret = memory_read( paddr, 4);
+  int ret = paddr_read( paddr, 4);
+  // int ret = memory_read( paddr, 4);
   mem_pc_now = 0;
   return ret;
 
@@ -34,7 +35,8 @@ extern "C" void mem_write(int waddr, int wdata, char wmask,int pc) {
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
   int paddr = waddr & ~0x3u;
   mem_pc_now = pc;
-  memory_write( paddr, 4, wdata, wmask);
+  paddr_write( paddr, 4, wdata, wmask);
+  // memory_write( paddr, 4, wdata, wmask);
   mem_pc_now = 0;
 }
 
@@ -76,7 +78,9 @@ extern "C" void diff_skip_device(int pc,int addr,int idx) {
   // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
   // `wmask`中每比特表示`wdata`中1个字节的掩码,
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
-  DEBUG_PRINT(dtrace, T, "device access at pc:0x%08x addr:0x%08x for device %d(%s)\n", pc, addr, idx, device_map[idx].name);
+  if (npc_state.trace_on == TRACE_ON) {
+    DEBUG_PRINT(dtrace, T, "device access at pc:0x%08x addr:0x%08x for device %d(%s)\n", pc, addr, idx, device_map[idx].name);
+  }
   #ifdef CONFIG_DIFFTEST
   if (npc_state.difftest_on == DIFF_ON) {
     use_device_pc_in(pc);
