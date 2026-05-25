@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <shoot.h>
+#include <isa.h>
 
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
@@ -137,8 +138,10 @@ void init_verilator(int argc, char** argv) {
 }
 
 void init_npc_state(){
+    cpu.pc = INIT_PC;
+
     npc_state.type = NPC_WAITING;
-    npc_state.halt_pc = 0;
+    npc_state.halt_pc = INIT_PC;
     npc_state.halt_ret = 0;
     npc_state.real_time = 0;
     npc_state.inst_count = 0;

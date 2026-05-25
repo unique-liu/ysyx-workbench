@@ -1,7 +1,7 @@
 #ifndef EXEC_H
 #define EXEC_H
 
-#include "VCPUtop.h"
+#include "VysyxSoCFull.h"
 #include <verilated.h>
 #include "verilated_fst_c.h"
 #include <common.h>

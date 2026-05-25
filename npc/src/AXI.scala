@@ -677,5 +677,11 @@ class AXI_Arbiter extends Module{
         AXI_CONN.master_get_slave_b(io.lsu_axi,void_axi)
     }
 
-
+    //debug: only lsu can access device, so check its all accesses
+    val u_diffskip          = Module(new DiffSkip())
+    u_diffskip.io.clock     := clock.asBool
+    u_diffskip.io.en        := io.lsu_axi.aw.valid && io.lsu_axi.aw.ready || io.lsu_axi.ar.valid && io.lsu_axi.ar.ready
+    u_diffskip.io.addr      := Mux(io.lsu_axi.aw.valid && io.lsu_axi.aw.ready, io.lsu_axi.aw.addr, io.lsu_axi.ar.addr)
+    u_diffskip.io.PC        := io.lsu_PC
+    u_diffskip.io.idx       := Mux(io.lsu_axi.aw.valid && io.lsu_axi.aw.ready, 11.U, 10.U) //10: read  11: write
 }

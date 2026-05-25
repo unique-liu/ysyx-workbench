@@ -2,7 +2,22 @@
 #include <debug.h>
 #include <exec.h>
 #include <sys/time.h>
-
+const mmio_map soc_device_map[SOC_DEVICE_NUM] = {
+  {"clint", 0x02000000, 0xffff},//0x0200_0000~0x0200_ffff
+  {"sram",0x0f000000,0x0fffffff},//0x0f00_0000~0x0fff_ffff
+  {"uart", 0x10000000, 0xfff},//0x1000_0000~0x1000_0fff
+  {"spi", 0x10001000, 0xfff},//0x1000_1000~0x1000_1fff
+  {"gpio",0x10002000,0xf},//0x1000_2000~0x1000_200f
+  {"ps2",0x10011000,0x7},//0x1001_1000~0x1001_1007
+  {"mrom", 0x20000000, 0xfff},//0x2000_0000~0x2000_0fff
+  {"vga",0x21000000,0x1fffff},//0x2100_0000~0x211f_ffff
+  {"flash", 0x30000000, 0x0fffffff},//0x3000_0000~0x3fff_ffff
+  {"chiplinkMMIO",0x40000000,0x3fffffff},//0x4000_0000~0x7fff_ffff
+  {"psRAM",0x80000000,0x1fffffff},//0x8000_0000~0x9fff_ffff
+  {"sdram",0xa0000000,0x1fffffff},//0xa000_0000~0xbfff_ffff
+  {"chiplinkMEM",0xc0000000,0x3fffffff}//0xc000_0000~0xffff_ffff
+  
+};
 
 const mmio_map device_map[DEVICE_NUM] = {
   {"serial", 0x10000000, 0x4},
@@ -29,7 +44,16 @@ int init_device() {
   } 
   return 0;
 }
-int in_device(int addr){
+int in_soc_device(uint32_t addr){
+  for (int i = 0; i < SOC_DEVICE_NUM; i++) {
+    if (addr >= soc_device_map[i].addr && addr < soc_device_map[i].addr + soc_device_map[i].len) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int in_device(uint32_t addr){
   for (int i = 0; i < DEVICE_NUM; i++) {
     if (addr >= device_map[i].addr && addr < device_map[i].addr + device_map[i].len) {
       return i;

@@ -11,9 +11,9 @@ extern "C" void halt_system(char is_error) {
   if (is_error) {
     npc_state.type = NPC_ERROR;
   } else {
+    npc_state.halt_pc = cpu.pc+4;//ebreak never submit, but always have a mv inst before, which is the last inst
     npc_state.type = NPC_HALT;
   }
-  npc_state.halt_pc = cpu.pc+4;//ebreak never submit, but always have a mv inst before, which is the last inst
   bool success;
   npc_state.halt_ret = isa_reg_str2val("a0", &success);
   assert(success);
@@ -78,11 +78,12 @@ extern "C" void diff_skip_device(int pc,int addr,int idx) {
   // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
   // `wmask`中每比特表示`wdata`中1个字节的掩码,
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
+  int device_id = in_soc_device(addr);
   if (npc_state.trace_on == TRACE_ON) {
-    DEBUG_PRINT(dtrace, T, "device access at pc:0x%08x addr:0x%08x for device %d(%s)\n", pc, addr, idx, device_map[idx].name);
+    DEBUG_PRINT(btrace, T, "bus %s at pc:0x%08x addr:0x%08x for device %d(%s)\n",idx==10?"read":"write", pc, addr, device_id, device_id!=-1?soc_device_map[device_id].name:"unknown");
   }
   #ifdef CONFIG_DIFFTEST
-  if (npc_state.difftest_on == DIFF_ON) {
+  if (npc_state.difftest_on == DIFF_ON && device_id != -1) {
     use_device_pc_in(pc);
   }
   #endif

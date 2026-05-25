@@ -100,7 +100,7 @@ int mmio_read(int addr,int len){
     #endif
     #ifdef CONFIG_DIFFTEST
     if(npc_state.difftest_on == DIFF_ON) {
-      use_device_pc_in(mem_pc_now);
+      // use_device_pc_in(mem_pc_now);
     }
     #endif
     return ret;
@@ -123,7 +123,7 @@ int mmio_write(int addr,int len,int wdata,char wmask){
     #endif
     #ifdef CONFIG_DIFFTEST
     if(npc_state.difftest_on == DIFF_ON) {
-      use_device_pc_in(mem_pc_now);
+      // use_device_pc_in(mem_pc_now);
     }
     #endif
     return device_write(device_id, addr, len, wdata, wmask);
@@ -191,5 +191,11 @@ void paddr_write(int addr, int len, int wdata, char wmask) {
   out_of_bound(addr);
 }
 
-// extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
-// extern "C" void mrom_read(int32_t addr, int32_t *data) { assert(0); }
+extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
+extern "C" void mrom_read(int32_t addr, int32_t *data) { 
+  //form first just return ebreak
+  *data = 0x00100073; // ebreak
+
+
+  // assert(0); 
+}

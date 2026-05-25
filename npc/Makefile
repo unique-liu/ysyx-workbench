@@ -6,8 +6,8 @@ VERILOG_DIRS = $(BUILD_DIR) vsrc
 VERILATOR_DIR = obj_dir
 VERILOG_SOC_DIRS = $(SOC_HOME)/perip
 # 顶层模块名
-# TOP_MODULE = ysyxSoCFull #SOC顶层模块名
-TOP_MODULE = CPUtop #NPC顶层模块名
+TOP_MODULE = ysyxSoCFull #SOC顶层模块名
+# TOP_MODULE = CPUtop #NPC顶层模块名
 TARGET = Vtop
 
 # Verilator 可执行文件
@@ -18,7 +18,7 @@ VERILOG_SRC = $(shell find $(VERILOG_DIRS) -type f \( -name "*.v" -o -name "*.sv
 VERILOG_SRC_NO_DPI = $(shell find $(BUILD_DIR) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
 VERILOG_SOC_SRC = $(shell find $(VERILOG_SOC_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
 VERILOG_SOC_SRC += $(SOC_HOME)/build/ysyxSoCFull.v
-# VERILOG_SRC += $(VERILOG_SOC_SRC)#接入SOC后需要添加SOC相关的Verilog文件
+VERILOG_SRC += $(VERILOG_SOC_SRC)#接入SOC后需要添加SOC相关的Verilog文件
 CPP_SRC = $(shell find $(CPP_DIRS) -type f \( -name "*.c" -o -name "*.cpp" \) 2>/dev/null)
 
 ifeq ($(strip $(VERILOG_SRC)),)
@@ -31,12 +31,13 @@ endif
 
 # 编译选项
 VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include 
-  #接入SOC后需要添加SOC相关的头文件路径
-# VCC_FLAGZ += -I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl --timescale "1ns/1ns" --no-timing
+
 LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
 VERILATOR_FLAGS = --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE)
 # 如需波形跟踪，添加：
-VERILATOR_FLAGS += --trace --trace-fst
+VERILATOR_FLAGS += -I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl --trace --trace-fst
+  #接入SOC要求
+VERILATOR_FLAGS += --timescale "1ns/1ns" --no-timing
 # 目标：构建可执行文件
 verilator: $(TARGET)
 
@@ -45,7 +46,7 @@ $(TARGET): $(VERILOG_SRC) $(CPP_SRC)
 
 
 verilog:
-# 	$(call git_commit, "generate verilog")
+	$(call git_commit, "generate verilog")
 	mkdir -p $(BUILD_DIR)
 	mill -j6 -i runMain Elaborate --target-dir $(BUILD_DIR)
 

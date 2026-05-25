@@ -55,7 +55,7 @@ class CLINT extends Module {
     val c_idle :: c_write :: c_read :: Nil = Enum(3)
     val c_fsm       = RegInit(c_idle) 
     val mtime       = RegInit(0.U(64.W))
-    val u_diffskip  = Module(new DiffSkip())
+    // val u_diffskip  = Module(new DiffSkip())
     // axi slave
     val axi_slave   = Module(new AXI_Slave())
     val r_data      = RegInit(0.U(32.W))
@@ -71,24 +71,24 @@ class CLINT extends Module {
     // CLINT logic 
     mtime := mtime + 1.U
     // diff skip
-    u_diffskip.io.clock     := clock.asBool
-    u_diffskip.io.idx       := D_CLINT.idx
-    u_diffskip.io.en        := 0.U(1.W) 
-    u_diffskip.io.PC        := 0.U(32.W)
-    u_diffskip.io.addr      := 0.U(32.W)
+    // u_diffskip.io.clock     := clock.asBool
+    // u_diffskip.io.idx       := D_CLINT.idx
+    // u_diffskip.io.en        := 0.U(1.W) 
+    // u_diffskip.io.PC        := 0.U(32.W)
+    // u_diffskip.io.addr      := 0.U(32.W)
     switch(c_fsm){
         is(c_idle){
             when(axi_slave.io.r_req.valid){
                 c_fsm               := c_read
                 r_data              := Mux(axi_slave.io.r_req.addr(7,0)===0xf8.U(8.W), mtime(31,0), mtime(63,32))
-                u_diffskip.io.en    := 1.U
-                u_diffskip.io.PC    := axi_slave.io.rPC_out
-                u_diffskip.io.addr  := axi_slave.io.r_req.addr
+                // u_diffskip.io.en    := 1.U
+                // u_diffskip.io.PC    := axi_slave.io.rPC_out
+                // u_diffskip.io.addr  := axi_slave.io.r_req.addr
             }.elsewhen(axi_slave.io.w_req.valid){
                 c_fsm := c_write
-                u_diffskip.io.en    := 1.U
-                u_diffskip.io.PC    := axi_slave.io.wPC_out
-                u_diffskip.io.addr  := axi_slave.io.w_req.addr
+                // u_diffskip.io.en    := 1.U
+                // u_diffskip.io.PC    := axi_slave.io.wPC_out
+                // u_diffskip.io.addr  := axi_slave.io.w_req.addr
             }
         }
         is(c_read){

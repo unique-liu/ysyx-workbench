@@ -6,6 +6,6 @@
 #include <debug.h>
 
 typedef uint32_t word_t;
-#define VCPUtop VCPUtop
-
+// #define VCPUtop VCPUtop
+#define VCPUtop VysyxSoCFull
 #endif
