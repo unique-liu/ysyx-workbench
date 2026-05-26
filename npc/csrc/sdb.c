@@ -288,6 +288,9 @@ void sdb_set_difftest_mode(char *mode){
 void sdb_mainloop() {
   if (is_batch_mode) {
     cmd_c(NULL);
+    if (npc_state.type == NPC_WAITING) {
+      npc_state.type = NPC_STOP;// interrupt by ctrl-c in batch mode
+    }
     return;
   }
 

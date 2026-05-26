@@ -40,6 +40,9 @@ class DiffSkip extends ExtModule {
     val PC      = Input (UInt(32.W))
     val addr    = Input (UInt(32.W))
     val idx     = Input (UInt(32.W))
+    val ret     = Input (Bool())
+    val ridx    = Input (UInt(32.W))
+    val rdata   = Input (UInt(32.W))
   })
 }
 

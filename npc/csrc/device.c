@@ -4,7 +4,7 @@
 #include <sys/time.h>
 const mmio_map soc_device_map[SOC_DEVICE_NUM] = {
   {"clint", 0x02000000, 0xffff},//0x0200_0000~0x0200_ffff
-  {"sram",0x0f000000,0x0fffffff},//0x0f00_0000~0x0fff_ffff
+  {"sram",0x0f000000,0x00001fff},//0x0f00_0000~0x0fff_ffff in fact but we only use 8KB for now:0x0f00_0000~0x0f00_1fff
   {"uart", 0x10000000, 0xfff},//0x1000_0000~0x1000_0fff
   {"spi", 0x10001000, 0xfff},//0x1000_1000~0x1000_1fff
   {"gpio",0x10002000,0xf},//0x1000_2000~0x1000_200f
@@ -46,6 +46,7 @@ int init_device() {
 }
 int in_soc_device(uint32_t addr){
   for (int i = 0; i < SOC_DEVICE_NUM; i++) {
+    // TRACE(debug,"addr:0x%08x %s[0x%08x,0x%08x],addr>=low:%d,addr<high=%d",addr, soc_device_map[i].name, soc_device_map[i].addr, soc_device_map[i].addr + soc_device_map[i].len, addr >= soc_device_map[i].addr, addr < soc_device_map[i].addr + soc_device_map[i].len);
     if (addr >= soc_device_map[i].addr && addr < soc_device_map[i].addr + soc_device_map[i].len) {
       return i;
     }

@@ -86,7 +86,7 @@ class LSU extends Module{
     will_out                    := io.next.ready & io.next.valid
     will_in                     := io.before.valid & io.before.ready
     io.before.ready             := !valid | will_out
-    io.next.valid               := valid & (lsus === ready)
+    io.next.valid               := valid & ((lsus === ready))
 
     //state machine
     op                          := LSUop.no_op
@@ -159,6 +159,11 @@ class LSU extends Module{
 
     //preparing wmask
     mem_mask                    := 0.U
+    // switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
+    //     is("b01".U){mem_mask := "b0001".U}
+    //     is("b10".U){mem_mask := "b0011".U}
+    //     is("b11".U){mem_mask := "b1111".U}
+    // }//sram supports unaligned access, so no need to prepare different mask for different address offset
     switch(io.before.mem_op(Memop.half_bit,Memop.byte_bit)){
         is("b01".U){
             switch(alu_result_2){
@@ -176,8 +181,8 @@ class LSU extends Module{
     io.sram_PC                  := reg_PC
     io.sram.req_ren             := (lsus === send_addr) & reg_mem_op(Memop.load_bit) & !have_exception & !io.flush
     io.sram.req_wen             := (lsus === send_addr) & !reg_mem_op(Memop.load_bit) & (reg_mem_op =/= Memop.noop) & !have_exception & !io.flush
-    io.sram.addr                := reg_alu_result
-    io.sram.wdata               := 0.U
+    io.sram.addr                := Cat(reg_alu_result(31,2),0.U(2.W))
+    io.sram.wdata               := 0.U(32.W)//reg_mem_src
     switch(reg_mem_op(Memop.half_bit,Memop.byte_bit)){
         is("b01".U){io.sram.wdata := Cat(reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0))}
         is("b10".U){io.sram.wdata := Cat(reg_mem_src(15,0),reg_mem_src(15,0))}
@@ -200,6 +205,7 @@ class LSU extends Module{
     io.next.CSR_info            := reg_CSR_info
 
     mem_out_aligned             := Mux(op(LSUop.save_ret_bit),io.sram.rdata,ret_rdata) >> Cat(reg_alu_result(1,0),0.U(3.W))
+    // mem_out_aligned             := Mux(op(LSUop.save_ret_bit),io.sram.rdata,ret_rdata)//memory support unaligned, so no need to shift
     io.next.mem_result          := 0.U(32.W)
     switch(reg_mem_op){
         is(Memop.l_byte_u){io.next.mem_result      := Cat(0.U(24.W),mem_out_aligned(7,0))}

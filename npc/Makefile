@@ -33,11 +33,11 @@ endif
 VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include 
 
 LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
-VERILATOR_FLAGS = --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE)
+VERILATOR_FLAGS = --autoflush --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE)
 # 如需波形跟踪，添加：
 VERILATOR_FLAGS += -I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl --trace --trace-fst
   #接入SOC要求
-VERILATOR_FLAGS += --timescale "1ns/1ns" --no-timing
+VERILATOR_FLAGS += --timescale "1ns/1ns" --no-timing 
 # 目标：构建可执行文件
 verilator: $(TARGET)
 
@@ -93,10 +93,11 @@ clean:
 # Some convenient rules
 BINARY = $(VERILATOR_DIR)/Vtop
 IMG ?=
+BOOT ?=
 DIFF = $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
-ELF = $(IMG:.bin=.elf)
+ELF ?= 
 ARGS ?=
-NPC_EXEC := $(BINARY) $(ARGS) --elf=$(ELF) --diff=$(DIFF) $(IMG)
+NPC_EXEC := $(BINARY) $(ARGS) --elf=$(ELF) --diff=$(DIFF) --mrom=$(BOOT) $(IMG)
 sim-env: $(BINARY)
 
 sim: sim-env

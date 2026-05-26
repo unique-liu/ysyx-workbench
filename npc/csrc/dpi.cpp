@@ -75,18 +75,21 @@ extern "C" void write_a_device(int waddr, int wdata, char wmask,int pc,int idx) 
 }
 
 extern "C" void diff_skip_device(int pc,int addr,int idx) {
-  // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
-  // `wmask`中每比特表示`wdata`中1个字节的掩码,
-  // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
   int device_id = in_soc_device(addr);
-  if (npc_state.trace_on == TRACE_ON) {
-    DEBUG_PRINT(btrace, T, "bus %s at pc:0x%08x addr:0x%08x for device %d(%s)\n",idx==10?"read":"write", pc, addr, device_id, device_id!=-1?soc_device_map[device_id].name:"unknown");
-  }
+  TRACE(btrace, "bus %s at pc:0x%08x addr:0x%08x for device %d(%s)\n",idx==10?"read":"write", pc, addr, device_id, device_id!=-1?soc_device_map[device_id].name:"unknown");
   #ifdef CONFIG_DIFFTEST
   if (npc_state.difftest_on == DIFF_ON && device_id != -1) {
     use_device_pc_in(pc);
   }
   #endif
+}
+extern "C" void bus_ret(int data,int idx) {
+  if (idx==10) {
+    TRACE(btrace, "bus read return data:0x%08x\n", data);
+  }else if (idx == 11) {
+    TRACE(btrace, "bus write return \n");
+  }
+  
 }
 
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);

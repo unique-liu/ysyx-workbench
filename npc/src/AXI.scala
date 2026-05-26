@@ -303,7 +303,13 @@ class SRAM_AXI(id:Int=0) extends Module{//SRAM to AXI4 bridge
     io.axi.aw.addr               := Mux(op(SRAM_AXIop.save_info_bit), io.sram.addr, reg_addr)
     io.axi.aw.id                 := id.U(4.W)
     io.axi.aw.len                := 0.U(8.W)
-    io.axi.aw.size               := 2.U(3.W)// 4 bytes
+    io.axi.aw.size               := 2.U(3.W)
+    // io.axi.aw.size               := 0.U(3.W)
+    // switch(io.sram.wmask){
+    //     is("b0001".U){io.axi.aw.size := 0.U(3.W)}//1 byte
+    //     is("b0011".U){io.axi.aw.size := 1.U(3.W)}//2 bytes
+    //     is("b1111".U){io.axi.aw.size := 2.U(3.W)}//4 bytes
+    // }
     io.axi.aw.burst              := AXI_BURST.INCR
 
     io.axi.w.valid               := op(SRAM_AXIop.set_wv_bit) && !w_sent
@@ -317,7 +323,13 @@ class SRAM_AXI(id:Int=0) extends Module{//SRAM to AXI4 bridge
     io.axi.ar.addr               := Mux(op(SRAM_AXIop.save_info_bit), io.sram.addr, reg_addr)
     io.axi.ar.id                 := id.U(4.W)
     io.axi.ar.len                := 0.U(8.W)
-    io.axi.ar.size               := 2.U(3.W)// 4 bytes
+    io.axi.ar.size               := 2.U(3.W)
+    // io.axi.ar.size               := 0.U(3.W)
+    // switch(io.sram.wmask){
+    //     is("b0001".U){io.axi.ar.size := 0.U(3.W)}//1 byte
+    //     is("b0011".U){io.axi.ar.size := 1.U(3.W)}//2 bytes
+    //     is("b1111".U){io.axi.ar.size := 2.U(3.W)}//4 bytes
+    // }
     io.axi.ar.burst              := AXI_BURST.INCR
 
     io.axi.r.ready               := ready & is_read
@@ -684,4 +696,8 @@ class AXI_Arbiter extends Module{
     u_diffskip.io.addr      := Mux(io.lsu_axi.aw.valid && io.lsu_axi.aw.ready, io.lsu_axi.aw.addr, io.lsu_axi.ar.addr)
     u_diffskip.io.PC        := io.lsu_PC
     u_diffskip.io.idx       := Mux(io.lsu_axi.aw.valid && io.lsu_axi.aw.ready, 11.U, 10.U) //10: read  11: write
+
+    u_diffskip.io.ret       := io.lsu_axi.r.valid && io.lsu_axi.r.ready || io.lsu_axi.b.valid && io.lsu_axi.b.ready
+    u_diffskip.io.rdata  := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, io.lsu_axi.r.data, 0.U)
+    u_diffskip.io.ridx   := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, 10.U, 11.U) //10: read  11: write
 }
