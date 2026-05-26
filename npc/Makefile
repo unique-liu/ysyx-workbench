@@ -103,4 +103,6 @@ sim: sim-env
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	$(NPC_EXEC)
 
+sim-test: sim-env
+	$(BINARY) -b --trace=on --diff_on=off --mrom=/home/liu/ysyx-workbench/npc/test/ctest/char-test.bin
 -include ../Makefile

@@ -134,3 +134,4 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
   #endif
 
 }
+

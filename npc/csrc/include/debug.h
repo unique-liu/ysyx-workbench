@@ -10,6 +10,13 @@
 #define LOG_PATH_T "logs/log-trace.txt"
 #define T log_trace
 
+#ifdef __cplusplus                                                         
+    extern "C" {                                                               
+#endif                                                                     
+extern FILE *T;                                                                   
+#ifdef __cplusplus                                                         
+}                                                                          
+#endif 
 #define FMT_WORD "0x%08" PRIx32
 
 #ifdef DEBUG
@@ -51,7 +58,6 @@
 //     fprintf(target,fmt,## __VA_ARGS__);\
 // }while(0)
 #define DEBUG_PRINT(name,target,fmt, ...) do{\
-    extern FILE *T;\
     fprintf(target,"[t:%llu]["#name"] ",npc_state.time);\
     fprintf(target,fmt,## __VA_ARGS__);\
 }while(0)

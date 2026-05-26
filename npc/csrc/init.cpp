@@ -21,6 +21,7 @@ static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static char *elf_file = NULL;
+static char *mrom_file = NULL;
 static int difftest_port = 1234;
 
 DEBUG_DECLARE();
@@ -37,10 +38,11 @@ static int parse_args(int argc, char *argv[]) {
     {"trace"    , required_argument, NULL,  't' },
     {"diff_on"  , required_argument, NULL,  'D' },
     {"time"     , required_argument, NULL,  'T' },
+    {"mrom",      required_argument, NULL,  'm' },
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:T:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:T:m:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -50,6 +52,7 @@ static int parse_args(int argc, char *argv[]) {
       case 't': sdb_set_trace_mode(optarg); break;
       case 'D': sdb_set_difftest_mode(optarg); break;
       case 'T': sscanf(optarg, "%lld", &npc_state.time_limit); break;
+      case 'm': mrom_file = optarg; break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -69,7 +72,8 @@ static int parse_args(int argc, char *argv[]) {
 
 static long load_img() {
   if (img_file == NULL) {
-    panic("No image is given. Use the default build-in image.");
+    Log("No image is given. Use the default build-in image.");
+    return 0;
   }
 
   FILE *fp = fopen(img_file, "rb");
@@ -82,6 +86,31 @@ static long load_img() {
 
   fseek(fp, 0, SEEK_SET);
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
+  assert(ret == 1);
+
+  fclose(fp);
+  return size;
+}
+
+static long load_mrom() {
+  if (mrom_file == NULL) {
+    Log("no mrom file given, skip");
+    return 0;
+  }
+
+  FILE *fp = fopen(mrom_file, "rb");
+  Assert(fp, "Can not open '%s'\n", mrom_file);
+
+  fseek(fp, 0, SEEK_END);
+  long size = ftell(fp);
+
+  Log("The mrom is %s, size = %ld\n", mrom_file, size);
+  if (size >= CONFIG_MROM_SIZE) {
+    panic("mrom file size %ld exceeds mrom size %d", size, CONFIG_MROM_SIZE);
+  }
+
+  fseek(fp, 0, SEEK_SET);
+  int ret = fread(mrom, size, 1, fp);
   assert(ret == 1);
 
   fclose(fp);
@@ -162,21 +191,18 @@ int init_all(int argc, char** argv) {
     // 解析命令行参数
     Log("start to parse arguments\n");
     parse_args(argc, argv);
-    Log("parse arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d\n",
-        log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port);
-    // if (argc < 2) {
-    //     fprintf(stderr, "Usage: %s <program_file>\n", argv[0]);
-    //     return -1;
-    // }
-    // std::string program_file = argv[1];  // 获取程序文件路径
+    Log("parse arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d, mrom_file = %s\n",
+        log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port, mrom_file ? mrom_file : "NULL");
 
     // 注册 SIGINT 信号处理函数
     signal(SIGINT, sigint_handler);
 
-    // // 加载 ELF 文件到模拟内存，并初始化函数表
-    // if (!load_program_elf(elf_file)) {
-    //     return -1;
-    // }
+
+    // load mrom file if needed
+    Log("start to load mrom\n");
+    long mrom_size = load_mrom();
+    Log("Loaded mrom file: %s, size: %ld\n", mrom_file ? mrom_file : "NULL", mrom_size);
+
     /* Load the image to memory. This will overwrite the built-in image. */
     Log("start to load image\n");
     long img_size = load_img();

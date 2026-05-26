@@ -2,8 +2,10 @@
 #include <exec.h>
 #include <device.h>
 
+
 int mem_pc_now = 0;
 uint8_t mem[CONFIG_MSIZE];
+int32_t mrom[CONFIG_MROM_SIZE];
 #define QUEUE_SIZE 10
 int use_device_pc[QUEUE_SIZE];
 int use_device_pc_head = 0;
@@ -193,9 +195,13 @@ void paddr_write(int addr, int len, int wdata, char wmask) {
 
 extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
 extern "C" void mrom_read(int32_t addr, int32_t *data) { 
-  //form first just return ebreak
-  *data = 0x00100073; // ebreak
-
-
-  // assert(0); 
+  int real_addr = addr - CONFIG_MROM_BASE;
+  if (real_addr >= 0 && real_addr < CONFIG_MROM_SIZE) {
+    *data = mrom[real_addr / 4];
+    TRACE(mtrace,"read mrom 0x%08x, get 0x%08x\n", addr, *data);
+    return;
+  }
+  TRACE(error,"mrom address 0x%08x is out of bound of mrom [0x%08x, 0x%08x]\n", addr, CONFIG_MROM_BASE, CONFIG_MROM_BASE + CONFIG_MROM_SIZE);
+  assert(0);
 }
+
