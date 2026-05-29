@@ -181,14 +181,25 @@ class LSU extends Module{
     io.sram_PC                  := reg_PC
     io.sram.req_ren             := (lsus === send_addr) & reg_mem_op(Memop.load_bit) & !have_exception & !io.flush
     io.sram.req_wen             := (lsus === send_addr) & !reg_mem_op(Memop.load_bit) & (reg_mem_op =/= Memop.noop) & !have_exception & !io.flush
-    io.sram.addr                := Cat(reg_alu_result(31,2),0.U(2.W))
+    io.sram.addr                := reg_alu_result
     io.sram.wdata               := 0.U(32.W)//reg_mem_src
+    io.sram.size                := 0.U(3.W) 
     switch(reg_mem_op(Memop.half_bit,Memop.byte_bit)){
-        is("b01".U){io.sram.wdata := Cat(reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0))}
-        is("b10".U){io.sram.wdata := Cat(reg_mem_src(15,0),reg_mem_src(15,0))}
-        is("b11".U){io.sram.wdata := reg_mem_src}
+        is("b01".U){//1byte
+            io.sram.wdata := Cat(reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0),reg_mem_src(7,0))
+            io.sram.size := 0.U(3.W)
+        }
+        is("b10".U){//2byte
+            io.sram.wdata := Cat(reg_mem_src(15,0),reg_mem_src(15,0))
+            io.sram.size := 1.U(3.W)
+        }
+        is("b11".U){//4byte
+            io.sram.wdata := reg_mem_src
+            io.sram.size := 2.U(3.W)
+        }
     }
     io.sram.wmask               := reg_mem_mask
+
     io.sram.ret_ready := (lsus === wait_mem) | (lsus === wait_error_mem)
 
     when(op(LSUop.save_ret_bit)){

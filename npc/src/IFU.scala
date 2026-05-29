@@ -114,5 +114,6 @@ class IFU (initPC:Int=0)extends Module{
     io.sram.addr                := Mux(changePC, nextPC, regPC)
     io.sram.wdata               := 0.U      //no use
     io.sram.wmask               := 0.U      //no use
+    io.sram.size                := 2.U      //always read 4 bytes
     io.sram.ret_ready          := (ifus === wait_inst) | (ifus === wait_error_inst)
 }
