@@ -21,5 +21,6 @@
 
 #define CONFIG_FST //开启波形文件生成
 
+#define CONFIG_USE_SOC //使用soc平台
 
 #endif // CONFIG_H

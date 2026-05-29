@@ -88,10 +88,15 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
       "If it is not necessary, you can turn it off in menuconfig.", ref_so_file);
 
   ref_difftest_init(port);
+  #ifndef CONFIG_USE_SOC
   mem_compare_size = img_size;
   ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), img_size, DIFFTEST_TO_REF);
   // chech_mem(RESET_VECTOR, img_size);
   diff_cpu.pc = RESET_VECTOR;
+  #else
+  ref_difftest_memcpy(0x20000000,mrom, 0x1000, DIFFTEST_TO_REF);
+  diff_cpu.pc = 0x20000000;
+  #endif
   ref_difftest_regcpy(&diff_cpu, DIFFTEST_TO_REF);
 }
 

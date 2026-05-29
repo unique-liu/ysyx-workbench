@@ -4,8 +4,13 @@
 
 
 int mem_pc_now = 0;
+#ifndef CONFIG_USE_SOC
 uint8_t mem[CONFIG_MSIZE];
+int32_t *mrom = NULL;
+#else
+uint8_t *mem = NULL;
 int32_t mrom[CONFIG_MROM_SIZE];
+#endif
 #define QUEUE_SIZE 10
 int use_device_pc[QUEUE_SIZE];
 int use_device_pc_head = 0;

@@ -25,7 +25,11 @@ __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction)
     }
   }else {
     for (size_t i = 0; i < n; i++) {
+      #ifndef USE_SOC
       paddr_write(addr + i, 1, ((uint8_t *)buf)[i]);
+      #else
+      write_mrom(addr + i, 1, ((uint8_t *)buf)[i]);
+      #endif
     }
   }
 }

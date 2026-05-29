@@ -76,18 +76,18 @@ extern "C" void write_a_device(int waddr, int wdata, char wmask,int pc,int idx) 
 
 extern "C" void diff_skip_device(int pc,int addr,int idx) {
   int device_id = in_soc_device(addr);
-  TRACE(btrace, "bus %s at pc:0x%08x addr:0x%08x for device %d(%s)\n",idx==10?"read":"write", pc, addr, device_id, device_id!=-1?soc_device_map[device_id].name:"unknown");
+  TRACE(btrace, "bus lsu %s at pc:0x%08x addr:0x%08x for device %d(%s)\n",idx==10?"read":"write", pc, addr, device_id, device_id!=-1?soc_device_map[device_id].name:"unknown");
   #ifdef CONFIG_DIFFTEST
-  if (npc_state.difftest_on == DIFF_ON && device_id != -1) {
+  if (npc_state.difftest_on == DIFF_ON && device_id != -1 && device_id != 6 && device_id != 1) {//mrom and sram are not skipped
     use_device_pc_in(pc);
   }
   #endif
 }
 extern "C" void bus_ret(int data,int idx) {
   if (idx==10) {
-    TRACE(btrace, "bus read return data:0x%08x\n", data);
+    TRACE(btrace, "bus lsu read return data:0x%08x\n", data);
   }else if (idx == 11) {
-    TRACE(btrace, "bus write return \n");
+    TRACE(btrace, "bus lsu write return \n");
   }
   
 }
