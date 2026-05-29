@@ -10,8 +10,8 @@ AM_SRCS := riscv/ysyxsoc/start.S \
 
 CFLAGS    += -fdata-sections -ffunction-sections
 LDSCRIPTS += $(AM_HOME)/scripts/linker-ysyxsoc.ld
-LDFLAGS   += --defsym=_pmem_start=0x20000000 --defsym=_entry_offset=0x0 --defsym=_heap_start=0x0f000000 --defsym=_stack_pointer=0x0f001ff0 
-LDFLAGS   += --gc-sections -e _start
+LDFLAGS   += --defsym=_pmem_start=0x20000000 --defsym=_entry_offset=0x0 --defsym=_heap_start=0x0f000000 --defsym=_stack_pointer=0x0f002000 
+LDFLAGS   += --gc-sections -e _start -Map=/home/liu/ysyx-workbench/am-kernels/tests/cpu-tests/build/link.map
 NPCFLAGS  += -b --trace=off --diff_on=on --time=1000000000
 
 MAINARGS_MAX_LEN = 64
@@ -24,7 +24,9 @@ insert-arg: image
 image: image-dep
 	@$(OBJDUMP) -d $(IMAGE).elf > $(IMAGE).txt
 	@echo + OBJCOPY "->" $(IMAGE_REL).bin
-	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
+	@$(OBJCOPY) -S --set-section-flags .bss=alloc -O binary $(IMAGE).elf $(IMAGE).bin 
+# .bss 不会再有“contents” 了，因为现在不会直接运行bin，trm会分配bss的空间并且在运行时初始化它，所以这里直接把.bss的内容去掉了
+
 
 run: insert-arg
 	$(MAKE) -C $(NPC_HOME) sim ARGS="$(NPCFLAGS)" BOOT=$(IMAGE).bin ELF=$(IMAGE).elf
