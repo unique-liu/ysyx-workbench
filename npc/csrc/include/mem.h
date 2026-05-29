@@ -15,9 +15,11 @@ extern int mem_pc_now;
 #ifndef CONFIG_USE_SOC
 extern uint8_t mem[CONFIG_MSIZE];
 extern int32_t *mrom;
+extern int32_t *flash;
 #else
 extern uint8_t *mem;
 extern int32_t mrom[CONFIG_MROM_SIZE];
+extern int32_t flash[CONFIG_FLASH_SIZE];
 #endif
 
 /* convert the guest physical address in the guest program to host virtual address in NEMU */

@@ -22,6 +22,7 @@ static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static char *elf_file = NULL;
 static char *mrom_file = NULL;
+static char *flash_file = NULL;
 static int difftest_port = 1234;
 
 DEBUG_DECLARE();
@@ -39,10 +40,11 @@ static int parse_args(int argc, char *argv[]) {
     {"diff_on"  , required_argument, NULL,  'D' },
     {"time"     , required_argument, NULL,  'T' },
     {"mrom",      required_argument, NULL,  'm' },
+    {"flash",      required_argument, NULL,  'f' },
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:T:m:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:T:m:f:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -53,6 +55,7 @@ static int parse_args(int argc, char *argv[]) {
       case 'D': sdb_set_difftest_mode(optarg); break;
       case 'T': sscanf(optarg, "%lld", &npc_state.time_limit); break;
       case 'm': mrom_file = optarg; break;
+      case 'f': flash_file = optarg; break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -64,6 +67,8 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-t,--trace=MODE         set trace mode\n");
         printf("\t-D,--diff_on=MODE       set difftest mode\n");
         printf("\t-T,--time=TIME          set time limit\n");
+        printf("\t-m,--mrom=FILE          load mrom file\n");
+        printf("\t-f,--flash=FILE         load flash file\n");
         exit(0);
     }
   }
@@ -111,6 +116,31 @@ static long load_mrom() {
 
   fseek(fp, 0, SEEK_SET);
   int ret = fread(mrom, size, 1, fp);
+  assert(ret == 1);
+
+  fclose(fp);
+  return size;
+}
+
+static long load_flash() {
+  if (flash_file == NULL) {
+    Log("no flash file given, skip");
+    return 0;
+  }
+
+  FILE *fp = fopen(flash_file, "rb");
+  Assert(fp, "Can not open '%s'\n", flash_file);
+
+  fseek(fp, 0, SEEK_END);
+  long size = ftell(fp);
+
+  Log("The flash is %s, size = %ld\n", flash_file, size);
+  if (size >= CONFIG_FLASH_SIZE) {
+    panic("flash file size %ld exceeds flash size %d", size, CONFIG_FLASH_SIZE);
+  }
+
+  fseek(fp, 0, SEEK_SET);
+  int ret = fread(flash, size, 1, fp);
   assert(ret == 1);
 
   fclose(fp);
@@ -191,8 +221,8 @@ int init_all(int argc, char** argv) {
     // 解析命令行参数
     Log("start to parse arguments\n");
     parse_args(argc, argv);
-    Log("parse arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d, mrom_file = %s\n",
-        log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port, mrom_file ? mrom_file : "NULL");
+    Log("parse arguments: log_file = %s, diff_so_file = %s, img_file = %s, elf_file = %s, difftest_port = %d, mrom_file = %s, flash_file = %s\n",
+        log_file ? log_file : "NULL", diff_so_file ? diff_so_file : "NULL", img_file ? img_file : "NULL", elf_file ? elf_file : "NULL", difftest_port, mrom_file ? mrom_file : "NULL", flash_file ? flash_file : "NULL");
 
     // 注册 SIGINT 信号处理函数
     signal(SIGINT, sigint_handler);
@@ -202,6 +232,11 @@ int init_all(int argc, char** argv) {
     Log("start to load mrom\n");
     long mrom_size = load_mrom();
     Log("Loaded mrom file: %s, size: %ld\n", mrom_file ? mrom_file : "NULL", mrom_size);
+
+    // load flash file if needed
+    Log("start to load flash\n");
+    long flash_size = load_flash();
+    Log("Loaded flash file: %s, size: %ld\n", flash_file ? flash_file : "NULL", flash_size);
 
     /* Load the image to memory. This will overwrite the built-in image. */
     Log("start to load image\n");
