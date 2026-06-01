@@ -233,10 +233,12 @@ extern "C" void psram_read(int32_t addr, int32_t *data) {
   npc_state.type = NPC_ERROR;
 }
 
-extern "C" void psram_write(int32_t addr, int32_t data) { 
+extern "C" void psram_write(int32_t addr, char data, char offset) { 
+  offset += addr & 0x3;
+  offset &= 0x3; 
   if (addr < CONFIG_PSRAM_SIZE) {
-    psram[addr / 4] = data;
-    TRACE(mtrace,"write psram 0x%08x, set 0x%08x\n", addr, data);
+    psram[addr / 4] = psram[addr / 4] & ~(0xFF << (offset * 8)) | ((uint32_t)(data) << (offset * 8));
+    TRACE(mtrace,"write psram 0x%08x, set 0x%08x\n", (uint32_t)addr+(uint32_t)offset, data);
     return; 
   }
   TRACE(error,"write psram address 0x%08x is larger than psram size 0x%08x\n", addr, CONFIG_PSRAM_SIZE);

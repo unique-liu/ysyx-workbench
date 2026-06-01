@@ -61,7 +61,7 @@ class WBU extends Module{
     //latching signals
     val reg_PC                  = Reg(UInt(32.W))
     val reg_alu_result          = Reg(UInt(32.W))   
-    val reg_reg_op              = Reg(UInt(32.W))   
+    val reg_reg_op              = Reg(UInt(Regop.op_width.W))   
     val reg_reg_rd              = Reg(UInt(5.W))
     val reg_mem_result          = Reg(UInt(32.W))   
     val reg_debug               = Reg(new debug)
