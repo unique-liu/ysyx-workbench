@@ -12,7 +12,7 @@ CFLAGS    += -fdata-sections -ffunction-sections
 LDSCRIPTS += $(AM_HOME)/scripts/linker-ysyxsoc.ld
 LDFLAGS   += --defsym=_pmem_start=0x20000000 --defsym=_entry_offset=0x0 --defsym=_heap_start=0x0f000000 --defsym=_stack_pointer=0x0f002000 
 LDFLAGS   += --gc-sections -e _start -Map=/home/liu/ysyx-workbench/am-kernels/tests/cpu-tests/build/link.map
-NPCFLAGS  += -b --trace=on --diff_on=on --time=1000000000 --flash=/home/liu/ysyx-workbench/npc/test/testflash
+NPCFLAGS  += -b --trace=on --diff_on=off --time=1000000000
 
 MAINARGS_MAX_LEN = 64
 MAINARGS_PLACEHOLDER = the_insert-arg_rule_in_Makefile_will_insert_mainargs_here

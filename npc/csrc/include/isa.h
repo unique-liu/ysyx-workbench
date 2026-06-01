@@ -3,7 +3,7 @@
 
 #include <common.h>
 
-#define INIT_PC 0x20000000
+#define INIT_PC 0x30000000
 
 typedef struct {
   int gpr[32];

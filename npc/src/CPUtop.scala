@@ -72,7 +72,7 @@ class CPUtop extends Module{
     val u_clint                         = Module(new CLINT())
     // val u_mem                           = Module(new Mem_AXI())
 
-    val u_ifu                           = Module(new IFU(initPC=0x20000000))
+    val u_ifu                           = Module(new IFU(initPC=0x30000000))
     val u_idu                           = Module(new IDU())
     val u_exu                           = Module(new EXU())
     val u_lsu                           = Module(new LSU())

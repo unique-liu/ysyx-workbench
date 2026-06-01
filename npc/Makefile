@@ -30,10 +30,10 @@ $(warning No C++ source files found, assuming pure Verilog simulation)
 endif
 
 # 编译选项
-VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include 
+VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include   -Os -march=native -mtune=native
 
 LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
-VERILATOR_FLAGS = --autoflush --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE)
+VERILATOR_FLAGS = --autoflush --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE) -O3 --threads 2
 # 如需波形跟踪，添加：
 VERILATOR_FLAGS += -I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl --trace --trace-fst
   #接入SOC要求
@@ -97,7 +97,7 @@ BOOT ?=
 DIFF = $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 ELF ?= 
 ARGS ?=
-NPC_EXEC := $(BINARY) $(ARGS) --elf=$(ELF) --diff=$(DIFF) --mrom=$(BOOT) $(IMG)
+NPC_EXEC := $(BINARY) $(ARGS) --elf=$(ELF) --diff=$(DIFF) --flash=$(BOOT) $(IMG)
 sim-env: $(BINARY)
 
 sim: sim-env

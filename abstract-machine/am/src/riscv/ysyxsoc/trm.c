@@ -38,10 +38,26 @@ void halt(int code) {
   __builtin_unreachable();
 }
 
+void print_myid(){
+  // 打印 mvendorid 和 marchid
+  uint32_t mvendorid, marchid;
+  asm volatile("csrr %0, mvendorid" : "=r"(mvendorid));
+  asm volatile("csrr %0, marchid" : "=r"(marchid));
+  printf("mvendorid: 0x%08x\n", mvendorid);
+  printf("marchid: 0x%08x\n", marchid);
+}
+
 void _trm_init() {
+  //load data and set bss
   memcpy(&_data_sa_start, &_data_ma_start, &_data_ma_end - &_data_ma_start);
   memset(&_bss_sa_start, 0, &_bss_sa_end - &_bss_sa_start);
+  //init uart
   init_uart();
+  //print mvendorid and marchid 
+  // print_myid();
+  // print_myid();
+
+  
   int ret = main(mainargs);
   halt(ret);
 }

@@ -8,10 +8,12 @@ int mem_pc_now = 0;
 uint8_t mem[CONFIG_MSIZE];
 int32_t *mrom = NULL;
 int32_t *flash = NULL;
+int32_t *psram = NULL;
 #else
 uint8_t *mem = NULL;
 int32_t mrom[CONFIG_MROM_SIZE];
 int32_t flash[CONFIG_FLASH_SIZE];
+int32_t psram[CONFIG_PSRAM_SIZE];
 #endif
 #define QUEUE_SIZE 10
 int use_device_pc[QUEUE_SIZE];
@@ -221,3 +223,22 @@ extern "C" void mrom_read(int32_t addr, int32_t *data) {
   npc_state.type = NPC_ERROR;
 }
 
+extern "C" void psram_read(int32_t addr, int32_t *data) { 
+  if (addr < CONFIG_PSRAM_SIZE) {
+    *data = psram[addr / 4];
+    TRACE(mtrace,"read psram 0x%08x, get 0x%08x\n", addr, *data);
+    return; 
+  }
+  TRACE(error,"read psram address 0x%08x is larger than psram size 0x%08x\n", addr, CONFIG_PSRAM_SIZE);
+  npc_state.type = NPC_ERROR;
+}
+
+extern "C" void psram_write(int32_t addr, int32_t data) { 
+  if (addr < CONFIG_PSRAM_SIZE) {
+    psram[addr / 4] = data;
+    TRACE(mtrace,"write psram 0x%08x, set 0x%08x\n", addr, data);
+    return; 
+  }
+  TRACE(error,"write psram address 0x%08x is larger than psram size 0x%08x\n", addr, CONFIG_PSRAM_SIZE);
+  npc_state.type = NPC_ERROR;
+}
