@@ -7,6 +7,7 @@
 #include <common.h>
 
 #define MAX_TIME 10000000
+#define MAX_TIME_NOINST 10000
 #define RESET_TIME 10
 
 typedef enum{

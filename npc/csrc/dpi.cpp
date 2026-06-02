@@ -9,6 +9,7 @@
 
 extern "C" void halt_system(char is_error) {
   if (is_error) {
+    npc_state.halt_pc = cpu.pc;
     npc_state.type = NPC_ERROR;
   } else {
     npc_state.halt_pc = cpu.pc+4;//ebreak never submit, but always have a mv inst before, which is the last inst

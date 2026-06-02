@@ -49,19 +49,13 @@ static void trace_and_difftest() {
 
 //   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
 //   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+
     #ifdef CONFIG_DIFFTEST
     if (npc_state.difftest_on == DIFF_ON) {
-        if (first_submit && npc_state.inst_submit) {
+        if (first_submit) {
             first_submit = 0;
-            npc_state.inst_submit = 0;
-        }else if (npc_state.inst_submit == 1) {
-            // if (first_submit) {
-            //     difftest_skip_ref();
-            //     printf("difftest: first instruction submit at pc = 0x%08x\n", cpu.pc);
-            //     first_submit = 0;
-            // }
+        }else{
             difftest_step(diff_cpu.pc, 0);
-            npc_state.inst_submit = 0;
         }
     }
     #endif
@@ -79,22 +73,34 @@ static void trace_and_difftest() {
         shoot();
     }
     #endif
+    npc_state.inst_submit = 0;
 }
 
 void execute(int n){
     struct timeval start, end;
+    int not_inst_count = 0;
     // reset(10);
     gettimeofday(&start, NULL);
     while (npc_state.type == NPC_RUNNING) {//running loop
         exceute_once();
-        trace_and_difftest();
+        if (npc_state.inst_submit == 1) {
+            trace_and_difftest();
+            not_inst_count = 0;
+        }
+        
         n--;
+        not_inst_count++;
         if (n == 0) {
             npc_state.type = NPC_WAITING;
             break;
         }
         if (npc_state.time >= npc_state.time_limit) {
             printf("\033[31mTime out\033[0m\n");
+            npc_state.type = NPC_TIMEOUT;
+            break;
+        }
+        if (not_inst_count >= MAX_TIME_NOINST) {
+            printf("\033[31mNo instruction executed in the last %d cycles\033[0m\n", MAX_TIME_NOINST/2);
             npc_state.type = NPC_TIMEOUT;
             break;
         }
