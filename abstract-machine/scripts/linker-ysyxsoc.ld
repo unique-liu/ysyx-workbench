@@ -1,5 +1,5 @@
 ENTRY(_start)
-PHDRS { text PT_LOAD; data PT_LOAD; entry PT_LOAD;bss PT_NULL;}
+PHDRS { text PT_LOAD FLAGS (5); loader PT_LOAD FLAGS (5); data PT_LOAD FLAGS (6); rodata PT_LOAD FLAGS (6); entry PT_LOAD FLAGS (5);bss PT_NULL;}
 
 MEMORY {
   sram : ORIGIN = 0x0f000000, LENGTH = 8K
@@ -13,16 +13,16 @@ SECTIONS {
   .entry : {
     *(.entry)
   } > flash AT> flash : entry
+  /* . = LOADADDR(.entry) + SIZEOF(.entry); */
 
-  
   .bootloader : {
     _bootloader_sa_start = .;
     *(.bootloader)
     _bootloader_sa_end = .;
-  } > psram AT> flash : text
+  } > psram AT> flash : loader
   _bootloader_ma_start = LOADADDR(.bootloader);
   _bootloader_ma_end = _bootloader_ma_start + SIZEOF(.bootloader);
-
+  /* . = LOADADDR(.bootloader) + SIZEOF(.bootloader); */
  
   .text : {
     _text_sa_start = .;
@@ -31,29 +31,36 @@ SECTIONS {
   } > psram AT> flash : text
    _text_ma_start = LOADADDR(.text);
   _text_ma_end = _text_ma_start + SIZEOF(.text);
+  /* . = LOADADDR(.text) + SIZEOF(.text); */
 
   etext = .;
   _etext = .;
+
+  .rodata : {
+    *(.rodata*)
+    *(.srodata*)
+  } > flash AT> flash : rodata
  
   .data : {
     _data_sa_start = .;
-    *(.rodata*)
     *(.data*)
     *(.sdata*)
     _data_sa_end = .;
   } > psram AT> flash : data
   _data_ma_start = LOADADDR(.data);
   _data_ma_end = _data_ma_start + SIZEOF(.data);
+  /* . = LOADADDR(.data) + SIZEOF(.data); */
+
   edata = .;
   _data = .;
   
-  .bss (NOLOAD): {
+  .bss (NOLOAD) : {
 	_bss_start = .;
     _bss_sa_start = .;
     *(.bss.*)
     *(.sbss*)
     *(.scommon)
     _bss_sa_end = .;
-  } > psram : bss
+  } > psram AT> flash : bss
 
 }
