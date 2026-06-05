@@ -9,11 +9,13 @@ uint8_t mem[CONFIG_MSIZE];
 int32_t *mrom = NULL;
 int32_t *flash = NULL;
 int32_t *psram = NULL;
+int16_t *sdram = NULL;
 #else
 uint8_t *mem = NULL;
 int32_t mrom[CONFIG_MROM_SIZE];
 int32_t flash[CONFIG_FLASH_SIZE];
 int32_t psram[CONFIG_PSRAM_SIZE];
+int16_t sdram[CONFIG_SDRAM_SIZE];
 #endif
 #define QUEUE_SIZE 10
 int use_device_pc[QUEUE_SIZE];
@@ -242,5 +244,25 @@ extern "C" void psram_write(int32_t addr, char data, char offset) {
     return; 
   }
   TRACE(error,"write psram address 0x%08x is larger than psram size 0x%08x\n", addr, CONFIG_PSRAM_SIZE);
+  npc_state.type = NPC_ERROR;
+}
+
+extern "C" void sdram_read(int32_t addr, int16_t *data,char burst_times) { 
+  if (addr < CONFIG_SDRAM_SIZE) {
+    *data = sdram[addr / 2 + burst_times];
+    TRACE(mtrace,"read sdram 0x%08x, get 0x%08x\n", addr, *data);
+    return; 
+  }
+  TRACE(error,"read sdram address 0x%08x is larger than sdram size 0x%08x\n", addr, CONFIG_SDRAM_SIZE);
+  npc_state.type = NPC_ERROR;
+}
+
+extern "C" void sdram_write(int32_t addr, int16_t *data,char burst_times) { 
+  if (addr < CONFIG_SDRAM_SIZE) {
+    sdram[addr / 2 + burst_times] = *data;
+    TRACE(mtrace,"write sdram 0x%08x, set 0x%08x\n", addr, *data);
+    return; 
+  }
+  TRACE(error,"write sdram address 0x%08x is larger than sdram size 0x%08x\n", addr, CONFIG_SDRAM_SIZE);
   npc_state.type = NPC_ERROR;
 }
