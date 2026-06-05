@@ -34,6 +34,7 @@ void shoot(){
         DEBUG_END();
         DEBUG_APPEND();
         DEBUG_PRINT(shoot, T, "shoot pid %d weakup\n", getpid());
+        printf("auto trace is on, shoot pid %d weakup\n", getpid());
         npc_state.trace_on = TRACE_ON;
         shoot_on = 0;
         i_am_child = 1;
@@ -56,9 +57,11 @@ void shoot_weakup(){
     if (shoot_on) {
         if (shoot_pid!=0) {
             DEBUG_PRINT(shoot, T, "try to weakup shoot pid %d \n----------\n", shoot_pid);
+            printf("try to weakup pid %d\n", shoot_pid);
             DEBUG_END();
             kill(shoot_pid, SIGCONT);
             waitpid(shoot_pid, NULL, 0);
+            printf("%d terminated\n", shoot_pid);
             DEBUG_APPEND();
             DEBUG_PRINT(shoot, T, "shoot pid %d ended\n----------\n", shoot_pid);
         }

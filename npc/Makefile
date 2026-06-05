@@ -33,7 +33,7 @@ endif
 VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include   -Os -march=native -mtune=native
 
 LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
-VERILATOR_FLAGS = --autoflush --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE) -O3 --threads 2
+VERILATOR_FLAGS = --autoflush --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE) -O3
 # 如需波形跟踪，添加：
 VERILATOR_FLAGS += -I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl --trace --trace-fst
   #接入SOC要求

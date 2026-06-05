@@ -293,6 +293,7 @@ int finish_all() {
       case NPC_TIMEOUT:
           printf("\033[31m[FAILED] Halt by timeout\033[0m\n");
           ret = -1;
+          weak_shoot = 1;
           break;
       case NPC_ERROR:
           #ifdef CONFIG_ITRACE
@@ -328,10 +329,16 @@ int finish_all() {
     }
     #endif
     if (i_am_child == 0) {
+      DEBUG_PRINT(finish, T, "main(pid:%d) finish all with ret %d\n", getpid(), ret);
+      printf("main(pid:%d) finish all with ret %d\n", getpid(), ret);
       top->final();
       delete top;
       delete contextp;
+    }else {
+      DEBUG_PRINT(finish, T, "child process(pid:%d) finish all with ret %d\n", getpid(), ret);
+      printf("child process(pid:%d) finish all with ret %d\n", getpid(), ret);
     }
+    
     DEBUG_END();
 
     return ret;
