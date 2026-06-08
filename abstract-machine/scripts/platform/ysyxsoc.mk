@@ -5,14 +5,16 @@ AM_SRCS := riscv/ysyxsoc/start.S \
            riscv/ysyxsoc/input.c \
            riscv/ysyxsoc/cte.c \
            riscv/ysyxsoc/trap.S \
+           riscv/ysyxsoc/uart.c \
+           riscv/ysyxsoc/gpu.c \
            platform/dummy/vme.c \
-           platform/dummy/mpe.c
+           platform/dummy/mpe.c \
 
 CFLAGS    += -fdata-sections -ffunction-sections
 LDSCRIPTS += $(AM_HOME)/scripts/linker-ysyxsoc.ld
 LDFLAGS   += --defsym=_pmem_start=0x20000000 --defsym=_entry_offset=0x0 --defsym=_heap_start=0x80000000 --defsym=_stack_pointer=0x0f002000 
 LDFLAGS   += --gc-sections -e _start
-NPCFLAGS  += -b --trace=auto --diff_on=off --time=1000000000
+NPCFLAGS  += -b --trace=on --diff_on=off --time=100000000000
 
 MAINARGS_MAX_LEN = 64
 MAINARGS_PLACEHOLDER = the_insert-arg_rule_in_Makefile_will_insert_mainargs_here
