@@ -5,6 +5,7 @@
 #include <trace.h>
 #include <shoot.h>
 #include <sys/time.h>
+#include <board.h>
 
 rstate_t npc_state;
 VerilatedContext* contextp;
@@ -83,6 +84,8 @@ void execute(int n){
     gettimeofday(&start, NULL);
     while (npc_state.type == NPC_RUNNING) {//running loop
         exceute_once();
+        update_board();
+
         if (npc_state.inst_submit == 1) {
             trace_and_difftest();
             not_inst_count = 0;

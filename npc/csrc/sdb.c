@@ -264,7 +264,12 @@ void sdb_set_trace_mode(char *mode){
     npc_state.trace_on = TRACE_OFF;
   #ifdef CONFIG_AUTOTRACE
   } else if (strcmp(mode, "auto") == 0) {
+    #ifndef CONFIG_BOARD
     npc_state.trace_on = is_batch_mode ? TRACE_AUTO : TRACE_OFF;
+    #else
+    printf("Warning: to avoid errors, board support can not work with multi thread\n");
+    npc_state.trace_on = TRACE_OFF;
+    #endif
   }
   #endif
   else {

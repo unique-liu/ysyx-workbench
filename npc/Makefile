@@ -29,27 +29,37 @@ ifeq ($(strip $(CPP_SRC)),)
 $(warning No C++ source files found, assuming pure Verilog simulation)
 endif
 
+
+# ----- verilog -> bin
 # 编译选项
 VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include   -Os -march=native -mtune=native
+# nvboard要求
+VCC_FLAGZ += -I$(NVBOARD_HOME)/usr/include 
 
+# 链接选项
 LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
+# nvboard要求
+LIBS += $(NVBOARD_HOME)/build/nvboard.a $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
+
 VERILATOR_FLAGS = --autoflush --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE) -O3
 # 如需波形跟踪，添加：
-VERILATOR_FLAGS += -I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl --trace --trace-fst
+VERILATOR_FLAGS += --trace --trace-fst
   #接入SOC要求
-VERILATOR_FLAGS += --timescale "1ns/1ns" --no-timing 
+VERILATOR_FLAGS +=-I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl  --timescale "1ns/1ns" --no-timing 
 # 目标：构建可执行文件
 verilator: $(TARGET)
 
 $(TARGET): $(VERILOG_SRC) $(CPP_SRC)
 	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILOG_SRC) $(CPP_SRC) -o $@
 
+# ------ Chisel -> verilog
 
 verilog:
 	$(call git_commit, "generate verilog")
 	mkdir -p $(BUILD_DIR)
 	mill -j6 -i runMain Elaborate --target-dir $(BUILD_DIR)
 
+# ------ verilog -> report
 
 YOSYS_STA_DIR = /home/liu/yosys-sta
 MY_YOSYS_DIR = $(PWD)/yosys
@@ -66,6 +76,13 @@ yosys:
 		CLK_PORT_NAME=$(CLK_PORT_NAME) \
 		O=$(O) \
 		RTL_FILES="$(RTL_FILES)"
+
+# ------ nxdc -> C
+AUTO_BIND = $(CPP_DIRS)/auto_bind.cpp
+nvboard: $(AUTO_BIND)
+$(AUTO_BIND): constr/top.nxdc
+	@python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py constr/top.nxdc $(AUTO_BIND)
+# ------ 其他
 
 test:
 	mill -i test

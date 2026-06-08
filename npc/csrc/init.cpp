@@ -16,6 +16,7 @@
 #include <cstring>
 #include <shoot.h>
 #include <isa.h>
+#include <board.h>
 
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
@@ -266,7 +267,11 @@ int init_all(int argc, char** argv) {
     // 初始化反汇编
     init_disasm();
 
+    // 初始化 Verilator
     init_verilator(argc, argv);
+
+    // 初始化板级支持
+    init_board();
 
     // 初始化快照
     shoot_init();
@@ -331,6 +336,7 @@ int finish_all() {
     if (i_am_child == 0) {
       DEBUG_PRINT(finish, T, "main(pid:%d) finish all with ret %d\n", getpid(), ret);
       printf("main(pid:%d) finish all with ret %d\n", getpid(), ret);
+      finish_board();
       top->final();
       delete top;
       delete contextp;
