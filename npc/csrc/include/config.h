@@ -12,6 +12,7 @@
 #define CONFIG_DIFFTEST// 开启差分测试功能
 #define CONFIG_AUTOTRACE // 开启自动跟踪功能
 #define CONFIG_AUTOTRACE_PERIOD 10000 // 自动跟踪的周期，单位为指令数
+#define CONFIG_BOARD // 开启板级支持
 
 #define CONFIG_MSIZE 0x8000004
 #define CONFIG_MBASE 0x80000000
@@ -20,7 +21,7 @@
 #define CONFIG_FLASH_SIZE 0x1000000
 #define CONFIG_FLASH_BASE 0x30000000
 #define CONFIG_PSRAM_SIZE 0x400000
-#define CONFIG_SDRAM_SIZE 0x10000
+#define CONFIG_SDRAM_SIZE 0x2000000// 32MB for 1 sdram chip
 #define CONFIG_PC_RESET_OFFSET 0 
 
 #define CONFIG_FST //开启波形文件生成

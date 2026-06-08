@@ -247,20 +247,29 @@ extern "C" void psram_write(int32_t addr, char data, char offset) {
   npc_state.type = NPC_ERROR;
 }
 
-extern "C" void sdram_read(int32_t addr, int16_t *data,char burst_times) { 
+extern "C" void sdram_read(uint32_t addr, uint16_t *data,char burst_times) { 
   if (addr < CONFIG_SDRAM_SIZE) {
     *data = sdram[addr / 2 + burst_times];
-    TRACE(mtrace,"read sdram 0x%08x, get 0x%08x\n", addr, *data);
+    TRACE(mtrace,"read sdram addr:0x%08x burst_times:%d, get 0x%04x\n", addr, burst_times, *data);
     return; 
   }
   TRACE(error,"read sdram address 0x%08x is larger than sdram size 0x%08x\n", addr, CONFIG_SDRAM_SIZE);
   npc_state.type = NPC_ERROR;
 }
 
-extern "C" void sdram_write(int32_t addr, int16_t *data,char burst_times) { 
+extern "C" void sdram_write(uint32_t addr, uint16_t data,char burst_times,char dqm) { 
+  TRACE(mtrace,"write sdram addr:0x%08x burst_times:%d dqm:%d, set 0x%04x\n", addr, burst_times, dqm, data);
+  if (dqm == 3) {
+    return; 
+  }
   if (addr < CONFIG_SDRAM_SIZE) {
-    sdram[addr / 2 + burst_times] = *data;
-    TRACE(mtrace,"write sdram 0x%08x, set 0x%08x\n", addr, *data);
+    if (dqm == 0) {
+      sdram[addr / 2 + burst_times] = data;
+    }else if (dqm == 1) {
+      sdram[addr / 2 + burst_times] = (sdram[addr / 2 + burst_times] & 0x00FF) | (data & 0xFF00);
+    }else if (dqm == 2) {
+      sdram[addr / 2 + burst_times] = (sdram[addr / 2 + burst_times] & 0xFF00) | (data & 0x00FF);
+    }
     return; 
   }
   TRACE(error,"write sdram address 0x%08x is larger than sdram size 0x%08x\n", addr, CONFIG_SDRAM_SIZE);
