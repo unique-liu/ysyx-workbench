@@ -2,8 +2,7 @@
 #include <klib-macros.h>
 #include <klib.h>
 #include "../riscv.h"
-#define SERIAL_ADDR 0x10000000L
-#define __RTTHREAD__
+// #define __RTTHREAD__
 extern char _heap_start;
 extern char _text_ma_start,_text_ma_end,_text_sa_start,_text_sa_end;
 extern char _bootloader_ma_start,_bootloader_ma_end,_bootloader_sa_start,_bootloader_sa_end;
@@ -13,6 +12,8 @@ extern char _bss_sa_start,_bss_sa_end;
 extern char _edata_ma_start,_edata_ma_end,_edata_sa_start,_edata_sa_end;
 extern char _ebss_sa_start,_ebss_sa_end;
 #endif
+void init_uart();
+void out_ch(char ch);
 
 int main(const char *args);
 
@@ -23,24 +24,13 @@ extern char _pmem_start;
 Area heap = RANGE(&_bss_sa_end, PMEM_END);// 堆区从 bss 段结束开始，到物理内存末尾
 static const char mainargs[MAINARGS_MAX_LEN] = TOSTRING(MAINARGS_PLACEHOLDER); // defined in CFLAGS
 
-
-__attribute__((section(".entry")))
-void init_uart(){
-  // 初始化串口，设置波特率等
-  // outb(SERIAL_ADDR + 1, 0x00); // 禁止中断
-  outb(SERIAL_ADDR + 3, 0x80); // 设置波特率分频器访问
-  outb(SERIAL_ADDR + 0, 0x01); // 波特率分频器低字节 (115200 baud)
-  outb(SERIAL_ADDR + 1, 0x00); // 波特率分频器高字节
-  outb(SERIAL_ADDR + 3, 0x03); // 设置数据位为8，停止位为1，无奇偶校验，并且禁用波特率分频器访问
-}
 #define putch_inline(ch) do { \
-  while((inb(SERIAL_ADDR+5)&0x20) == 0); /* 等待发送缓冲区空 */ \
-  outb(SERIAL_ADDR, (uint8_t)(ch)); \
+  while((inb(0x10000000+5)&0x20) == 0); /* 等待发送缓冲区空 */ \
+  outb(0x10000000, (uint8_t)(ch)); \
 } while(0)
 
 void putch(char ch) {
-  while((inb(SERIAL_ADDR+5)&0x20) == 0); // 等待发送缓冲区空
-  outb(SERIAL_ADDR, (uint8_t)ch);
+  out_ch(ch);
 }
 
 void halt(int code) {
@@ -115,6 +105,7 @@ void second_loader() {
   }
   #endif
   putch_inline('2');
+  asm volatile ("j _trm_init");
 }
 
 // __attribute__((section(".bootloader")))
@@ -123,7 +114,7 @@ void _trm_init() {
   //print mvendorid and marchid 
   print_myid();
   // print load info
-  print_loadinfo();
+  // print_loadinfo();
   
   int ret = main(mainargs);
   halt(ret);
