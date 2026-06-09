@@ -4,6 +4,7 @@ class debug extends Bundle{
     val inst            = UInt(32.W)
     val branch          = Bool()
     val branch_target   = UInt(32.W)
+    val it_code         = UInt(8.W)
 }
 
 class DebugIO extends ExtModule{

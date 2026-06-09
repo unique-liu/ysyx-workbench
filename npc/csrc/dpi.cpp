@@ -6,6 +6,7 @@
 #include <difftest.h>
 #include <exec.h>
 #include <trace.h>
+#include <performance.h>
 
 extern "C" void halt_system(char is_error) {
   if (is_error) {
@@ -139,3 +140,10 @@ extern "C" void sync_cpu(int pc, int inst,int submit, int rd, int wdata, int wen
 
 }
 
+extern "C" void perf(uint8_t type,uint8_t code) {
+  // 性能统计函数, 根据type统计不同的性能事件
+  if (npc_state.report_on == REPORT_OFF) {
+    return;
+  }
+  record(type,code);
+}

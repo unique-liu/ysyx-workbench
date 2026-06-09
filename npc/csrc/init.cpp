@@ -17,6 +17,7 @@
 #include <shoot.h>
 #include <isa.h>
 #include <board.h>
+#include <performance.h>
 
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
@@ -43,10 +44,11 @@ static int parse_args(int argc, char *argv[]) {
     {"time"     , required_argument, NULL,  'T' },
     {"mrom",      required_argument, NULL,  'm' },
     {"flash",      required_argument, NULL,  'f' },
+    {"report",      required_argument, NULL,  'r' },
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:c:D:T:m:f:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:c:D:T:m:f:r:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -73,6 +75,7 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-T,--time=TIME          set time limit\n");
         printf("\t-m,--mrom=FILE          load mrom file\n");
         printf("\t-f,--flash=FILE         load flash file\n");
+        printf("\t-r,--report=MODE        set report mode\n");
         exit(0);
     }
   }
@@ -344,6 +347,9 @@ int finish_all() {
       top->final();
       delete top;
       delete contextp;
+      if (npc_state.report_on == REPORT_ON) {
+        report_performance();
+      }
     }else {
       DEBUG_PRINT(finish, T, "child process(pid:%d) finish all with ret %d\n", getpid(), ret);
       printf("child process(pid:%d) finish all with ret %d\n", getpid(), ret);

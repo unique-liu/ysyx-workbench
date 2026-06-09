@@ -292,6 +292,16 @@ void sdb_set_difftest_mode(char *mode){
   }
 } 
 
+void sdb_set_report_mode(char *mode) {
+  if (strcmp(mode, "on") == 0) {
+    npc_state.report_on = REPORT_ON;
+  } else if (strcmp(mode, "off") == 0) {
+    npc_state.report_on = REPORT_OFF;
+  } else {
+    printf("Unknown report mode '%s', use 'on' or 'off'\n", mode);
+  }
+}
+
 void sdb_mainloop() {
   if (is_batch_mode) {
     cmd_c(NULL);

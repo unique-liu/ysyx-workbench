@@ -13,11 +13,7 @@ class LSU extends Module{
             val reg_rd          = Input (UInt(5.W))
             val mem_op          = Input (UInt(Memop.op_width.W))
             val mem_src         = Input (UInt(32.W))
-            val debug = new Bundle{
-                val inst            = Input (UInt(32.W))
-                val branch          = Input (Bool())
-                val branch_target   = Input (UInt(32.W))
-            }
+            val debug           = Input (new debug)
             val CSR_info        = Input (new CSR_info)
         }
         val next = new Bundle{
@@ -28,11 +24,7 @@ class LSU extends Module{
             val reg_op          = Output(UInt(Regop.op_width.W))
             val reg_rd          = Output(UInt(5.W))
             val mem_result      = Output(UInt(32.W))
-            val debug = new Bundle{
-                val inst            = Output(UInt(32.W))
-                val branch          = Output(Bool())
-                val branch_target   = Output(UInt(32.W))
-            }
+            val debug           = Output(new debug)
             val CSR_info        = Output(new CSR_info)
             val exception       = Input (Bool())
         }
@@ -233,4 +225,16 @@ class LSU extends Module{
 
     //CSR
     have_exception              := io.next.exception | reg_CSR_info.exception //LSU or WBU can raise exception, so do not real access memory
+
+    //perf-it
+    val perf_it                 = Module(new perf(PT.it))
+    perf_it.io.valid            := io.next.valid & io.next.ready
+    perf_it.io.code             := reg_debug.it_code
+    //perf=lmd
+    val perf_lmd                = Module(new perf(PT.lmd))
+    val lack_inst               = valid === 1.U(1.W) && io.next.ready.asBool && !io.next.valid.asBool
+    val lmd_code                = Wire(UInt(8.W))
+    lmd_code                    := Mux(lsus === wait_error_mem, PT.ini_w_err, PT.ini_w_lsu)
+    perf_lmd.io.valid           := valid === 1.U(1.W) && !io.next.valid.asBool
+    perf_lmd.io.code            := Cat(lack_inst, lmd_code(6,0))
 }

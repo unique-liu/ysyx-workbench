@@ -12,11 +12,7 @@ class WBU extends Module{
             val reg_op          = Input (UInt(Regop.op_width.W))
             val reg_rd          = Input (UInt(5.W))
             val mem_result      = Input (UInt(32.W))
-            val debug = new Bundle{
-                val inst            = Input (UInt(32.W))
-                val branch          = Input (Bool())
-                val branch_target   = Input (UInt(32.W))
-            }
+            val debug           = Input (new debug)
             val CSR_info        = Input (new CSR_info)
             val exception       = Output(Bool())
         }
@@ -107,5 +103,10 @@ class WBU extends Module{
     io.CSR.info                 := reg_CSR_info
 
     io.before.exception         := reg_CSR_info.exception
+
+    //perf-it
+    val perf_it                 = Module(new perf(PT.it))
+    perf_it.io.valid            := io.next.valid & io.next.ready
+    perf_it.io.code             := reg_debug.it_code
 
 }

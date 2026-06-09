@@ -13,11 +13,7 @@ class EXU extends Module{
             val reg_rd          = Input (UInt(5.W))
             val mem_op          = Input (UInt(Memop.op_width.W))
             val mem_src         = Input (UInt(32.W))
-            val debug = new Bundle{
-                val inst            = Input (UInt(32.W))
-                val branch          = Input (Bool())
-                val branch_target   = Input (UInt(32.W))
-            }
+            val debug           = Input (new debug)
             val CSR_info        = Input (new CSR_info)
         }
         val next = new Bundle{
@@ -29,11 +25,7 @@ class EXU extends Module{
             val reg_rd          = Output(UInt(5.W))
             val mem_op          = Output(UInt(Memop.op_width.W))
             val mem_src         = Output(UInt(32.W))
-            val debug = new Bundle{
-                val inst            = Output(UInt(32.W))
-                val branch          = Output(Bool())
-                val branch_target   = Output(UInt(32.W))
-            }
+            val debug           = Output(new debug)
             val CSR_info        = Output(new CSR_info)
         }
         val forward = new Bundle{
@@ -106,4 +98,9 @@ class EXU extends Module{
     io.forward.reg_wdata        := alu_out
     io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
     io.forward.reg_useable      := !reg_reg_op(Regop.mem_bit) & valid
+
+    //perf-it
+    val perf_it                 = Module(new perf(PT.it))
+    perf_it.io.valid            := io.next.valid & io.next.ready
+    perf_it.io.code             := reg_debug.it_code
 }

@@ -29,6 +29,10 @@ typedef enum{
     DIFF_OFF,
     DIFF_ON,
 } diff_t;
+typedef enum{
+    REPORT_OFF,
+    REPORT_ON,
+} report_t;
 typedef struct{
     rstate_types_t type;//current state of npc
     int halt_pc;//the pc of the instruction (not accurate) that cause the halt, may be 0 if the halt is not caused by an instruction
@@ -41,6 +45,7 @@ typedef struct{
     long long trace_clock;//trace on when npc_state.time >= trace_clock
     diff_t difftest_on;//whether to do difftest, default 0, can be set by shooting mode
     long long time_limit;//the maximum time allowed for execution, default MAX_TIME, can be set by arguments
+    report_t report_on;//whether to report performance, default 0, can be set by shooting mode
 } rstate_t;
 
 extern rstate_t npc_state;

@@ -230,15 +230,68 @@ class SRAM_AXI(id:Int=0) extends Module{//SRAM to AXI4 bridge
 
     //state machine
     op                := SRAM_AXIop.no_op
+    // switch(fsm){
+    //     is(idle){
+    //         when(io.sram.req_ren){// have read request
+    //             fsm := Mux(io.axi.ar.ready,wait_resp,have_req_r)
+    //             op  := SRAM_AXIop.save_info | SRAM_AXIop.set_arv | Mux(io.axi.ar.ready, SRAM_AXIop.set_ready, SRAM_AXIop.no_op)
+    //             is_read := true.B
+    //         }.elsewhen(io.sram.req_wen){// have write request
+    //             fsm := Mux(io.axi.aw.ready && io.axi.w.ready,wait_resp,have_req_w)
+    //             op  := SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv | Mux(io.axi.aw.ready && io.axi.w.ready, SRAM_AXIop.clear_aww | SRAM_AXIop.set_ready, SRAM_AXIop.no_op)
+    //             is_read := false.B
+    //         }
+    //     }
+    //     is(have_req_w){
+    //         when((aw_sent | io.axi.aw.ready) && (w_sent | io.axi.w.ready)){
+    //             fsm := wait_resp
+    //             op  := SRAM_AXIop.set_awv | SRAM_AXIop.set_wv | SRAM_AXIop.clear_aww | SRAM_AXIop.set_ready
+    //         }.otherwise{
+    //             op  := SRAM_AXIop.set_awv | SRAM_AXIop.set_wv
+    //         }
+    //     }
+    //     is(have_req_r){
+    //         when(io.axi.ar.ready){
+    //             fsm := wait_resp
+    //             op  := SRAM_AXIop.set_arv | SRAM_AXIop.set_ready
+    //         }.otherwise{
+    //             op  := SRAM_AXIop.set_arv
+    //         }
+    //     }
+    //     is(wait_resp){
+    //         when((io.axi.r.valid || io.axi.b.valid)){
+    //             when(io.sram.req_ren && io.sram.ret_ready){// have read request
+    //                 fsm := Mux(io.axi.ar.ready,wait_resp,have_req_r)
+    //                 op  := SRAM_AXIop.save_ret | SRAM_AXIop.save_info | SRAM_AXIop.set_arv
+    //                 is_read := true.B
+    //             }.elsewhen(io.sram.req_wen && io.sram.ret_ready){// have write request
+    //                 fsm := Mux(io.axi.aw.ready && io.axi.w.ready,wait_resp,have_req_w)
+    //                 op  := SRAM_AXIop.save_ret | SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv
+    //                 is_read := false.B
+    //             }.otherwise{
+    //                 fsm := Mux(io.sram.ret_ready,idle,wait_ret)
+    //                 op  := SRAM_AXIop.save_ret | Mux(io.sram.ret_ready,SRAM_AXIop.set_ready,SRAM_AXIop.no_op)
+    //             }
+    //         }
+    //     }
+    //     is(wait_ret){
+    //         when(io.sram.ret_ready){
+    //             fsm := idle
+    //             op  := SRAM_AXIop.set_ready
+    //         }
+    //     }
+    // }
+
+    //use a simpler fsm to avoid loop
     switch(fsm){
         is(idle){
             when(io.sram.req_ren){// have read request
-                fsm := Mux(io.axi.ar.ready,wait_resp,have_req_r)
-                op  := SRAM_AXIop.save_info | SRAM_AXIop.set_arv | Mux(io.axi.ar.ready, SRAM_AXIop.set_ready, SRAM_AXIop.no_op)
+                fsm := have_req_r
+                op  := SRAM_AXIop.save_info 
                 is_read := true.B
             }.elsewhen(io.sram.req_wen){// have write request
-                fsm := Mux(io.axi.aw.ready && io.axi.w.ready,wait_resp,have_req_w)
-                op  := SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv | Mux(io.axi.aw.ready && io.axi.w.ready, SRAM_AXIop.clear_aww | SRAM_AXIop.set_ready, SRAM_AXIop.no_op)
+                fsm := have_req_w
+                op  := SRAM_AXIop.save_info
                 is_read := false.B
             }
         }
@@ -260,18 +313,8 @@ class SRAM_AXI(id:Int=0) extends Module{//SRAM to AXI4 bridge
         }
         is(wait_resp){
             when((io.axi.r.valid || io.axi.b.valid)){
-                when(io.sram.req_ren && io.sram.ret_ready){// have read request
-                    fsm := Mux(io.axi.ar.ready,wait_resp,have_req_r)
-                    op  := SRAM_AXIop.save_ret | SRAM_AXIop.save_info | SRAM_AXIop.set_arv
-                    is_read := true.B
-                }.elsewhen(io.sram.req_wen && io.sram.ret_ready){// have write request
-                    fsm := Mux(io.axi.aw.ready && io.axi.w.ready,wait_resp,have_req_w)
-                    op  := SRAM_AXIop.save_ret | SRAM_AXIop.save_info | SRAM_AXIop.set_awv | SRAM_AXIop.set_wv
-                    is_read := false.B
-                }.otherwise{
-                    fsm := Mux(io.sram.ret_ready,idle,wait_ret)
-                    op  := SRAM_AXIop.save_ret | Mux(io.sram.ret_ready,SRAM_AXIop.set_ready,SRAM_AXIop.no_op)
-                }
+                fsm := Mux(io.sram.ret_ready,idle,wait_ret)
+                op  := SRAM_AXIop.save_ret | Mux(io.sram.ret_ready,SRAM_AXIop.set_ready,SRAM_AXIop.no_op)
             }
         }
         is(wait_ret){
@@ -301,26 +344,26 @@ class SRAM_AXI(id:Int=0) extends Module{//SRAM to AXI4 bridge
     }
 
     //axi
-    io.axi_PC                    := Mux(op(SRAM_AXIop.save_info_bit), io.PC, reg_PC)
-    io.axi.aw.valid              := op(SRAM_AXIop.set_awv_bit) && !aw_sent
-    io.axi.aw.addr               := Mux(op(SRAM_AXIop.save_info_bit), io.sram.addr, reg_addr)
+    io.axi_PC                    := reg_PC//Mux(op(SRAM_AXIop.save_info_bit), io.PC, reg_PC)
+    io.axi.aw.valid              := fsm === have_req_w && !aw_sent //&& op(SRAM_AXIop.set_awv_bit) 
+    io.axi.aw.addr               := reg_addr//Mux(op(SRAM_AXIop.save_info_bit), io.sram.addr, reg_addr)
     io.axi.aw.id                 := id.U(4.W)
     io.axi.aw.len                := 0.U(8.W)
-    io.axi.aw.size               := Mux(op(SRAM_AXIop.save_info_bit), io.sram.size, reg_size)
+    io.axi.aw.size               := reg_size//Mux(op(SRAM_AXIop.save_info_bit), io.sram.size, reg_size)
     io.axi.aw.burst              := AXI_BURST.INCR
 
-    io.axi.w.valid               := op(SRAM_AXIop.set_wv_bit) && !w_sent
-    io.axi.w.data                := Mux(op(SRAM_AXIop.save_info_bit), io.sram.wdata, reg_wdata)
-    io.axi.w.strb                := Mux(op(SRAM_AXIop.save_info_bit), io.sram.wmask, reg_wmask)
+    io.axi.w.valid               := fsm === have_req_w && !w_sent //op(SRAM_AXIop.set_wv_bit) && 
+    io.axi.w.data                := reg_wdata//Mux(op(SRAM_AXIop.save_info_bit), io.sram.wdata, reg_wdata)
+    io.axi.w.strb                := reg_wmask//Mux(op(SRAM_AXIop.save_info_bit), io.sram.wmask, reg_wmask)
     io.axi.w.last                := true.B
 
     io.axi.b.ready               := ready & !is_read
 
-    io.axi.ar.valid              := op(SRAM_AXIop.set_arv_bit)
-    io.axi.ar.addr               := Mux(op(SRAM_AXIop.save_info_bit), io.sram.addr, reg_addr)
+    io.axi.ar.valid              := fsm === have_req_r//op(SRAM_AXIop.set_arv_bit)
+    io.axi.ar.addr               := reg_addr//Mux(op(SRAM_AXIop.save_info_bit), io.sram.addr, reg_addr)
     io.axi.ar.id                 := id.U(4.W)
     io.axi.ar.len                := 0.U(8.W)
-    io.axi.ar.size               := Mux(op(SRAM_AXIop.save_info_bit), io.sram.size, reg_size)
+    io.axi.ar.size               := reg_size//Mux(op(SRAM_AXIop.save_info_bit), io.sram.size, reg_size)
     io.axi.ar.burst              := AXI_BURST.INCR
 
     io.axi.r.ready               := ready & is_read
@@ -539,15 +582,27 @@ class AXI_Arbiter extends Module{
     //out read channel: switch between ifu_axi and lsu_axi
     val r_idle :: r_ifu :: r_lsu :: Nil = Enum(3)
     val r_fsm = RegInit(r_idle)
+    val share_lsu = RegInit(0.U(2.W))// let lsu access when too many ifu requests, to avoid starvation
+    val have_ifu_req = io.ifu_axi.ar.valid && !is_clint_ifu
+    val have_lsu_req = io.lsu_axi.ar.valid && !is_clint_lsu
+    val lsu_read_imediately = (share_lsu === 3.U && have_ifu_req)
+
+    //if ifu read too much, let lsu read immediately to avoid starvation
+    when(io.ifu_axi.ar.valid && io.ifu_axi.ar.ready && io.lsu_axi.ar.valid && !io.lsu_axi.ar.ready){
+        share_lsu := share_lsu + 1.U(2.W)
+    }.elsewhen(io.lsu_axi.ar.valid && io.lsu_axi.ar.ready){
+        share_lsu := 0.U(2.W)
+    }
+
 
     io.out_rPC := 0.U(32.W)
     AXI_CONN.slave_get_master_ar(io.out_axi, void_axi)
     AXI_CONN.slave_get_master_r(io.out_axi, void_axi)
     switch(r_fsm){//TODO: can seperate ar and r channel, so that can switch to other master when waiting for rdata
         is(r_idle){
-            when(io.ifu_axi.ar.valid && !is_clint_ifu){
+            when(have_ifu_req && !lsu_read_imediately){
                 r_fsm := r_ifu
-            }.elsewhen(io.lsu_axi.ar.valid && !is_clint_lsu){
+            }.elsewhen(have_lsu_req){
                 r_fsm := r_lsu
             }
         }
@@ -556,9 +611,9 @@ class AXI_Arbiter extends Module{
             AXI_CONN.slave_get_master_ar(io.out_axi, io.ifu_axi)
             AXI_CONN.slave_get_master_r(io.out_axi, io.ifu_axi)
             when(io.ifu_axi.r.ready && io.ifu_axi.r.valid && io.ifu_axi.r.last){
-                when(io.ifu_axi.ar.valid && !is_clint_ifu){
+                when(have_ifu_req && !lsu_read_imediately){
                     r_fsm := r_ifu
-                }.elsewhen(io.lsu_axi.ar.valid && !is_clint_lsu){
+                }.elsewhen(have_lsu_req){
                     r_fsm := r_lsu
                 }.otherwise{
                     r_fsm := r_idle
@@ -570,9 +625,9 @@ class AXI_Arbiter extends Module{
             AXI_CONN.slave_get_master_ar(io.out_axi, io.lsu_axi)
             AXI_CONN.slave_get_master_r(io.out_axi, io.lsu_axi)
             when(io.lsu_axi.r.ready && io.lsu_axi.r.valid && io.lsu_axi.r.last){
-                when(io.ifu_axi.ar.valid && !is_clint_ifu){
+                when(have_ifu_req && !lsu_read_imediately){
                     r_fsm := r_ifu
-                }.elsewhen(io.lsu_axi.ar.valid && !is_clint_lsu){
+                }.elsewhen(have_lsu_req){
                     r_fsm := r_lsu
                 }.otherwise{
                     r_fsm := r_idle
@@ -689,6 +744,15 @@ class AXI_Arbiter extends Module{
     u_diffskip.io.idx       := Mux(io.lsu_axi.aw.valid && io.lsu_axi.aw.ready, 11.U, 10.U) //10: read  11: write
 
     u_diffskip.io.ret       := io.lsu_axi.r.valid && io.lsu_axi.r.ready || io.lsu_axi.b.valid && io.lsu_axi.b.ready
-    u_diffskip.io.rdata  := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, io.lsu_axi.r.data, 0.U)
-    u_diffskip.io.ridx   := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, 10.U, 11.U) //10: read  11: write
+    u_diffskip.io.rdata     := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, io.lsu_axi.r.data, 0.U)
+    u_diffskip.io.ridx      := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, 10.U, 11.U) //10: read  11: write
+
+    //perf-ini
+    val perf_ini            = Module(new perf(PT.ini))
+    perf_ini.io.valid       := have_ifu_req && r_fsm === r_lsu
+    perf_ini.io.code        := PT.ini_w_lsu
+    //perf-lmd
+    val perf_lmd            = Module(new perf(PT.lmd))
+    perf_lmd.io.valid       := have_lsu_req && r_fsm === r_ifu
+    perf_lmd.io.code        := PT.lmd_w_ifu
 }

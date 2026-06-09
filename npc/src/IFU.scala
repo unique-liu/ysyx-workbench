@@ -115,5 +115,13 @@ class IFU (initPC:Int=0)extends Module{
     io.sram.wdata               := 0.U      //no use
     io.sram.wmask               := 0.U      //no use
     io.sram.size                := 2.U      //always read 4 bytes
-    io.sram.ret_ready          := (ifus === wait_inst) | (ifus === wait_error_inst)
+    io.sram.ret_ready           := (ifus === wait_inst) | (ifus === wait_error_inst)
+
+    //perf-ini
+    val perf_ini                = Module(new perf(PT.ini))
+    val lack_inst               = io.next.ready && !io.next.valid
+    val ini_code                = Wire(UInt(8.W))
+    ini_code                    := Mux(ifus === wait_error_inst,PT.ini_w_err, PT.ini_w_mem)
+    perf_ini.io.valid           := !io.next.valid
+    perf_ini.io.code            := Cat(lack_inst, ini_code(6,0))
 }
