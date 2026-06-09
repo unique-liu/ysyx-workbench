@@ -270,6 +270,8 @@ void sdb_set_trace_mode(char *mode){
     printf("Warning: to avoid errors, board support can not work with multi thread\n");
     npc_state.trace_on = TRACE_OFF;
     #endif
+  } else if(strcmp(mode, "clock") == 0) {
+    npc_state.trace_on = TRACE_CLOCK;
   }
   #endif
   else {

@@ -8,7 +8,7 @@
 
 #define MAX_TIME 10000000
 #define MAX_TIME_NOINST 10000
-#define RESET_TIME 10
+#define RESET_TIME 50
 
 typedef enum{
     NPC_INVALID,
@@ -22,7 +22,8 @@ typedef enum{
 typedef enum{
     TRACE_ON,
     TRACE_OFF,
-    TRACE_AUTO
+    TRACE_AUTO,
+    TRACE_CLOCK,
 } trace_t;
 typedef enum{
     DIFF_OFF,
@@ -37,6 +38,7 @@ typedef struct{
     long long time;//clk up and down equals 2 time units
     int inst_submit;
     trace_t trace_on;//whether to print trace log, default 1, can be set by shooting mode
+    long long trace_clock;//trace on when npc_state.time >= trace_clock
     diff_t difftest_on;//whether to do difftest, default 0, can be set by shooting mode
     long long time_limit;//the maximum time allowed for execution, default MAX_TIME, can be set by arguments
 } rstate_t;

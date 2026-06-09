@@ -6,6 +6,7 @@
 #include <shoot.h>
 #include <sys/time.h>
 #include <board.h>
+#include <init.h>
 
 rstate_t npc_state;
 VerilatedContext* contextp;
@@ -80,11 +81,16 @@ static void trace_and_difftest() {
 void execute(int n){
     struct timeval start, end;
     int not_inst_count = 0;
-    // reset(10);
     gettimeofday(&start, NULL);
     while (npc_state.type == NPC_RUNNING) {//running loop
         exceute_once();
         update_board();
+
+        if (npc_state.trace_on == TRACE_CLOCK && npc_state.time >= npc_state.trace_clock) {
+            npc_state.trace_on = TRACE_ON;
+            init_fst();
+            printf("time %lld reached trace clock %lld, turn on trace\n", npc_state.time, npc_state.trace_clock);
+        }
 
         if (npc_state.inst_submit == 1) {
             trace_and_difftest();

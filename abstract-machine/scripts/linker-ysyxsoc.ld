@@ -6,6 +6,8 @@ MEMORY {
   mrom : ORIGIN = 0x20000000, LENGTH = 4K
   flash : ORIGIN = 0x30000000, LENGTH = 0x10000000
   psram : ORIGIN = 0x80000000, LENGTH = 0x400000
+  /* sdram : ORIGIN = 0x80000000, LENGTH = 0x400000 */
+  sdram : ORIGIN = 0xa0000000, LENGTH = 0x2000000
 }
 
 SECTIONS {
@@ -19,7 +21,7 @@ SECTIONS {
     _bootloader_sa_start = .;
     *(.bootloader)
     _bootloader_sa_end = .;
-  } > psram AT> flash : loader
+  } > sdram AT> flash : loader
   _bootloader_ma_start = LOADADDR(.bootloader);
   _bootloader_ma_end = _bootloader_ma_start + SIZEOF(.bootloader);
   /* . = LOADADDR(.bootloader) + SIZEOF(.bootloader); */
@@ -28,7 +30,7 @@ SECTIONS {
     _text_sa_start = .;
     *(.text*)
     _text_sa_end = .;
-  } > psram AT> flash : text
+  } > sdram AT> flash : text
    _text_ma_start = LOADADDR(.text);
   _text_ma_end = _text_ma_start + SIZEOF(.text);
   /* . = LOADADDR(.text) + SIZEOF(.text); */
@@ -46,7 +48,7 @@ SECTIONS {
     *(.data*)
     *(.sdata*)
     _data_sa_end = .;
-  } > psram AT> flash : data
+  } > sdram AT> flash : data
   _data_ma_start = LOADADDR(.data);
   _data_ma_end = _data_ma_start + SIZEOF(.data);
   /* . = LOADADDR(.data) + SIZEOF(.data); */
@@ -61,6 +63,6 @@ SECTIONS {
     *(.sbss*)
     *(.scommon)
     _bss_sa_end = .;
-  } > psram AT> flash : bss
+  } > sdram AT> flash : bss
 
 }

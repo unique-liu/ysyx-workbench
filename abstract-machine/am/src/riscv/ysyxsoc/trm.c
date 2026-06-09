@@ -18,7 +18,7 @@ void out_ch(char ch);
 int main(const char *args);
 
 extern char _pmem_start;
-#define PMEM_SIZE 0x400000//psram size
+#define PMEM_SIZE 0x2000000//sdram size
 #define PMEM_END  ((uintptr_t)&_heap_start + PMEM_SIZE)
 
 Area heap = RANGE(&_bss_sa_end, PMEM_END);// 堆区从 bss 段结束开始，到物理内存末尾
@@ -85,11 +85,11 @@ void second_loader() {
   while (dst < &_data_sa_end) {
     *dst++ = *src++;
   }
-  char *bss = &_bss_sa_start;
-  putch_inline('b');
-  while (bss < &_bss_sa_end) {
-    *bss++ = 0;
-  }
+  // char *bss = &_bss_sa_start;
+  // putch_inline('b');
+  // while (bss < &_bss_sa_end) {
+  //   *bss++ = 0;
+  // }
 
   #ifdef __RTTHREAD__
   src = &_edata_ma_start;
@@ -98,11 +98,11 @@ void second_loader() {
   while (dst < &_edata_sa_end) {
     *dst++ = *src++;
   }
-  bss = &_ebss_sa_start;
-  putch('B');
-  while (bss < &_ebss_sa_end) {
-    *bss++ = 0;
-  }
+  // bss = &_ebss_sa_start;
+  // putch('B');
+  // while (bss < &_ebss_sa_end) {
+  //   *bss++ = 0;
+  // }
   #endif
   putch_inline('2');
   asm volatile ("j _trm_init");

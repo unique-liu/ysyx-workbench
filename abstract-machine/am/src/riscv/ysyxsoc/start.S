@@ -7,6 +7,5 @@ _start:
   la sp, _stack_pointer
   call first_loader
   call second_loader
-  call _trm_init
 
 .size _start, . - _start

@@ -38,6 +38,7 @@ static int parse_args(int argc, char *argv[]) {
     {"help"     , no_argument      , NULL, 'h'},
     {"elf"      , required_argument, NULL,  'e' },
     {"trace"    , required_argument, NULL,  't' },
+    {"trace_clock", required_argument, NULL, 'c'},
     {"diff_on"  , required_argument, NULL,  'D' },
     {"time"     , required_argument, NULL,  'T' },
     {"mrom",      required_argument, NULL,  'm' },
@@ -45,7 +46,7 @@ static int parse_args(int argc, char *argv[]) {
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:D:T:m:f:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:t:c:D:T:m:f:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -53,6 +54,7 @@ static int parse_args(int argc, char *argv[]) {
       case 'd': diff_so_file = optarg; break;
       case 'e': elf_file = optarg; break;
       case 't': sdb_set_trace_mode(optarg); break;
+      case 'c': sscanf(optarg, "%lld", &npc_state.trace_clock); break;
       case 'D': sdb_set_difftest_mode(optarg); break;
       case 'T': sscanf(optarg, "%lld", &npc_state.time_limit); break;
       case 'm': mrom_file = optarg; break;
@@ -66,6 +68,7 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-p,--port=PORT          run DiffTest with port PORT\n");
         printf("\t-e,--elf=ELF            load ELF file for debugging\n");
         printf("\t-t,--trace=MODE         set trace mode\n");
+        printf("\t-c,--trace_clock=CLOCK  set trace clock\n");
         printf("\t-D,--diff_on=MODE       set difftest mode\n");
         printf("\t-T,--time=TIME          set time limit\n");
         printf("\t-m,--mrom=FILE          load mrom file\n");
@@ -280,25 +283,26 @@ int init_all(int argc, char** argv) {
 }
 
 int finish_all() {
-    int weak_shoot = 0;
+    int wake_shoot = 0;
     int ret = 0;
     switch (npc_state.type) {
       case NPC_HALT:
           if (npc_state.halt_ret) {
             printf("\033[31m[FAILED] Hit Bad Trap\033[0m\n");
             ret = -1;
-            weak_shoot = 1;
+            wake_shoot = 1;
           }else {
             printf("\033[32m[SUCCEED] Hit Good Trap\033[0m\n");
           }
           break;
       case NPC_STOP:
           printf("\033[32m[SUCCEED] Halt by interupt or command q\033[0m\n");
+          wake_shoot = 1;
           break;
       case NPC_TIMEOUT:
           printf("\033[31m[FAILED] Halt by timeout\033[0m\n");
           ret = -1;
-          weak_shoot = 1;
+          wake_shoot = 1;
           break;
       case NPC_ERROR:
           #ifdef CONFIG_ITRACE
@@ -306,7 +310,7 @@ int finish_all() {
           #endif
           printf("\033[31m[FAILED] Halt with error at pc = " FMT_WORD "\033[0m\n", npc_state.halt_pc);
           ret = -1;
-          weak_shoot = 1;
+          wake_shoot = 1;
           break;
       default:
           #ifdef CONFIG_ITRACE
@@ -321,7 +325,7 @@ int finish_all() {
       npc_state.real_time / 1000 == 0 ? 0 : cycle / (npc_state.real_time / 1000),
       (float)npc_state.inst_count == 0 ? 0 : cycle / (float)npc_state.inst_count);
 
-    if (weak_shoot) {//hit bad trap
+    if (wake_shoot) {//hit bad trap
       shoot_weakup();
     }else {
       shoot_clear();
