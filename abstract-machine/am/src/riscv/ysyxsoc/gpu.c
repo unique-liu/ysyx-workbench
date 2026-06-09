@@ -4,7 +4,7 @@
 #define VGA_WIDTH    640
 #define VGA_HEIGHT   480
 #define VGA_SIZE     (VGA_WIDTH * VGA_HEIGHT * sizeof(uint32_t))
-#define XY_TO_ADDR(x, y) (VGA_BASE + (y * VGA_WIDTH + x) * sizeof(uint32_t))
+#define XY_TO_ADDR(x, y) (VGA_BASE + ((y) * VGA_WIDTH + (x)) * sizeof(uint32_t))
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
   cfg->present = true;
   cfg->width = VGA_WIDTH;
