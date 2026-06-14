@@ -18,7 +18,7 @@
 
 #include <common.h>
 
-#define USE_SOC
+// #define USE_SOC
 #ifdef USE_SOC
 #define MROM_BASE 0x20000000
 #define MROM_SIZE 0x1000

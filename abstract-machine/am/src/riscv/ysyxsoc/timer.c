@@ -1,7 +1,7 @@
 #include <am.h>
 #include "../riscv.h"
 #define RTC_ADDR 0x0200bff8
-#define CYCLE_PER_US 607 * 1000 // test in use, not fixed in fact
+#define CYCLE_PER_US 198 * 1000 // test in use, not fixed in fact
 void __am_timer_init() {
 }
 

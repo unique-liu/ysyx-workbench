@@ -1,8 +1,8 @@
 #include <board.h>
 #include <nvboard.h>
-#include "VysyxSoCFull.h"
+#include INCLUDE_TOP
 #include <exec.h>
-
+#ifdef CONFIG_USE_SOC
 void nvboard_bind_all_pins(VysyxSoCFull* top);
 
 void init_board() {
@@ -57,3 +57,11 @@ extern "C" void key_handler(uint8_t keycode, uint8_t *data,char is_ext,char is_r
   *data = (is_release)? return_data | 0x80 : return_data;//use the highest bit to indicate whether the key is released
   TRACE(dtrace,"keycode:0x%02x is_ext:%d is_release:%d return:%02x\n", keycode, is_ext, is_release, return_data);
 }
+#else
+void init_board() {
+}
+void update_board() {
+}
+void finish_board() {
+}
+#endif

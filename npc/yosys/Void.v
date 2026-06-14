@@ -33,7 +33,11 @@ module DiffSkip (
     input           io_en,
     input  [31:0]   io_PC,
     input  [31:0]   io_addr,
-    input  [31:0]   io_idx
+    input  [31:0]   io_idx,
+
+    input           io_ret,
+    input  [31:0]   io_ridx,
+    input  [31:0]   io_rdata
 );
 endmodule
 
@@ -56,3 +60,12 @@ module SpecialIO (
 );
 endmodule
 
+module PerformanceIO (
+    input         io_clock,
+    input         io_valid,
+    input  [7:0]  io_perf_type,
+    input  [7:0]  io_code
+);
+
+
+endmodule

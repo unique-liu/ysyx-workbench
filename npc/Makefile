@@ -1,31 +1,44 @@
+# 关键路径
 PWD = $(shell pwd)
 SOC_HOME = /home/liu/ysyx-workbench/ysyxSoC
+# 这个被环境变量定义了
+# NVBOARD_HOME = /home/liu/nvboard   
+
+# build 目录
 BUILD_DIR = $(PWD)/build
-CPP_DIRS = csrc
-VERILOG_DIRS = $(BUILD_DIR) vsrc
-VERILATOR_DIR = obj_dir
-VERILOG_SOC_DIRS = $(SOC_HOME)/perip
+BUILD_CHISEL_DIR = $(BUILD_DIR)/chisel
+BUILD_VERILATOR_DIR = $(BUILD_DIR)/verilator
+
+CPP_DIRS = $(PWD)/csrc
+CHISEL_DIRS = $(PWD)/src
+VERILOG_NO_DPI_DIRS = $(BUILD_CHISEL_DIR)/soc
+VERILOG_DIRS = $(BUILD_CHISEL_DIR)/npc vsrc
+VERILOG_SOC_DIRS = $(BUILD_CHISEL_DIR)/soc vsrc $(SOC_HOME)/perip
+CONSTR_DIRS = $(PWD)/constr
 # 顶层模块名
-TOP_MODULE = ysyxSoCFull #SOC顶层模块名
-# TOP_MODULE = CPUtop #NPC顶层模块名
-TARGET = Vtop
+TOP_MODULE_SOC = ysyxSoCFull #SOC顶层模块名
+TOP_MODULE_NPC = CPUtop #NPC顶层模块名
+SOC_TARGET = $(BUILD_VERILATOR_DIR)/soc/Vtop
+NPC_TARGET = $(BUILD_VERILATOR_DIR)/npc/Vtop
 
 # Verilator 可执行文件
 VERILATOR = verilator
 
 # 收集所有.v .sv .cpp 文件
+VERILOG_SRC_NO_DPI = $(shell find $(VERILOG_NO_DPI_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
 VERILOG_SRC = $(shell find $(VERILOG_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
-VERILOG_SRC_NO_DPI = $(shell find $(BUILD_DIR) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
 VERILOG_SOC_SRC = $(shell find $(VERILOG_SOC_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
 VERILOG_SOC_SRC += $(SOC_HOME)/build/ysyxSoCFull.v
-VERILOG_SRC += $(VERILOG_SOC_SRC)#接入SOC后需要添加SOC相关的Verilog文件
-CPP_SRC = $(shell find $(CPP_DIRS) -type f \( -name "*.c" -o -name "*.cpp" \) 2>/dev/null)
+
+CPP_SRC_COMMON = $(shell find $(CPP_DIRS) -type f \( -name "*.c" -o -name "*.cpp" \) ! -name "auto_bind.cpp" 2>/dev/null)
+CPP_SOC_SRC = $(CPP_SRC_COMMON) $(AUTO_BIND)
+CPP_NPC_SRC = $(CPP_SRC_COMMON)
 
 ifeq ($(strip $(VERILOG_SRC)),)
 $(error No Verilog/SystemVerilog files found in $(VERILOG_DIRS))
 endif
 
-ifeq ($(strip $(CPP_SRC)),)
+ifeq ($(strip $(CPP_SRC_COMMON)),)
 $(warning No C++ source files found, assuming pure Verilog simulation)
 endif
 
@@ -39,49 +52,68 @@ VCC_FLAGZ += -I$(NVBOARD_HOME)/usr/include
 # 链接选项
 LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
 # nvboard要求
-LIBS += $(NVBOARD_HOME)/build/nvboard.a $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
+LIBS_SOC = $(LIBS) $(NVBOARD_HOME)/build/nvboard.a $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
 
-VERILATOR_FLAGS = --autoflush --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)" --build --exe -j --top-module $(TOP_MODULE) -O3
+VERILATOR_FLAGS = --autoflush  --build --exe -j --timescale "1ns/1ns" --no-timing -O3 --x-assign fast --x-initial fast
 # 如需波形跟踪，添加：
 VERILATOR_FLAGS += --trace --trace-fst
-  #接入SOC要求
-VERILATOR_FLAGS +=-I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl  --timescale "1ns/1ns" --no-timing 
-# 目标：构建可执行文件
-verilator: $(TARGET)
 
-$(TARGET): $(VERILOG_SRC) $(CPP_SRC)
-	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILOG_SRC) $(CPP_SRC) -o $@
+VERILATOR_SOC_FLAGS = $(VERILATOR_FLAGS) --top-module $(TOP_MODULE_SOC) --cc -CFLAGS "$(VCC_FLAGZ) -DCONFIG_USE_SOC" -LDFLAGS "$(LIBS_SOC)"\
+			 -I$(SOC_HOME)/perip/uart16550/rtl -I$(SOC_HOME)/perip/spi/rtl   --Mdir $(BUILD_VERILATOR_DIR)/soc
+VERILATOR_NPC_FLAGS = $(VERILATOR_FLAGS) --top-module $(TOP_MODULE_NPC) --cc -CFLAGS "$(VCC_FLAGZ)" -LDFLAGS "$(LIBS)"\
+			  --Mdir $(BUILD_VERILATOR_DIR)/npc
+
+# 目标：构建可执行文件
+verilator: $(SOC_TARGET)
+
+$(SOC_TARGET): $(VERILOG_SOC_SRC) $(CPP_SOC_SRC)
+	mkdir -p $(BUILD_VERILATOR_DIR)/soc
+	$(VERILATOR) $(VERILATOR_SOC_FLAGS) $(VERILOG_SOC_SRC) $(CPP_SOC_SRC) -o $@
+
+$(NPC_TARGET): $(VERILOG_SRC) $(CPP_NPC_SRC) 
+	mkdir -p $(BUILD_VERILATOR_DIR)/npc
+	$(VERILATOR) $(VERILATOR_NPC_FLAGS) $(VERILOG_SRC) $(CPP_NPC_SRC) -o $@
 
 # ------ Chisel -> verilog
+NPC_CPU_TOP = $(BUILD_CHISEL_DIR)/npc/CPUtop.sv
+SOC_CPU_TOP = $(BUILD_CHISEL_DIR)/soc/CPUtop.sv
+CHISEL_FILES = $(shell find $(CHISEL_DIRS) -type f \( -name "*.scala" \) 2>/dev/null)
 
-verilog:
+verilog: $(NPC_CPU_TOP)
+
+$(NPC_CPU_TOP): $(CHISEL_FILES)
 	$(call git_commit, "generate verilog")
-	mkdir -p $(BUILD_DIR)
-	mill -j6 -i runMain Elaborate --target-dir $(BUILD_DIR)
+	mkdir -p $(BUILD_CHISEL_DIR)/npc
+	JAVA_OPTS="-Duse_soc=false"  mill -j6 -i runMain Elaborate --target-dir $(BUILD_CHISEL_DIR)/npc
 
+$(SOC_CPU_TOP): $(CHISEL_FILES)
+	$(call git_commit, "generate verilog")
+	mkdir -p $(BUILD_CHISEL_DIR)/soc
+	JAVA_OPTS="-Duse_soc=true"  mill -j6 -i runMain Elaborate --target-dir $(BUILD_CHISEL_DIR)/soc
 # ------ verilog -> report
 
 YOSYS_STA_DIR = /home/liu/yosys-sta
 MY_YOSYS_DIR = $(PWD)/yosys
-SDC_FILE = $(MY_YOSYS_DIR)/default.sdc
-RTL_FILES = $(strip $(foreach f,$(VERILOG_SRC_NO_DPI),$(realpath $(f)))) $(MY_YOSYS_DIR)/Void.v
-CLK_FREQ_MHZ = 100
-CLK_PORT_NAME = clock
+YOSYS_SDC_FILE = $(MY_YOSYS_DIR)/default.sdc
+YOSYS_RTL_FILES = $(strip $(foreach f,$(VERILOG_SRC_NO_DPI),$(realpath $(f)))) $(MY_YOSYS_DIR)/Void.v
+YOSYS_CLK_FREQ_MHZ = 10000
+YOSYS_CLK_PORT_NAME = clock
 O = $(MY_YOSYS_DIR)/report
 yosys:
+
 	$(MAKE) -C $(YOSYS_STA_DIR) sta \
-		DESIGN=$(TOP_MODULE) \
-		SDC_FILE=$(SDC_FILE) \
-		CLK_FREQ_MHZ=$(CLK_FREQ_MHZ) \
-		CLK_PORT_NAME=$(CLK_PORT_NAME) \
+		DESIGN=$(TOP_MODULE_NPC) \
+		SDC_FILE=$(YOSYS_SDC_FILE) \
+		CLK_FREQ_MHZ=$(YOSYS_CLK_FREQ_MHZ) \
+		CLK_PORT_NAME=$(YOSYS_CLK_PORT_NAME) \
 		O=$(O) \
-		RTL_FILES="$(RTL_FILES)"
+		RTL_FILES="$(YOSYS_RTL_FILES)"
 
 # ------ nxdc -> C
 AUTO_BIND = $(CPP_DIRS)/auto_bind.cpp
 nvboard: $(AUTO_BIND)
-$(AUTO_BIND): constr/top.nxdc
-	@python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py constr/top.nxdc $(AUTO_BIND)
+$(AUTO_BIND): $(CONSTR_DIRS)/top.nxdc
+	@python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $(CONSTR_DIRS)/top.nxdc $(AUTO_BIND)
 # ------ 其他
 
 test:
@@ -108,16 +140,25 @@ clean:
 .PHONY: test verilog help reformat checkformat clean yosys
 
 # Some convenient rules
-BINARY = $(VERILATOR_DIR)/Vtop
 IMG ?=
 BOOT ?=
 DIFF = $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 ELF ?= 
 ARGS ?=
-NPC_EXEC := $(BINARY) $(ARGS) --elf=$(ELF) --diff=$(DIFF) --flash=$(BOOT) $(IMG)
+SOC_EXEC := $(SOC_TARGET) $(ARGS) --elf=$(ELF) --diff=$(DIFF) --flash=$(BOOT) $(IMG)
+NPC_EXEC := $(NPC_TARGET) $(ARGS) --elf=$(ELF) --diff=$(DIFF) $(IMG)
+
 sim-env: $(BINARY)
 
-sim: sim-env
+sim: $(SOC_TARGET)
+	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+	$(SOC_EXEC)
+
+sim_soc: $(SOC_TARGET)
+	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+	$(SOC_EXEC)
+
+sim_npc: $(NPC_TARGET)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	$(NPC_EXEC)
 

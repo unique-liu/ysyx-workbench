@@ -59,9 +59,6 @@ extern "C" int read_a_device(int raddr, int pc,int idx) {
 }
 
 extern "C" void write_a_device(int waddr, int wdata, char wmask,int pc,int idx) {
-  // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
-  // `wmask`中每比特表示`wdata`中1个字节的掩码,
-  // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
   int paddr = waddr & ~0x3u;
   mem_pc_now = pc;
   if (in_device(paddr) != idx) {

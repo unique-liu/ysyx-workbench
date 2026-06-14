@@ -1,13 +1,14 @@
 #ifndef EXEC_H
 #define EXEC_H
 
-#include "VysyxSoCFull.h"
+#include <common.h>
+#include INCLUDE_TOP
 #include <verilated.h>
 #include "verilated_fst_c.h"
-#include <common.h>
+
 
 #define MAX_TIME 10000000
-#define MAX_TIME_NOINST 10000
+#define MAX_TIME_NOINST 100000
 #define RESET_TIME 50
 
 typedef enum{

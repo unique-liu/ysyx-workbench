@@ -22,6 +22,7 @@ object PT {// Performance Type
     val lmd_w_ifu   = 1.U(8.W)// code: wait ifu
     val lmd_w_err   = 2.U(8.W)// code: wait error
     val lmd_w_mem   = 3.U(8.W)// code: wait memory
+    val lmd_total   = 4.U(8.W)// code: total mem cycle
 }
 
 

@@ -70,9 +70,8 @@ class CPUtop extends Module{
     val u_d_switch                      = Module(new SRAM_AXI())
     val u_arbiter                       = Module(new AXI_Arbiter())
     val u_clint                         = Module(new CLINT())
-    // val u_mem                           = Module(new Mem_AXI())
 
-    val u_ifu                           = Module(new IFU(initPC=0x30000000))
+    val u_ifu                           = Module(new IFU(initPC=Config.initPC))
     val u_idu                           = Module(new IDU())
     val u_exu                           = Module(new EXU())
     val u_lsu                           = Module(new LSU())
@@ -126,35 +125,60 @@ class CPUtop extends Module{
     u_wbu.io.CSR                        <> u_csr.io.CSR
 
     //CPU out
-    u_arbiter.io.out_axi.aw.ready       := io.master_awready
-    io.master_awvalid                   := u_arbiter.io.out_axi.aw.valid
-    io.master_awaddr                    := u_arbiter.io.out_axi.aw.addr
-    io.master_awid                      := u_arbiter.io.out_axi.aw.id
-    io.master_awlen                     := u_arbiter.io.out_axi.aw.len
-    io.master_awsize                    := u_arbiter.io.out_axi.aw.size
-    io.master_awburst                   := u_arbiter.io.out_axi.aw.burst
-    u_arbiter.io.out_axi.w.ready        := io.master_wready
-    io.master_wvalid                    := u_arbiter.io.out_axi.w.valid
-    io.master_wdata                     := u_arbiter.io.out_axi.w.data
-    io.master_wstrb                     := u_arbiter.io.out_axi.w.strb
-    io.master_wlast                     := u_arbiter.io.out_axi.w.last
-    io.master_bready                    := u_arbiter.io.out_axi.b.ready
-    u_arbiter.io.out_axi.b.valid        := io.master_bvalid
-    u_arbiter.io.out_axi.b.resp         := io.master_bresp
-    u_arbiter.io.out_axi.b.id           := io.master_bid
-    u_arbiter.io.out_axi.ar.ready       := io.master_arready
-    io.master_arvalid                   := u_arbiter.io.out_axi.ar.valid
-    io.master_araddr                    := u_arbiter.io.out_axi.ar.addr
-    io.master_arid                      := u_arbiter.io.out_axi.ar.id
-    io.master_arlen                     := u_arbiter.io.out_axi.ar.len
-    io.master_arsize                    := u_arbiter.io.out_axi.ar.size
-    io.master_arburst                   := u_arbiter.io.out_axi.ar.burst
-    io.master_rready                    := u_arbiter.io.out_axi.r.ready
-    u_arbiter.io.out_axi.r.valid        := io.master_rvalid
-    u_arbiter.io.out_axi.r.resp         := io.master_rresp
-    u_arbiter.io.out_axi.r.data         := io.master_rdata
-    u_arbiter.io.out_axi.r.last         := io.master_rlast
-    u_arbiter.io.out_axi.r.id           := io.master_rid
+    if(Config.use_soc){
+        u_arbiter.io.out_axi.aw.ready       := io.master_awready
+        io.master_awvalid                   := u_arbiter.io.out_axi.aw.valid
+        io.master_awaddr                    := u_arbiter.io.out_axi.aw.addr
+        io.master_awid                      := u_arbiter.io.out_axi.aw.id
+        io.master_awlen                     := u_arbiter.io.out_axi.aw.len
+        io.master_awsize                    := u_arbiter.io.out_axi.aw.size
+        io.master_awburst                   := u_arbiter.io.out_axi.aw.burst
+        u_arbiter.io.out_axi.w.ready        := io.master_wready
+        io.master_wvalid                    := u_arbiter.io.out_axi.w.valid
+        io.master_wdata                     := u_arbiter.io.out_axi.w.data
+        io.master_wstrb                     := u_arbiter.io.out_axi.w.strb
+        io.master_wlast                     := u_arbiter.io.out_axi.w.last
+        io.master_bready                    := u_arbiter.io.out_axi.b.ready
+        u_arbiter.io.out_axi.b.valid        := io.master_bvalid
+        u_arbiter.io.out_axi.b.resp         := io.master_bresp
+        u_arbiter.io.out_axi.b.id           := io.master_bid
+        u_arbiter.io.out_axi.ar.ready       := io.master_arready
+        io.master_arvalid                   := u_arbiter.io.out_axi.ar.valid
+        io.master_araddr                    := u_arbiter.io.out_axi.ar.addr
+        io.master_arid                      := u_arbiter.io.out_axi.ar.id
+        io.master_arlen                     := u_arbiter.io.out_axi.ar.len
+        io.master_arsize                    := u_arbiter.io.out_axi.ar.size
+        io.master_arburst                   := u_arbiter.io.out_axi.ar.burst
+        io.master_rready                    := u_arbiter.io.out_axi.r.ready
+        u_arbiter.io.out_axi.r.valid        := io.master_rvalid
+        u_arbiter.io.out_axi.r.resp         := io.master_rresp
+        u_arbiter.io.out_axi.r.data         := io.master_rdata
+        u_arbiter.io.out_axi.r.last         := io.master_rlast
+        u_arbiter.io.out_axi.r.id           := io.master_rid
+    }else{
+        val u_mem                           = Module(new Mem_AXI())
+        u_mem.io.rPC                        := u_arbiter.io.out_rPC
+        u_mem.io.wPC                        := u_arbiter.io.out_wPC
+        u_mem.io.axi                        <> u_arbiter.io.out_axi
+        io.master_awvalid                   := 0.U
+        io.master_awaddr                    := 0.U
+        io.master_awid                      := 0.U
+        io.master_awlen                     := 0.U
+        io.master_awsize                    := 0.U
+        io.master_awburst                   := 0.U
+        io.master_wvalid                    := 0.U
+        io.master_wdata                     := 0.U
+        io.master_wstrb                     := 0.U
+        io.master_wlast                     := 0.U
+        io.master_bready                    := 0.U
+        io.master_arvalid                   := 0.U
+        io.master_araddr                    := 0.U
+        io.master_arid                      := 0.U
+        io.master_arlen                     := 0.U
+        io.master_arsize                    := 0.U
+        io.master_arburst                   := 0.U
+        io.master_rready                    := 0.U
+    }
 
     io.slave_awready                    := 0.U(1.W)
     // io.slave_awvalid                    := Input (Bool())
