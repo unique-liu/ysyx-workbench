@@ -12,6 +12,7 @@
 !.scalafmt.conf
 !README.md
 !*.nxdc
+!*.so.5
 build/
 
 # mill

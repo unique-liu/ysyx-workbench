@@ -148,11 +148,7 @@ ARGS ?=
 SOC_EXEC := $(SOC_TARGET) $(ARGS) --elf=$(ELF) --diff=$(DIFF) --flash=$(BOOT) $(IMG)
 NPC_EXEC := $(NPC_TARGET) $(ARGS) --elf=$(ELF) --diff=$(DIFF) $(IMG)
 
-sim-env: $(BINARY)
-
-sim: $(SOC_TARGET)
-	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	$(SOC_EXEC)
+sim-env: $(NPC_TARGET)
 
 sim_soc: $(SOC_TARGET)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
@@ -162,6 +158,6 @@ sim_npc: $(NPC_TARGET)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	$(NPC_EXEC)
 
-sim-test: sim-env
-	$(BINARY) -b --trace=on --diff_on=off --mrom=/home/liu/ysyx-workbench/npc/test/ctest/char-test.bin
+sim-test: $(NPC_TARGET)
+	$(NPC_TARGET) -b --trace=on --diff_on=off --mrom=/home/liu/ysyx-workbench/npc/test/ctest/char-test.bin
 -include ../Makefile
