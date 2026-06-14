@@ -99,8 +99,11 @@ class EXU extends Module{
     io.forward.reg_rd           := Mux(reg_reg_op(Regop.write_bit) && (valid === 1.U),reg_reg_rd,0.U(5.W))
     io.forward.reg_useable      := !reg_reg_op(Regop.mem_bit) & valid
 
-    //perf-it
-    val perf_it                 = Module(new perf(PT.it))
-    perf_it.io.valid            := io.next.valid & io.next.ready
-    perf_it.io.code             := reg_debug.it_code
+    
+    if(Config.perf_on){
+        //perf-it
+        val perf_it                 = Module(new perf(PT.it))
+        perf_it.io.valid            := valid
+        perf_it.io.code             := reg_debug.it_code
+    }
 }

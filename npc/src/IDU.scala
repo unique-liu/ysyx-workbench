@@ -114,27 +114,30 @@ class IDU extends Module{
     io.next.reg_rd              := regInst(11, 7)
     io.next.mem_op              := inst_decoder.io.mem_op
 
-    //perf-it
-    val perf_it                 = Module(new perf(PT.it))
+    
     val it_code                 = Wire(UInt(8.W))
-    it_code                     := PT.it_inv
-    when(inst_decoder.io.csr_op =/= CSRop.noop){
-        it_code := PT.it_c
-    }.elsewhen(inst_decoder.io.branch_op =/= Branchop.noop){
-        it_code := PT.it_b
-    }.elsewhen(inst_decoder.io.mem_op =/= Memop.noop){
-        when(inst_decoder.io.mem_op(Memop.load_bit)){
-            it_code := PT.it_l
+    if(Config.perf_on){
+        //perf-it
+        val perf_it                 = Module(new perf(PT.it))
+        it_code                     := PT.it_inv
+        when(inst_decoder.io.csr_op =/= CSRop.noop){
+            it_code := PT.it_c
+        }.elsewhen(inst_decoder.io.branch_op =/= Branchop.noop){
+            it_code := PT.it_b
+        }.elsewhen(inst_decoder.io.mem_op =/= Memop.noop){
+            when(inst_decoder.io.mem_op(Memop.load_bit)){
+                it_code := PT.it_l
+            }.otherwise{
+                it_code := PT.it_s
+            }
+        }.elsewhen(inst_decoder.io.special_op =/= Specialop.noop){
+            it_code := PT.it_crt
         }.otherwise{
-            it_code := PT.it_s
+            it_code := PT.it_c
         }
-    }.elsewhen(inst_decoder.io.special_op =/= Specialop.noop){
-        it_code := PT.it_crt
-    }.otherwise{
-        it_code := PT.it_c
+        perf_it.io.valid            := io.next.valid
+        perf_it.io.code             := Cat(io.next.ready,it_code(6,0))// high bit indicates a new instruction
     }
-    perf_it.io.valid            := io.next.valid & io.next.ready
-    perf_it.io.code             := Cat(1.U(1.W),it_code(6,0))// high bit indicates a new instruction
 
     //imm generation
     val inst_type                = inst_decoder.io.inst_type
@@ -190,6 +193,7 @@ class IDU extends Module{
     io.next.debug.branch          := branch_taken & inst_decoder.io.branch_op(Branchop.jump_bit)//this is used to control ftrace, so only jump instruction
     io.next.debug.branch_target   := branch_ctrl.io.branch_target
     io.next.debug.it_code         := it_code
+
 }
 
 class inst_decoder extends Module{

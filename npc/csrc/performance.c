@@ -4,11 +4,13 @@
 static void call_inst_type(uint8_t code);
 static void call_ifu_no_inst(uint8_t code);
 static void call_lsu_mem_delay(uint8_t code);
+
 static perf_item_t perf_items[] = {
     PERF("invalid", NULL),
     PERF("inst_type",call_inst_type),
     PERF("ifu_no_inst", call_ifu_no_inst),
     PERF("lsu_mem_delay", call_lsu_mem_delay),
+
 };// 最多支持256种性能事件
 
 void record(uint8_t type, uint8_t code) {
@@ -45,7 +47,7 @@ static void report_inst_type() {
     const char* type_names[] = {"other", "alu", "branch", "store", "load", "csr", "control"};
     printf("----- Instruction type performance:\n");
     for (int i = 0; i < sizeof(inst_types)/sizeof(inst_types[0]); i++) {
-        printf("%s: count = %lu, total_cycle = %lu, avg_cycle = %lu\n", type_names[i], inst_types[i].inst_count, inst_types[i].inst_total_cycle, inst_types[i].inst_total_cycle / (inst_types[i].inst_count ? inst_types[i].inst_count : 1));
+        printf("%s:\tcount = %lu,\ttotal_cycle = %lu,\tavg_cycle = %lf\n", type_names[i], inst_types[i].inst_count, inst_types[i].inst_total_cycle, (double)inst_types[i].inst_total_cycle / (inst_types[i].inst_count ? (double)inst_types[i].inst_count : 1.0));
     }
 }
 static inst_type_t ifu_no_inst[] = {
@@ -70,13 +72,14 @@ static void report_ifu_no_inst() {
     printf("----- IFU no inst performance:\n");
     printf("total %ld cycles delay for ifu no inst\n",total_waste_cycle);
     printf("using %ld cycles wait error mem access and %ld cycles wait memory access\n", ifu_no_inst[2].inst_total_cycle, ifu_no_inst[3].inst_total_cycle);
-    printf("ifu axi request wait lsu %ld cycles", ifu_no_inst[1].inst_total_cycle);
+    printf("ifu axi request wait lsu %ld cycles\n", ifu_no_inst[1].inst_total_cycle);
 }
-static inst_type_t lsu_mem_delay[] = {
+static inst_type_t lsu_mem_delay[] = {// inst_count的和记录因为访存导致延迟的周期数
     {0,0},// other
     {0,0},// wait ifu mem access
     {0,0},// wait error mem access 
     {0,0},// wait memory access
+    {0,0},// total mem cycle
 };
 static void call_lsu_mem_delay(uint8_t code) {
     // 根据code记录指令类型事件, 如R/I/S/B/U/J等
@@ -94,13 +97,27 @@ static void report_lsu_mem_delay() {
     }
     printf("----- LSU mem delay performance:\n");
     printf("total %ld cycles delay for lsu mem access\n",total_waste_cycle);
-    printf("using %ld cycles wait ifu mem access and %ld cycles wait memory access\n", lsu_mem_delay[1].inst_total_cycle, lsu_mem_delay[3].inst_total_cycle);
-    printf("lsu axi request wait ifu %ld cycles", lsu_mem_delay[2].inst_total_cycle);
+    printf("using %ld cycles wait error mem access and %ld cycles wait memory access\n", lsu_mem_delay[2].inst_total_cycle, lsu_mem_delay[3].inst_total_cycle);
+    printf("lsu axi request wait ifu %ld cycles\n", lsu_mem_delay[1].inst_total_cycle);
+    printf("total mem cycle: %ld, inst: %ld, avg mem access cycle: %lf\n",lsu_mem_delay[4].inst_total_cycle,inst_types[3].inst_count+inst_types[4].inst_count, (double)lsu_mem_delay[4].inst_total_cycle / ((inst_types[3].inst_count + inst_types[4].inst_count) ? (double)(inst_types[3].inst_count + inst_types[4].inst_count) : 1.0));
 }
+
+
+
+
+static inst_type_t lsu_avg_memdelay = {0,0};
+static void call_lsu_avg_memdelay(uint8_t code) {
+    if (code & 0x80) {//最高位表示是新的访存指令
+        code = code & 0x7F;
+        lsu_avg_memdelay.inst_count++;
+    }
+    lsu_avg_memdelay.inst_total_cycle++;//访存周期
+}
+
+
 
 void report_performance() {
     report_inst_type();
     report_ifu_no_inst();
     report_lsu_mem_delay();
 }
-

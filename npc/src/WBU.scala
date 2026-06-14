@@ -104,9 +104,11 @@ class WBU extends Module{
 
     io.before.exception         := reg_CSR_info.exception
 
-    //perf-it
-    val perf_it                 = Module(new perf(PT.it))
-    perf_it.io.valid            := io.next.valid & io.next.ready
-    perf_it.io.code             := reg_debug.it_code
+    if(Config.perf_on){
+        //perf-it
+        val perf_it                 = Module(new perf(PT.it))
+        perf_it.io.valid            := valid
+        perf_it.io.code             := reg_debug.it_code
+    }
 
 }

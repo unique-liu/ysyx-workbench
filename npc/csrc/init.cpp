@@ -61,6 +61,7 @@ static int parse_args(int argc, char *argv[]) {
       case 'T': sscanf(optarg, "%lld", &npc_state.time_limit); break;
       case 'm': mrom_file = optarg; break;
       case 'f': flash_file = optarg; break;
+      case 'r': sdb_set_report_mode(optarg); break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);

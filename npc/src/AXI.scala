@@ -747,12 +747,14 @@ class AXI_Arbiter extends Module{
     u_diffskip.io.rdata     := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, io.lsu_axi.r.data, 0.U)
     u_diffskip.io.ridx      := Mux(io.lsu_axi.r.valid && io.lsu_axi.r.ready, 10.U, 11.U) //10: read  11: write
 
-    //perf-ini
-    val perf_ini            = Module(new perf(PT.ini))
-    perf_ini.io.valid       := have_ifu_req && r_fsm === r_lsu
-    perf_ini.io.code        := PT.ini_w_lsu
-    //perf-lmd
-    val perf_lmd            = Module(new perf(PT.lmd))
-    perf_lmd.io.valid       := have_lsu_req && r_fsm === r_ifu
-    perf_lmd.io.code        := PT.lmd_w_ifu
+    if(Config.perf_on){
+        //perf-ini
+        val perf_ini            = Module(new perf(PT.ini))
+        perf_ini.io.valid       := have_ifu_req && r_fsm === r_lsu
+        perf_ini.io.code        := PT.ini_w_lsu
+        //perf-lmd
+        val perf_lmd            = Module(new perf(PT.lmd))
+        perf_lmd.io.valid       := have_lsu_req && r_fsm === r_ifu
+        perf_lmd.io.code        := PT.lmd_w_ifu
+    }
 }

@@ -226,15 +226,22 @@ class LSU extends Module{
     //CSR
     have_exception              := io.next.exception | reg_CSR_info.exception //LSU or WBU can raise exception, so do not real access memory
 
-    //perf-it
-    val perf_it                 = Module(new perf(PT.it))
-    perf_it.io.valid            := io.next.valid & io.next.ready
-    perf_it.io.code             := reg_debug.it_code
-    //perf=lmd
-    val perf_lmd                = Module(new perf(PT.lmd))
-    val lack_inst               = valid === 1.U(1.W) && io.next.ready.asBool && !io.next.valid.asBool
-    val lmd_code                = Wire(UInt(8.W))
-    lmd_code                    := Mux(lsus === wait_error_mem, PT.ini_w_err, PT.ini_w_lsu)
-    perf_lmd.io.valid           := valid === 1.U(1.W) && !io.next.valid.asBool
-    perf_lmd.io.code            := Cat(lack_inst, lmd_code(6,0))
+    if(Config.perf_on){
+        //perf-it
+        val perf_it                 = Module(new perf(PT.it))
+        perf_it.io.valid            := valid
+        perf_it.io.code             := reg_debug.it_code
+        //perf-lmd
+        val perf_lmd                = Module(new perf(PT.lmd))
+        val lack_inst               = valid === 1.U(1.W) && io.next.ready.asBool && !io.next.valid.asBool
+        val lmd_code                = Wire(UInt(8.W))
+        lmd_code                    := Mux(lsus === wait_error_mem, PT.lmd_w_err, PT.lmd_w_mem)
+        perf_lmd.io.valid           := valid === 1.U(1.W) && !io.next.valid.asBool // cpu delay is casued by memory
+        perf_lmd.io.code            := Cat(lack_inst, lmd_code(6,0))
+        //perf-lmd2
+        val perf_lmd2               = Module(new perf(PT.lmd))
+        perf_lmd2.io.valid          := valid === 1.U(1.W) && (reg_mem_op =/= Memop.noop)
+        perf_lmd2.io.code           := PT.lmd_total
+
+    }
 }
