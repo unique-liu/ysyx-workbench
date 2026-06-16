@@ -393,7 +393,7 @@ class SRAM_AXI(id:Int=0) extends Module{//SRAM to AXI4 bridge
 }
 
 
-class AXI_Slave extends Module{
+class AXI_Slave extends Module{// need to support burst read for icache in no_soc mode
     val io = IO(new Bundle{
         val rPC         = Input (UInt(32.W))
         val wPC         = Input (UInt(32.W))
