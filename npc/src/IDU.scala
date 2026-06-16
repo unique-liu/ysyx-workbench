@@ -121,7 +121,11 @@ class IDU extends Module{
         val perf_it                 = Module(new perf(PT.it))
         it_code                     := PT.it_inv
         when(inst_decoder.io.csr_op =/= CSRop.noop){
-            it_code := PT.it_c
+            when(inst_decoder.io.csr_op(CSRop.int_bit)){
+                it_code := PT.it_crt
+            }.otherwise{
+                it_code := PT.it_csr
+            }
         }.elsewhen(inst_decoder.io.branch_op =/= Branchop.noop){
             it_code := PT.it_b
         }.elsewhen(inst_decoder.io.mem_op =/= Memop.noop){

@@ -420,11 +420,16 @@ class AXI_Slave extends Module{// need to support burst read for icache in no_so
     val ar_fsm      = RegInit(AXI_FSM.ar_idle)
     val ar_addr     = RegInit(0.U(32.W))
     val ar_id       = RegInit(0.U(4.W))
+    var ar_len      = RegInit(0.U(8.W))
+    var ar_size     = RegInit(0.U(3.W))
+    // var ar_burst    = RegInit(0.U(2.W)) just assume it is INCR
     val ar_PC       = RegInit(0.U(32.W))// for debug
     // r
     val r_fsm       = RegInit(AXI_FSM.r_idle)
     val r_data      = Wire(UInt(32.W))
     val r_resp      = Wire(UInt(2.W))
+    val burst_cnt   = RegInit(0.U(8.W))// for burst read
+    val addr_incr   = RegInit(0.U(32.W))
     val read_done   = Wire(Bool())
     // b
     val b_fsm       = RegInit(AXI_FSM.b_idle)
@@ -477,6 +482,8 @@ class AXI_Slave extends Module{// need to support burst read for icache in no_so
         ar_fsm := AXI_FSM.ar_wait   
         ar_addr := io.axi.ar.addr
         ar_id := io.axi.ar.id
+        ar_len := io.axi.ar.len
+        ar_size := io.axi.ar.size
         ar_PC := io.rPC
       }
     }
@@ -485,6 +492,8 @@ class AXI_Slave extends Module{// need to support burst read for icache in no_so
         ar_fsm := AXI_FSM.ar_idle
         ar_addr := 0.U(32.W)
         ar_id := 0.U(4.W)
+        ar_len := 0.U(8.W)
+        ar_size := 0.U(3.W)
         ar_PC := 0.U(32.W)
       }
     }
@@ -494,26 +503,32 @@ class AXI_Slave extends Module{// need to support burst read for icache in no_so
   //r
   switch(r_fsm){
     is(AXI_FSM.r_idle){
-      when(ar_fsm === AXI_FSM.ar_wait){
-        r_fsm := AXI_FSM.r_wait
-      }
+        when(ar_fsm === AXI_FSM.ar_wait){
+          r_fsm := AXI_FSM.r_wait
+        }
     }
     is(AXI_FSM.r_wait){
-      when(read_done){
-        r_fsm := AXI_FSM.r_resp
-      }
+        when(io.r_resp.valid){
+          r_fsm := AXI_FSM.r_resp
+        }
     }
     is(AXI_FSM.r_resp){
-      when(io.axi.r.ready){
-        r_fsm := AXI_FSM.r_idle
-      }
+        when(io.axi.r.ready && burst_cnt === ar_len){
+            burst_cnt := 0.U(8.W)
+            addr_incr := 0.U(32.W)
+            r_fsm := AXI_FSM.r_idle
+        }.elsewhen(io.axi.r.ready){
+            burst_cnt := burst_cnt + 1.U(8.W)
+            addr_incr := addr_incr + (1.U(32.W) << ar_size)
+            r_fsm := AXI_FSM.r_wait
+        }   
     }
   }
   io.axi.r.valid := (r_fsm === AXI_FSM.r_resp)
   io.axi.r.data := r_data
   io.axi.r.resp := r_resp
   io.axi.r.id   := ar_id
-  io.axi.r.last := true.B
+  io.axi.r.last := (burst_cnt === ar_len)
   //b
   switch(b_fsm){
     is(AXI_FSM.b_idle){
@@ -539,14 +554,14 @@ class AXI_Slave extends Module{// need to support burst read for icache in no_so
   io.rPC_out        := ar_PC
   io.wPC_out        := aw_PC
   io.r_req.valid    := (ar_fsm === AXI_FSM.ar_wait)
-  io.r_req.addr     := ar_addr
+  io.r_req.addr     := ar_addr + addr_incr
   io.w_req.valid    := (aw_fsm === AXI_FSM.aw_wait) && (w_fsm === AXI_FSM.w_wait)
   io.w_req.addr     := aw_addr
   io.w_req.data     := w_data
   io.w_req.strb     := w_strb
 
   //outside will preserve data until give ready signal
-  read_done         := io.r_resp.valid 
+  read_done         := io.axi.r.last && io.axi.r.ready && io.axi.r.valid
   r_data            := io.r_resp.data
   r_resp            := io.r_resp.resp
   io.r_resp.ready   := io.axi.r.ready && io.axi.r.valid

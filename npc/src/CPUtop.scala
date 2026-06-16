@@ -65,8 +65,7 @@ class CPUtop extends Module{
     })
 
     val u_regfile                       = Module(new Regfile())
-    
-    val u_i_switch                      = Module(new SRAM_AXI())
+    val u_i_switch                      = Module(new iCache())
     val u_d_switch                      = Module(new SRAM_AXI())
     val u_arbiter                       = Module(new AXI_Arbiter())
     val u_clint                         = Module(new CLINT())

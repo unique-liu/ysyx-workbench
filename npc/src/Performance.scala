@@ -23,6 +23,11 @@ object PT {// Performance Type
     val lmd_w_err   = 2.U(8.W)// code: wait error
     val lmd_w_mem   = 3.U(8.W)// code: wait memory
     val lmd_total   = 4.U(8.W)// code: total mem cycle
+  val icache        = 4.U(8.W)//icache
+    val icache_hit   = "b00000001".U(8.W)// code: hit
+    val icache_miss  = "b00000010".U(8.W)// code: miss
+    val icache_refill= "b00000100".U(8.W)// code: miss refill cycle
+    val icache_cycle = "b00001000".U(8.W)// code: normal access cycle
 }
 
 

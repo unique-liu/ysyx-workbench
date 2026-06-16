@@ -53,7 +53,9 @@ class IFU (initPC:Int=0)extends Module{
     op                          := IFUop.no_op
     switch(ifus){
         is(idle){//wait to send request
-            when(io.sram.req_ready){
+            when(changePC && !io.sram.req_ready){
+                op                  := IFUop.save_pc
+            }.elsewhen(io.sram.req_ready){
                 ifus                := wait_inst
                 op                  := Mux(changePC, IFUop.save_pc, IFUop.no_op)
             }

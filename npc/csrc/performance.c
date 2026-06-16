@@ -4,13 +4,14 @@
 static void call_inst_type(uint8_t code);
 static void call_ifu_no_inst(uint8_t code);
 static void call_lsu_mem_delay(uint8_t code);
+static void call_icache(uint8_t code);
 
 static perf_item_t perf_items[] = {
     PERF("invalid", NULL),
     PERF("inst_type",call_inst_type),
     PERF("ifu_no_inst", call_ifu_no_inst),
     PERF("lsu_mem_delay", call_lsu_mem_delay),
-
+    PERF("icache", call_icache)
 };// 最多支持256种性能事件
 
 void record(uint8_t type, uint8_t code) {
@@ -57,8 +58,7 @@ static inst_type_t ifu_no_inst[] = {
     {0,0},// wait memory access
 };
 static void call_ifu_no_inst(uint8_t code) {
-    // 根据code记录指令类型事件, 如R/I/S/B/U/J等
-    if (code & 0x80) {//最高位表示是新的指令
+    if (code & 0x80) {//最高位表示这一拍由于ifu没有指令可发而导致阻塞
         code = code & 0x7F;
         ifu_no_inst[code].inst_count++;
     }
@@ -83,7 +83,7 @@ static inst_type_t lsu_mem_delay[] = {// inst_count的和记录因为访存导�
 };
 static void call_lsu_mem_delay(uint8_t code) {
     // 根据code记录指令类型事件, 如R/I/S/B/U/J等
-    if (code & 0x80) {//最高位表示是新的指令
+    if (code & 0x80) {//最高位表示这一拍由于lsu访存而导致阻塞
         code = code & 0x7F;
         lsu_mem_delay[code].inst_count++;
     }
@@ -103,15 +103,29 @@ static void report_lsu_mem_delay() {
 }
 
 
-
-
-static inst_type_t lsu_avg_memdelay = {0,0};
-static void call_lsu_avg_memdelay(uint8_t code) {
-    if (code & 0x80) {//最高位表示是新的访存指令
-        code = code & 0x7F;
-        lsu_avg_memdelay.inst_count++;
+static inst_type_t icache[] = 
+{{0,0},// icache hit
+{0,0},// icache miss
+{0,0},// icache miss refill cycle
+{0,0}// icache normal access cycle
+};
+static void call_icache(uint8_t code){
+    for (int i =0 ;i < 8 ; i++) {
+        if (code>>i & 0x1 ) {
+            icache[i].inst_count++;//use bits to indicate which event happens
+        }
     }
-    lsu_avg_memdelay.inst_total_cycle++;//访存周期
+}
+void report_icache(){
+    uint64_t total_access = icache[0].inst_count + icache[1].inst_count;
+    double hit_rate = (double)icache[0].inst_count / (total_access ? (double)total_access : 1.0);
+    double avg_access_cycle = (double)icache[3].inst_count / (total_access ? (double)total_access : 1.0);
+    double avg_miss_penalty = (double)icache[2].inst_count / (icache[1].inst_count ? (double)icache[1].inst_count : 1.0);
+    double amat = avg_access_cycle + (1.0 - hit_rate) * avg_miss_penalty;
+    printf("----- Icache performance:\n");
+    printf("total access: %ld, hit: %ld, miss: %ld, hit rate: %lf\n", total_access, icache[0].inst_count, icache[1].inst_count, hit_rate);
+    printf("average access cycle: %lf average miss penalty: %lf\n", avg_access_cycle, avg_miss_penalty);
+    printf("AMAT: %lf\n", amat);
 }
 
 
@@ -120,4 +134,5 @@ void report_performance() {
     report_inst_type();
     report_ifu_no_inst();
     report_lsu_mem_delay();
+    report_icache();
 }

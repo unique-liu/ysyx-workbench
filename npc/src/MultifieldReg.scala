@@ -136,7 +136,7 @@ class mvendoridDEF{
 
 class marchidDEF{
     val field_widths    = Seq(32)
-    val init_val        = Seq(BigInt("DEADBEEF", 16))
+    val init_val        = Seq(BigInt("018D7E68", 16))//报名号100022545  学号ysyx_26050152
     val total_width     = 32
     val marchid         = 0
 }
