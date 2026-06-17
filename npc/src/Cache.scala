@@ -56,12 +56,15 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
 
     //declarations
         //state machine
-        val idle :: look_up :: send_rreq :: get_ret :: uc_send_rreq :: uc_get_ret :: Nil = Enum(6)
+        val idle :: look_up :: send_rreq :: get_ret :: uc_send_rreq :: uc_get_ret :: ub_send_rreq :: ub_get_ret :: Nil = Enum(8)
         val op                  = Wire(UInt(Cacheop.width.W))
         val fsm                 = RegInit(idle)
         //info  
         val reg_addr            = RegInit(0.U(32.W))
         val can_cache           = Wire(Bool())//indicate if the current access can be cached
+        val can_burst           = Wire(Bool())//indicate if the current access can use burst, in case of xip flash
+        val ub_cnt              = RegInit(0.U((offset_bits - 2).W))//count how many words have been sent
+        val addr_incr           = RegInit(0.U(8.W))//the address to be sent in next beat, used in burst write
         //cache
         val read_lines          = Wire(Vec(lines_per_group, new CacheLine(tag_bits, line_words)))
         val hit_vec             = Wire(Vec(lines_per_group, Bool()))
@@ -94,7 +97,7 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
                 fsm         := idle
             }.elsewhen(!hit){
                 op          := Cacheop.save_replace
-                fsm         := send_rreq
+                fsm         := Mux(can_burst, send_rreq,ub_send_rreq )
             }
         }
         is(send_rreq){ // send read request to axi
@@ -127,13 +130,41 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
                 fsm         := idle
             }
         }
+        is(ub_send_rreq){
+            when(io.axi.ar.ready){
+                op          := Cacheop.no_op
+                fsm         := ub_get_ret
+            }
+        }
+        is(ub_get_ret){
+            when(io.axi.r.valid && (ub_cnt === (line_words - 1).U)){
+                op          := Cacheop.save_refill | Cacheop.refill_mem
+                fsm         := idle
+                refill_cnt  := 0.U
+                ub_cnt      := 0.U
+                addr_incr   := 0.U
+            }.elsewhen(io.axi.r.valid){
+                op          := Cacheop.save_refill
+                fsm         := ub_send_rreq
+                refill_cnt  := refill_cnt + 1.U
+                ub_cnt      := ub_cnt + 1.U
+                addr_incr   := addr_incr + 4.U
+            }.otherwise{
+                op          := Cacheop.no_op
+            }
+        }
     }
 
     //Cache logic
     if (Config.use_soc){
-        can_cache :=  io.sram.addr(31, 28) === 0xa.U 
+        can_cache :=  io.sram.addr(31, 28) === 0xa.U  ||  io.sram.addr(31, 28) === 0x3.U //cache flash and sdram
     }else{
         can_cache := true.B
+    }
+    if (Config.use_soc){
+        can_burst :=  io.sram.addr(31, 28) === 0xa.U  // only sdram can use burst
+    }else{
+        can_burst := false.B
     }
 
     read_lines.zip(mem_datas).foreach{ case(line, mem) =>
@@ -151,7 +182,7 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
     have_invalid := invalid_vec.reduce(_ || _)
 
     when(op(Cacheop.save_replace_bit)){
-        replace_vec         := Mux(have_invalid, invalid_vec.asUInt, count_down_vec)
+        replace_vec         := Mux(have_invalid, invalid_vec.asUInt & (-(invalid_vec.asUInt)), count_down_vec)
         count_down_vec      := Mux(have_invalid, count_down_vec, Cat(count_down_vec(lines_per_group-2, 0), count_down_vec(lines_per_group-1)))
         refill_buf.valid    := true.B
         refill_buf.tag      := reg_addr(tag_end_bit, tag_start_bit)
@@ -200,21 +231,23 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
 
     io.axi.b.ready                  := false.B
 
-    io.axi.ar.valid                 := fsm === send_rreq || fsm === uc_send_rreq
-    io.axi.ar.addr                  := Mux(fsm === uc_send_rreq, reg_addr, Cat(reg_addr(tag_end_bit, index_start_bit),0.U(offset_bits.W)))//align to line
+    io.axi.ar.valid                 := fsm === send_rreq || fsm === uc_send_rreq || fsm === ub_send_rreq
+    io.axi.ar.addr                  :=  Mux(fsm === uc_send_rreq, reg_addr, 
+                                        Mux(fsm === ub_send_rreq, Cat(reg_addr(tag_end_bit, index_start_bit),0.U(offset_bits.W)) + addr_incr,
+                                            Cat(reg_addr(tag_end_bit, index_start_bit),0.U(offset_bits.W))))//align to line
     io.axi.ar.id                    := axi_id.U
-    io.axi.ar.len                   := Mux(fsm === uc_send_rreq, 0.U,(line_words - 1).U)//number of beats in a burst, minus 1 because len starts from 0
+    io.axi.ar.len                   := Mux(fsm === uc_send_rreq || fsm === ub_send_rreq, 0.U,(line_words - 1).U)//number of beats in a burst, minus 1 because len starts from 0
     io.axi.ar.size                  := 2.U//if always read 4 bytes
     io.axi.ar.burst                 := AXI_BURST.INCR
 
-    io.axi.r.ready                  := fsm === get_ret || fsm === uc_get_ret
+    io.axi.r.ready                  := fsm === get_ret || fsm === uc_get_ret || fsm === ub_get_ret
 
     if(Config.perf_on){
         //perf-icache
         val perf_icache             = Module(new perf(PT.icache))
         val icache_hit              = hit && (fsm === look_up)
         val icache_miss             = !hit && (fsm === look_up)
-        val icache_refill           = fsm === get_ret || fsm === send_rreq
+        val icache_refill           = fsm === get_ret || fsm === send_rreq || fsm === ub_get_ret || fsm === ub_send_rreq 
         val icache_cycle            = (fsm === look_up) || (fsm === idle) && io.sram.req_ren //count cycle when look up or wait for req
         val icache_code             = Cat(icache_cycle, icache_refill, icache_miss, icache_hit)
         perf_icache.io.valid        := icache_hit || icache_miss || icache_refill || icache_cycle
