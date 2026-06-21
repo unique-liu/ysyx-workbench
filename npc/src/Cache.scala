@@ -1,19 +1,23 @@
 import chisel3._
 import chisel3.util._
 object Cacheop{
-    val width           = 5
+    val width           = 7
     val save_info_bit   = 0
     val save_replace_bit= 1
     val save_refill_bit = 2
     val refill_mem_bit  = 3
     val uc_return_bit   = 4
+    val flush_cache_bit = 5
+    val flush_init_bit  = 6
     
-    val no_op           = "b00000".U(width.W)
-    val save_info       = "b00001".U(width.W)//save addr, wdata, wmask, size 
-    val save_replace    = "b00010".U(width.W)
-    val save_refill     = "b00100".U(width.W)
-    val refill_mem      = "b01000".U(width.W)//in cache this is no use
-    val uc_return       = "b10000".U(width.W)
+    val no_op           = "b0000000".U(width.W)
+    val save_info       = "b0000001".U(width.W)//save addr, wdata, wmask, size 
+    val save_replace    = "b0000010".U(width.W)
+    val save_refill     = "b0000100".U(width.W)
+    val refill_mem      = "b0001000".U(width.W)
+    val uc_return       = "b0010000".U(width.W)
+    val flush_cache     = "b0100000".U(width.W)
+    val flush_init      = "b1000000".U(width.W)
 }
 
 // 定义缓存行数据结构（包含 valid, tag, data）
@@ -34,6 +38,7 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
         val sram            = Flipped(new SRAM)
         val axi_PC          = Output(UInt(32.W))
         val axi             = new AXI4
+        val flush           = Input(Bool())
     })   
     //prepare args
     assert(offset_bits > 2, "offset_bits must be at least 2")
@@ -56,7 +61,7 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
 
     //declarations
         //state machine
-        val idle :: look_up :: send_rreq :: get_ret :: uc_send_rreq :: uc_get_ret :: ub_send_rreq :: ub_get_ret :: Nil = Enum(8)
+        val idle :: look_up :: send_rreq :: get_ret :: uc_send_rreq :: uc_get_ret :: ub_send_rreq :: ub_get_ret :: flush :: Nil = Enum(9)
         val op                  = Wire(UInt(Cacheop.width.W))
         val fsm                 = RegInit(idle)
         //info  
@@ -75,15 +80,22 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
         val have_invalid        = Wire(Bool())
         val count_down_vec      = RegInit(1.U(lines_per_group.W))//use count down: replace 3 -> 2 -> 1 -> 0 -> 3 ...
         val replace_vec         = RegInit(0.U(lines_per_group.W))
+        val refill_idx          = RegInit(0.U(index_bits.W))
         val refill_cnt          = RegInit(0.U((offset_bits - 2).W))//count how many words have been refilled, used in burst write
         val refill_buf          = Reg(new CacheLine(tag_bits, line_words))
         val refill_wire         = Wire(new CacheLine(tag_bits, line_words))
+        val reg_flush           = RegInit(false.B)
+        val flush_idx           = RegInit(0.U(index_bits.W))//used when flush cache group by group
 
     //state machine
     op                      := Cacheop.no_op
     switch(fsm){
         is(idle){// wait for req
-            when(io.sram.req_ren && can_cache){
+            when(io.flush || reg_flush){
+                op          := Cacheop.flush_init
+                fsm         := flush
+                flush_idx   := 0.U
+            }.elsewhen(io.sram.req_ren && can_cache){
                 op          := Cacheop.save_info
                 fsm         := look_up
             }.elsewhen(io.sram.req_ren && !can_cache){
@@ -153,9 +165,24 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
                 op          := Cacheop.no_op
             }
         }
+        is(flush){
+            when(flush_idx === (num_groups - 1).U){
+                op          := Cacheop.flush_cache | Cacheop.refill_mem
+                fsm         := idle
+            }.otherwise{
+                op          := Cacheop.flush_cache | Cacheop.refill_mem
+                flush_idx   := flush_idx + 1.U
+            }
+        }
     }
 
     //Cache logic
+    when(io.flush){
+        reg_flush   := true.B
+    }.elsewhen(fsm === flush){
+        reg_flush   := false.B
+    }
+
     if (Config.use_soc){
         can_cache :=  io.sram.addr(31, 28) === 0xa.U  ||  io.sram.addr(31, 28) === 0x3.U //cache flash and sdram
     }else{
@@ -186,15 +213,18 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
         count_down_vec      := Mux(have_invalid, count_down_vec, Cat(count_down_vec(lines_per_group-2, 0), count_down_vec(lines_per_group-1)))
         refill_buf.valid    := true.B
         refill_buf.tag      := reg_addr(tag_end_bit, tag_start_bit)
+    }.elsewhen(op(Cacheop.flush_init_bit)){
+        replace_vec         := ~(0.U(lines_per_group.W))
+        refill_buf.valid    := false.B
     }
 
+    refill_idx  := Mux(op(Cacheop.flush_cache_bit), flush_idx, reg_addr(index_end_bit, index_start_bit))
     refill_wire := refill_buf
     refill_wire.data(line_words-1) := io.axi.r.data
     when(op(Cacheop.refill_mem_bit)){  
-        // mem_datas(replace_index).write(reg_addr(index_end_bit, index_start_bit), refill_wire.asUInt)
         for(i <- 0 until lines_per_group){
             when(replace_vec(i)){
-                mem_datas(i).write(reg_addr(index_end_bit, index_start_bit), refill_wire.asUInt)
+                mem_datas(i).write(refill_idx, refill_wire.asUInt)
             }
         }
     }.elsewhen(op(Cacheop.save_refill_bit)){
@@ -204,7 +234,7 @@ class iCache(axi_id:Int=0,offset_bits:Int=4,index_bits:Int=4,group_bits:Int=1) e
     
 
     //sram
-    io.sram.req_ready               := (fsm === idle)
+    io.sram.req_ready               := (fsm === idle) && ~io.flush && ~reg_flush
     when(op(Cacheop.save_info_bit)){
         reg_addr    := io.sram.addr 
     }

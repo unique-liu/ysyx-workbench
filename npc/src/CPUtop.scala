@@ -88,6 +88,7 @@ class CPUtop extends Module{
 
     //bus
     u_i_switch.io.PC                    := u_ifu.io.sram_PC
+    u_i_switch.io.flush                 := u_idu.io.fencei
     u_ifu.io.sram                       <> u_i_switch.io.sram
     u_d_switch.io.PC                    := u_lsu.io.sram_PC
     u_lsu.io.sram                       <> u_d_switch.io.sram

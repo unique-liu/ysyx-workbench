@@ -53,6 +53,7 @@ class IDU extends Module{
             val rdata       = Input(UInt(32.W))
         }
         val flush           = Input(Bool())
+        val fencei          = Output(Bool())
     })
     //dclarations
     val rs1_stall               = Wire(Bool())
@@ -152,7 +153,7 @@ class IDU extends Module{
 
     //branch control
     val branch_ctrl              = Module(new branch_ctrl)
-    branch_taken                 := branch_ctrl.io.take_branch & io.next.valid//there have some problem, fix in the future
+    branch_taken                 := branch_ctrl.io.take_branch & will_out
     branch_ctrl.io.src1          := rs1_data
     branch_ctrl.io.src2          := rs2_data
     branch_ctrl.io.pc            := regPC
@@ -161,6 +162,7 @@ class IDU extends Module{
     io.before.branchPC           := branch_ctrl.io.branch_target
     io.before.ifbranch           := branch_taken
 
+    io.fencei                    := inst_decoder.io.branch_op === Branchop.fencei & will_out
     //ALU source selection
     val src1_op                  = inst_decoder.io.src1_op
     val src2_op                  = inst_decoder.io.src2_op
@@ -269,6 +271,7 @@ class inst_decoder extends Module{
             InstCode.ecall   -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.noop, Srcop.use_zero, Srcop.use_zero,Specialop.noop, CSRop.ecall),
             InstCode.ebreak  -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.noop, Srcop.use_zero, Srcop.use_zero,Specialop.noop, CSRop.ebreak),
             InstCode.mret    -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.noop, Srcop.use_zero, Srcop.use_zero,Specialop.noop, CSRop.mret),
+            InstCode.fencei  -> concatBitPat(InstType.I, ALUop.add, Regop.noop , Memop.noop    , Branchop.fencei,Srcop.use_zero,Srcop.use_zero,Specialop.noop, CSRop.noop),
             //S-type
             InstCode.sb      -> concatBitPat(InstType.S, ALUop.add, Regop.noop , Memop.s_byte  , Branchop.noop, Srcop.use_reg , Srcop.use_imm ,Specialop.noop, CSRop.noop),
             InstCode.sh      -> concatBitPat(InstType.S, ALUop.add, Regop.noop , Memop.s_half  , Branchop.noop, Srcop.use_reg , Srcop.use_imm ,Specialop.noop, CSRop.noop),
@@ -354,6 +357,8 @@ class branch_ctrl extends Module{
         is(Branchop.bgeu){io.take_branch    := (io.src1 >= io.src2)}
         is(Branchop.jal){io.take_branch     := true.B}
         is(Branchop.jalr){io.take_branch    := true.B}
+        is(Branchop.fencei){io.take_branch  := true.B}
     }
-    io.branch_target := Mux(io.branch_op === Branchop.jalr,(io.src1 + io.imm) & (~1.U(32.W)),io.pc + io.imm)
+    io.branch_target := Mux(io.branch_op === Branchop.jalr,(io.src1 + io.imm) & (~1.U(32.W)),
+                        Mux(io.branch_op === Branchop.fencei, io.pc + 4.U, io.pc + io.imm))
 }

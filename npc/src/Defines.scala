@@ -84,22 +84,24 @@ object Regop{
     val b_w_mem     = BitPat(w_mem)
 }
 object Branchop{
-    val op_width    = 5
+    val op_width    = 6
     val branch_bit   = 0
     val reverse_bit  = 1//1: reverse the condition of == > >=, e.g. beq -> bne
     val sign_bit     = 2//0: signed compare, 1: unsigned compare
     val cond_bit     = 3//0: === , 1: >=
     val jump_bit     = 4//1: this is a jump instruction
+    val fence_bit    = 5//1: this is a fence instruction
 
-    val noop        = "b00000".U(op_width.W)
-    val beq         = "b00001".U(op_width.W)
-    val bne         = "b00011".U(op_width.W)
-    val bge         = "b01001".U(op_width.W)
-    val blt         = "b01011".U(op_width.W)
-    val bgeu        = "b01101".U(op_width.W)
-    val bltu        = "b01111".U(op_width.W)
-    val jal         = "b10000".U(op_width.W)
-    val jalr        = "b11000".U(op_width.W)
+    val noop        = "b000000".U(op_width.W)
+    val beq         = "b000001".U(op_width.W)
+    val bne         = "b000011".U(op_width.W)
+    val bge         = "b001001".U(op_width.W)
+    val blt         = "b001011".U(op_width.W)
+    val bgeu        = "b001101".U(op_width.W)
+    val bltu        = "b001111".U(op_width.W)
+    val jal         = "b010000".U(op_width.W)
+    val jalr        = "b011000".U(op_width.W)
+    val fencei      = "b100000".U(op_width.W)
     //following the the bitpattern of above
     val b_noop      = BitPat(noop)
     val b_beq       = BitPat(beq)
@@ -110,6 +112,7 @@ object Branchop{
     val b_bltu      = BitPat(bltu)
     val b_jal       = BitPat(jal)
     val b_jalr      = BitPat(jalr)
+    val b_fencei    = BitPat(fencei)
 }
 object Srcop{
     val op_width    = 5
@@ -135,11 +138,6 @@ object Srcop{
 object Specialop{
     val op_width    = 2
     val noop        = "b00".U(op_width.W)
-    val halt_error  = "b01".U(op_width.W)
-    val halt_normal = "b11".U(op_width.W)
-    val b_noop      = BitPat(noop)
-    val b_halt_error = BitPat(halt_error)
-    val b_halt_normal = BitPat(halt_normal)
 }
 object CSRop{
     val op_width    = 5
@@ -207,6 +205,7 @@ object InstCode{
     val ecall       = BitPat("b000000000000_00000_000_00000_1110011")
     val ebreak      = BitPat("b000000000001_00000_000_00000_1110011")
     val mret        = BitPat("b001100000010_00000_000_00000_1110011")
+    val fencei      = BitPat("b0000_0000_0000_00000_001_00000_0001111")
 
     //S-type: imm[11:5]|rs2|rs1|func3|imm[4:0]|opcode
     val sb          = BitPat("b???????_?????_?????_000_?????_0100011")
