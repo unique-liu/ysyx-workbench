@@ -1,11 +1,11 @@
 # 关键路径
 PWD = $(shell pwd)
 # 这个是SOC的路径
-SOC_HOME = /home/liu/ysyx-workbench/ysyxSoC
+SOC_HOME ?= ../ysyxSoC
 # 这个是nvboard的路径
-# NVBOARD_HOME = /home/liu/nvboard   
+NVBOARD_HOME ?= ../nvboard   
 # 这个是nemu的路径
-# NEMU_HOME = ../nemu
+NEMU_HOME ?= ../nemu
 
 # build 目录
 BUILD_DIR = $(PWD)/build
@@ -125,6 +125,11 @@ $(AUTO_BIND): $(CONSTR_DIRS)/top.nxdc
 	@python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $(CONSTR_DIRS)/top.nxdc $(AUTO_BIND)
 
 # ------ 其他
+check:
+	@echo "SOC_HOME: $(SOC_HOME)"
+	@echo "NVBOARD_HOME: $(NVBOARD_HOME)"
+	@echo "NEMU_HOME: $(NEMU_HOME)"
+
 test:
 	mill -i test
 
