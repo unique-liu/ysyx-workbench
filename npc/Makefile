@@ -15,8 +15,9 @@ BUILD_VERILATOR_DIR = $(BUILD_DIR)/verilator
 CPP_DIRS = $(PWD)/csrc
 CHISEL_DIRS = $(PWD)/src
 VERILOG_NO_DPI_DIRS = $(BUILD_CHISEL_DIR)/soc
-VERILOG_DIRS = $(BUILD_CHISEL_DIR)/npc vsrc
-VERILOG_SOC_DIRS = $(BUILD_CHISEL_DIR)/soc vsrc $(SOC_HOME)/perip
+VERILOG_NPC_DIRS = $(BUILD_CHISEL_DIR)/npc vsrc
+VERILOG_SOC_DIRS = $(BUILD_CHISEL_DIR)/soc vsrc
+VERILOG_SOC_EXTRA_DIRS =  $(SOC_HOME)/perip
 CONSTR_DIRS = $(PWD)/constr
 # 顶层模块名
 TOP_MODULE_SOC = ysyxSoCFull #SOC顶层模块名
@@ -29,16 +30,17 @@ VERILATOR = verilator
 
 # 收集所有.v .sv .cpp 文件
 VERILOG_SRC_NO_DPI = $(shell find $(VERILOG_NO_DPI_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
-VERILOG_SRC = $(shell find $(VERILOG_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
+VERILOG_NPC_SRC = $(shell find $(VERILOG_NPC_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
 VERILOG_SOC_SRC = $(shell find $(VERILOG_SOC_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
-VERILOG_SOC_SRC += $(SOC_HOME)/build/ysyxSoCFull.v
+VERILOG_SOC_EXTRA_SRC = $(shell find $(VERILOG_SOC_EXTRA_DIRS) -type f \( -name "*.v" -o -name "*.sv" \) 2>/dev/null)
+VERILOG_SOC_EXTRA_SRC += $(SOC_HOME)/build/ysyxSoCFull.v
 
 CPP_SRC_COMMON = $(shell find $(CPP_DIRS) -type f \( -name "*.c" -o -name "*.cpp" \) ! -name "auto_bind.cpp" 2>/dev/null)
 CPP_SOC_SRC = $(CPP_SRC_COMMON) $(AUTO_BIND)
 CPP_NPC_SRC = $(CPP_SRC_COMMON)
 
-ifeq ($(strip $(VERILOG_SRC)),)
-$(error No Verilog/SystemVerilog files found in $(VERILOG_DIRS))
+ifeq ($(strip $(VERILOG_NPC_SRC)),)
+$(error No Verilog/SystemVerilog files found in $(VERILOG_NPC_DIRS))
 endif
 
 ifeq ($(strip $(CPP_SRC_COMMON)),)
@@ -70,17 +72,17 @@ VERILATOR_NPC_FLAGS = $(VERILATOR_FLAGS) --top-module $(TOP_MODULE_NPC) --cc -CF
 verilator_npc: $(NPC_TARGET)
 verilator_soc: $(SOC_TARGET)
 
-$(SOC_TARGET): $(VERILOG_SOC_SRC) $(CPP_SOC_SRC)
+$(SOC_TARGET): $(SOC_CPU_TOP) $(VERILOG_SOC_EXTRA_SRC) $(CPP_SOC_SRC)
 	mkdir -p $(BUILD_VERILATOR_DIR)/soc
-	$(VERILATOR) $(VERILATOR_SOC_FLAGS) $(VERILOG_SOC_SRC) $(CPP_SOC_SRC) -o $@
+	$(VERILATOR) $(VERILATOR_SOC_FLAGS) $(SOC_CPU_TOP) $(VERILOG_SOC_EXTRA_SRC) $(CPP_SOC_SRC) -o $@
 
-$(NPC_TARGET): $(VERILOG_SRC) $(CPP_NPC_SRC)
+$(NPC_TARGET): $(NPC_CPU_TOP) $(CPP_NPC_SRC)
 	mkdir -p $(BUILD_VERILATOR_DIR)/npc
-	$(VERILATOR) $(VERILATOR_NPC_FLAGS) $(VERILOG_SRC) $(CPP_NPC_SRC) -o $@
+	$(VERILATOR) $(VERILATOR_NPC_FLAGS) $(NPC_CPU_TOP) $(CPP_NPC_SRC) -o $@
 
 # ------ Chisel -> verilog
-NPC_CPU_TOP = $(BUILD_CHISEL_DIR)/npc/CPUtop.sv
-SOC_CPU_TOP = $(BUILD_CHISEL_DIR)/soc/CPUtop.sv
+NPC_CPU_TOP = $(BUILD_DIR)/ysyx_26050152-npc.sv
+SOC_CPU_TOP = $(BUILD_DIR)/ysyx_26050152.sv
 CHISEL_FILES = $(shell find $(CHISEL_DIRS) -type f \( -name "*.scala" \) 2>/dev/null)
 
 verilog_npc: $(NPC_CPU_TOP)
@@ -90,11 +92,13 @@ $(NPC_CPU_TOP): $(CHISEL_FILES)
 	$(call git_commit, "generate verilog")
 	mkdir -p $(BUILD_CHISEL_DIR)/npc
 	JAVA_OPTS="-Duse_soc=false"  mill -j6 -i runMain Elaborate --target-dir $(BUILD_CHISEL_DIR)/npc
+	cat $(VERILOG_NPC_SRC) > $(NPC_CPU_TOP)
 
 $(SOC_CPU_TOP): $(CHISEL_FILES)
 	$(call git_commit, "generate verilog")
 	mkdir -p $(BUILD_CHISEL_DIR)/soc
 	JAVA_OPTS="-Duse_soc=true"  mill -j6 -i runMain Elaborate --target-dir $(BUILD_CHISEL_DIR)/soc
+	cat $(VERILOG_SOC_SRC) > $(SOC_CPU_TOP)
 # ------ verilog -> report
 
 YOSYS_STA_DIR = /home/liu/yosys-sta
@@ -119,8 +123,8 @@ AUTO_BIND = $(CPP_DIRS)/auto_bind.cpp
 nvboard: $(AUTO_BIND)
 $(AUTO_BIND): $(CONSTR_DIRS)/top.nxdc
 	@python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $(CONSTR_DIRS)/top.nxdc $(AUTO_BIND)
-# ------ 其他
 
+# ------ 其他
 test:
 	mill -i test
 
@@ -144,6 +148,8 @@ clean:
 
 .PHONY: test verilog verilator help reformat checkformat clean yosys
 
+
+
 # Some convenient rules
 IMG ?=
 BOOT ?=
@@ -165,4 +171,14 @@ sim_npc: $(NPC_TARGET)
 
 sim-test: $(NPC_TARGET)
 	$(NPC_TARGET) -b --trace=on --diff_on=off --mrom=/home/liu/ysyx-workbench/npc/test/ctest/char-test.bin
+
+# ------ command for course
+verilog:$(SOC_CPU_TOP)
+
+sim-iverilog: 
+	@echo not supported
+
+sim-iverilog-netlist: 
+	@echo not supported
+
 -include ../Makefile

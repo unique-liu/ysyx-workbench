@@ -1,4 +1,4 @@
-STUID =2023k8009929022 
+STUID =ysyx_26050152
 STUNAME =刘遥青 
 
 # DO NOT modify the following code!!!
