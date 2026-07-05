@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define DEBUG // 开启调试模式，启用日志记录等功能
+// #define DEBUG // 开启调试模式，启用日志记录等功能
 #define CONFIG_DEVICE // 开启设备模拟功能
 #define CONFIG_ITRACE // 开启指令跟踪功能
 #define CONFIG_MTRACE // 开启内存访问日志记录功能
@@ -9,10 +9,16 @@
 #define CONFIG_DTRACE // 开启设备模拟功能
 #define CONFIG_RTRACE // 开启寄存器访问日志记录功能
 // #define CONFIG_WATCHPOINT // 开启监视点功能
-#define CONFIG_DIFFTEST// 开启差分测试功能
-#define CONFIG_AUTOTRACE // 开启自动跟踪功能
+// #define CONFIG_DIFFTEST// 开启差分测试功能
+// #define CONFIG_AUTOTRACE // 开启自动跟踪功能
 #define CONFIG_AUTOTRACE_PERIOD 10000 // 自动跟踪的周期，单位为指令数
 #define CONFIG_BOARD // 开启板级支持
+
+#ifdef CONFIG_BOARD
+#ifndef CONFIG_NO_NVBOARD
+#define ENABLE_NVBOARD // 启用nvboard功能
+#endif
+#endif
 
 #define CONFIG_MSIZE 0x8000004
 #define CONFIG_MBASE 0x80000000
@@ -24,7 +30,7 @@
 #define CONFIG_SDRAM_SIZE 0x2000000// 32MB for 1 sdram chip
 #define CONFIG_PC_RESET_OFFSET 0 
 
-#define CONFIG_FST //开启波形文件生成
+// #define CONFIG_FST //开启波形文件生成
 
 // #define CONFIG_USE_SOC //使用soc平台
 

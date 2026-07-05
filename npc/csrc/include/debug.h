@@ -96,8 +96,23 @@ extern FILE *T;
 #else
 #define DEBUG_DECLARE()
 #define DEBUG_INIT() do {} while (0)
+#define DEBUG_APPEND()
 #define DEBUG_END() do {} while (0)
 #define DEBUG_PRINT(fmt, ...) do {} while (0)
+#define DEBUG_FLUSH(target)
+#define TRACE(name,...)
+#define TRACE_FORCE(name,...)
+#define panic(...) do {\
+    printf(__VA_ARGS__);\
+    assert(0);\
+    } while (0)
+#define Assert(cond,...) do{\
+    if (!(cond)) {\
+        printf(__VA_ARGS__);\
+        assert(0);\
+    }\
+    }while(0)
+#define Log(...)
 #endif
 
 #define DEBUG_ASSERT(cond,name,target,fmt, ...) do {\

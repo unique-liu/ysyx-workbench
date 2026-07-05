@@ -272,10 +272,10 @@ void sdb_set_trace_mode(char *mode){
     #endif
   } else if(strcmp(mode, "clock") == 0) {
     npc_state.trace_on = TRACE_CLOCK;
-  }
   #endif
-  else {
-    printf("Unknown trace mode '%s', use 'on' or 'off' maybe CONFIG_AUTOTRACE was not defined\n", mode);
+  }else {
+    // printf("Unknown trace mode '%s', use 'on' or 'off' maybe CONFIG_AUTOTRACE was not defined\n", mode);
+    npc_state.trace_on = TRACE_OFF;
   }
 }
 

@@ -3,7 +3,7 @@ PWD = $(shell pwd)
 # 这个是SOC的路径
 SOC_HOME ?= ../ysyxSoC
 # 这个是nvboard的路径
-NVBOARD_HOME ?= ../nvboard   
+NVBOARD_HOME ?= ../nvboard
 # 这个是nemu的路径
 NEMU_HOME ?= ../nemu
 
@@ -36,28 +36,31 @@ VERILOG_SOC_EXTRA_SRC = $(shell find $(VERILOG_SOC_EXTRA_DIRS) -type f \( -name 
 VERILOG_SOC_EXTRA_SRC += $(SOC_HOME)/build/ysyxSoCFull.v
 
 CPP_SRC_COMMON = $(shell find $(CPP_DIRS) -type f \( -name "*.c" -o -name "*.cpp" \) ! -name "auto_bind.cpp" 2>/dev/null)
+ifneq ($(strip $(NVBOARD_HOME)),)
 CPP_SOC_SRC = $(CPP_SRC_COMMON) $(AUTO_BIND)
+else
+CPP_SOC_SRC = $(CPP_SRC_COMMON)
+endif
 CPP_NPC_SRC = $(CPP_SRC_COMMON)
-
-ifeq ($(strip $(VERILOG_NPC_SRC)),)
-$(error No Verilog/SystemVerilog files found in $(VERILOG_NPC_DIRS))
-endif
-
-ifeq ($(strip $(CPP_SRC_COMMON)),)
-$(warning No C++ source files found, assuming pure Verilog simulation)
-endif
-
 
 # ----- verilog -> bin
 # 编译选项
 VCC_FLAGZ = -I$(CURDIR)/csrc/include -I$(NEMU_HOME)/tools/capstone/repo/include   -Os -march=native -mtune=native
 # nvboard要求
+ifneq ($(strip $(NVBOARD_HOME)),)
 VCC_FLAGZ += -I$(NVBOARD_HOME)/usr/include 
+else
+VCC_FLAGZ += -DCONFIG_NO_NVBOARD
+endif
 
 # 链接选项
 LIBS = $(CURDIR)/csrc/lib/libcapstone.so.5 -lreadline -ldl -pie
 # nvboard要求
+ifneq ($(strip $(NVBOARD_HOME)),)
 LIBS_SOC = $(LIBS) $(NVBOARD_HOME)/build/nvboard.a $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
+else
+LIBS_SOC = $(LIBS)
+endif
 
 VERILATOR_FLAGS = --autoflush  --build --exe -j --timescale "1ns/1ns" --no-timing -O3 --x-assign fast --x-initial fast
 # 如需波形跟踪，添加：

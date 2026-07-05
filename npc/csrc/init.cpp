@@ -183,7 +183,7 @@ void sigint_handler(int signum) {
     printf("halt with interupt\n");
     npc_state.type = NPC_WAITING;
 }
-
+ 
 void init_fst(){
     #ifdef CONFIG_FST
     tfp = new VerilatedFstC;

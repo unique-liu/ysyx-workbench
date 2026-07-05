@@ -1,12 +1,15 @@
 #include <board.h>
-#include <nvboard.h>
 #include INCLUDE_TOP
 #include <exec.h>
+
 #ifdef CONFIG_USE_SOC
+#ifdef ENABLE_NVBOARD
+#include <nvboard.h>
 void nvboard_bind_all_pins(VysyxSoCFull* top);
+#endif
 
 void init_board() {
-    #ifdef CONFIG_BOARD
+    #ifdef ENABLE_NVBOARD
     nvboard_bind_all_pins(top);
     nvboard_init();
     #else
@@ -15,13 +18,13 @@ void init_board() {
 }
 
 void update_board() {
-    #ifdef CONFIG_BOARD
+    #ifdef ENABLE_NVBOARD
     nvboard_update();
     #endif
 
 }
 void finish_board() {
-    #ifdef CONFIG_BOARD
+    #ifdef ENABLE_NVBOARD
     nvboard_quit();
     #endif
 }
