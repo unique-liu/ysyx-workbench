@@ -130,8 +130,12 @@ $(AUTO_BIND): $(CONSTR_DIRS)/top.nxdc
 # ------ 其他
 check:
 	@echo "SOC_HOME: $(SOC_HOME)"
+	@test -d "$(SOC_HOME)" || { echo "ERROR: SOC_HOME directory does not exist!"; exit 1; }
 	@echo "NVBOARD_HOME: $(NVBOARD_HOME)"
+	@test -d "$(NVBOARD_HOME)" || { echo "ERROR: NVBOARD_HOME directory does not exist!"; exit 1; }
 	@echo "NEMU_HOME: $(NEMU_HOME)"
+	@test -d "$(NEMU_HOME)" || { echo "ERROR: NEMU_HOME directory does not exist!"; exit 1; }
+	@echo "All directories exist."
 
 test:
 	mill -i test
