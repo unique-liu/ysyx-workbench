@@ -1,8 +1,11 @@
 # 关键路径
 PWD = $(shell pwd)
+# 这个是SOC的路径
 SOC_HOME = /home/liu/ysyx-workbench/ysyxSoC
-# 这个被环境变量定义了
+# 这个是nvboard的路径
 # NVBOARD_HOME = /home/liu/nvboard   
+# 这个是nemu的路径
+# NEMU_HOME = ../nemu
 
 # build 目录
 BUILD_DIR = $(PWD)/build
@@ -17,7 +20,7 @@ VERILOG_SOC_DIRS = $(BUILD_CHISEL_DIR)/soc vsrc $(SOC_HOME)/perip
 CONSTR_DIRS = $(PWD)/constr
 # 顶层模块名
 TOP_MODULE_SOC = ysyxSoCFull #SOC顶层模块名
-TOP_MODULE_NPC = CPUtop #NPC顶层模块名
+TOP_MODULE_NPC = ysyx_26050152 #NPC顶层模块名
 SOC_TARGET = $(BUILD_VERILATOR_DIR)/soc/Vtop
 NPC_TARGET = $(BUILD_VERILATOR_DIR)/npc/Vtop
 
@@ -64,13 +67,14 @@ VERILATOR_NPC_FLAGS = $(VERILATOR_FLAGS) --top-module $(TOP_MODULE_NPC) --cc -CF
 			  --Mdir $(BUILD_VERILATOR_DIR)/npc
 
 # 目标：构建可执行文件
-verilator: $(SOC_TARGET)
+verilator_npc: $(NPC_TARGET)
+verilator_soc: $(SOC_TARGET)
 
 $(SOC_TARGET): $(VERILOG_SOC_SRC) $(CPP_SOC_SRC)
 	mkdir -p $(BUILD_VERILATOR_DIR)/soc
 	$(VERILATOR) $(VERILATOR_SOC_FLAGS) $(VERILOG_SOC_SRC) $(CPP_SOC_SRC) -o $@
 
-$(NPC_TARGET): $(VERILOG_SRC) $(CPP_NPC_SRC) 
+$(NPC_TARGET): $(VERILOG_SRC) $(CPP_NPC_SRC)
 	mkdir -p $(BUILD_VERILATOR_DIR)/npc
 	$(VERILATOR) $(VERILATOR_NPC_FLAGS) $(VERILOG_SRC) $(CPP_NPC_SRC) -o $@
 
@@ -79,7 +83,8 @@ NPC_CPU_TOP = $(BUILD_CHISEL_DIR)/npc/CPUtop.sv
 SOC_CPU_TOP = $(BUILD_CHISEL_DIR)/soc/CPUtop.sv
 CHISEL_FILES = $(shell find $(CHISEL_DIRS) -type f \( -name "*.scala" \) 2>/dev/null)
 
-verilog: $(NPC_CPU_TOP)
+verilog_npc: $(NPC_CPU_TOP)
+verilog_soc: $(SOC_CPU_TOP)
 
 $(NPC_CPU_TOP): $(CHISEL_FILES)
 	$(call git_commit, "generate verilog")
@@ -100,7 +105,7 @@ YOSYS_CLK_FREQ_MHZ = 10000
 YOSYS_CLK_PORT_NAME = clock
 O = $(MY_YOSYS_DIR)/report
 yosys:
-
+	rm -rf yosys/report/
 	$(MAKE) -C $(YOSYS_STA_DIR) sta \
 		DESIGN=$(TOP_MODULE_NPC) \
 		SDC_FILE=$(YOSYS_SDC_FILE) \
@@ -137,7 +142,7 @@ idea:
 clean:
 	-rm -rf $(BUILD_DIR)
 
-.PHONY: test verilog help reformat checkformat clean yosys
+.PHONY: test verilog verilator help reformat checkformat clean yosys
 
 # Some convenient rules
 IMG ?=

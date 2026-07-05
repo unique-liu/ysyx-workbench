@@ -11,8 +11,8 @@ typedef uint32_t word_t;
 #define VCPUtop VysyxSoCFull
 #define INCLUDE_TOP "VysyxSoCFull.h"
 #else
-#define VCPUtop VCPUtop
-#define INCLUDE_TOP "VCPUtop.h"
+#define VCPUtop Vysyx_26050152
+#define INCLUDE_TOP "Vysyx_26050152.h"
 #endif
 
 #endif
