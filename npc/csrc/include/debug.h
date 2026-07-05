@@ -62,10 +62,18 @@ extern FILE *T;
     fprintf(target,fmt,## __VA_ARGS__);\
 }while(0)
 
+#define DEBUG_FLUSH(target) do{\
+    fflush(target);\
+}while(0)
+
 #define TRACE(name,...) do{\
     if (npc_state.trace_on==TRACE_ON) {\
     DEBUG_PRINT(name,T,__VA_ARGS__);\
     }\
+}while(0)
+
+#define TRACE_FORCE(name,...) do{\
+    DEBUG_PRINT(name,T,__VA_ARGS__);\
 }while(0)
 
 #define panic(...) do {\

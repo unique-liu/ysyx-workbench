@@ -6,6 +6,7 @@
 struct function_table func_table[FTRACE_MAX_FUNC_NUM];
 uint64_t ftrace_call_depth = 0; 
 word_t ftrace_call_stack[FTRACE_MAX_CALL_DEPTH];
+static int ftrace_disable = 0;
 //iringbuf
 char iringbuf[IRINGBUF_SIZE][128];
 int iringbuf_idx = 0;
@@ -106,7 +107,6 @@ static int find_function_by_addr(word_t addr) {
 }
 
 static void ftrace_call(word_t pc, word_t target,int rd) {
-  
   int current_idx = find_function_by_addr(pc);
   int target_idx = find_function_by_addr(target);
   if (current_idx == target_idx && rd == 0) {
@@ -120,7 +120,8 @@ static void ftrace_call(word_t pc, word_t target,int rd) {
       ftrace_call_depth++;
     }
   }else {
-    printf("ftrace call stack overflow at pc: 0x%08x\n", pc);
+    TRACE(ftrace,"ftrace call stack overflow at pc: 0x%08x, ftrace is disabled\n", pc);
+    ftrace_disable = 1;
   }
 }
 
@@ -141,6 +142,8 @@ static void ftrace_ret(word_t pc, word_t target) {
 
 void ftrace_enter(word_t pc, word_t target,int rd,int rs1){
   #ifdef CONFIG_FTRACE
+  if(ftrace_disable || npc_state.trace_on == TRACE_OFF) return;
+
   if (rs1 != 1 || rd != 0) {
     ftrace_call(pc, target,rd);
   }else {

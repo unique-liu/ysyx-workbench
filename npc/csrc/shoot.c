@@ -27,7 +27,8 @@ void shoot(){
         return;
     }
     shoot_clear();
-
+    
+    DEBUG_FLUSH(T);
     shoot_pid = fork();
     if (shoot_pid == 0) {
         raise(SIGSTOP);

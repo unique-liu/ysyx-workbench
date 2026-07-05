@@ -9,8 +9,8 @@
 
 //ftrace
 #define FTRACE_MAX_NAME_LEN 32
-#define FTRACE_MAX_FUNC_NUM 100
-#define FTRACE_MAX_CALL_DEPTH 100
+#define FTRACE_MAX_FUNC_NUM 500
+#define FTRACE_MAX_CALL_DEPTH 500
 struct function_table{
   char name[FTRACE_MAX_NAME_LEN];
   word_t addr;

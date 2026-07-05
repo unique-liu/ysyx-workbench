@@ -163,7 +163,7 @@ static long load_elf() {
 
   FILE *fp = fopen(elf_file, "rb");
   Assert(fp, "Can not open '%s'\n", elf_file);
-
+ 
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
 
@@ -172,7 +172,7 @@ static long load_elf() {
   fseek(fp, 0, SEEK_SET);
   int ret = init_function_table(fp);
   assert(ret >= 0);
-  Log("Loaded %d functions from ELF file.", ret);
+  Log("Loaded %d functions from ELF file.\n", ret);
 
   fclose(fp);
   return size;
