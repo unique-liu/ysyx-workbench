@@ -1,0 +1,75 @@
+From 021f98f840fd55f5f4be7dfb859e30e2205a9067 Mon Sep 17 00:00:00 2001
+From: 2023k8009929022-LiuYaoqing <liuyaoqing23@mails.ucas.ac.cn>
+Date: Tue, 9 Jun 2026 21:19:07 +0800
+Subject: [PATCH 3/4] npc: move to sdram and enable real uart input
+
+---
+ bsp/abstract-machine/extra.ld      | 6 ++++--
+ bsp/abstract-machine/src/context.c | 2 +-
+ bsp/abstract-machine/src/uart.c    | 7 +++++--
+ 3 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/bsp/abstract-machine/extra.ld b/bsp/abstract-machine/extra.ld
+index 8ad129b73..697af33a0 100644
+--- a/bsp/abstract-machine/extra.ld
++++ b/bsp/abstract-machine/extra.ld
+@@ -3,6 +3,8 @@ MEMORY {
+   mrom : ORIGIN = 0x20000000, LENGTH = 4K
+   flash : ORIGIN = 0x30000000, LENGTH = 0x10000000
+   psram : ORIGIN = 0x80000000, LENGTH = 0x400000
++  /* sdram : ORIGIN = 0x80000000, LENGTH = 0x400000 */
++  sdram : ORIGIN = 0xa0000000, LENGTH = 0x2000000
+ }
+ /* this is for npc with soc */
+ 
+@@ -37,7 +39,7 @@ SECTIONS {
+     __am_apps_data_end = .;
+     . = ALIGN(8);
+     _edata_sa_end = .;
+-  } > psram AT> flash : data
++  } > sdram AT> flash : data
+   _edata_ma_start = LOADADDR(.data.extra);
+   _edata_ma_end = _edata_ma_start + SIZEOF(.data.extra);
+ }
+@@ -54,6 +56,6 @@ SECTIONS {
+     __am_apps_bss_end = .;
+     . = ALIGN(8);
+     _ebss_sa_end = .;
+-  } > psram AT> flash : bss
++  } > sdram AT> flash : bss
+ } 
+ INSERT BEFORE .bss;
+diff --git a/bsp/abstract-machine/src/context.c b/bsp/abstract-machine/src/context.c
+index 442a2491b..0904fb0ae 100644
+--- a/bsp/abstract-machine/src/context.c
++++ b/bsp/abstract-machine/src/context.c
+@@ -31,7 +31,7 @@ void __am_cte_init() {
+ }
+ 
+ void rt_hw_context_switch_to(rt_ubase_t to) {
+-  printf("to= 0x%08x &to= 0x%08x\n *to= 0x%08x\n",to,&to,*((rt_ubase_t*)to));
++  // printf("to= 0x%08x &to= 0x%08x\n *to= 0x%08x\n",to,&to,*((rt_ubase_t*)to));
+   asm volatile(
+     "mv t0, %0;"
+     "mv t1, %1;"
+diff --git a/bsp/abstract-machine/src/uart.c b/bsp/abstract-machine/src/uart.c
+index e4eb86689..9bd307e83 100644
+--- a/bsp/abstract-machine/src/uart.c
++++ b/bsp/abstract-machine/src/uart.c
+@@ -37,8 +37,11 @@ static int _uart_putc(struct rt_serial_device *serial, char c) {
+ }
+ 
+ static int _uart_getc(struct rt_serial_device *serial) {
+-  static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\n";
+-  return (*p != '\0' ? *(p ++) : -1);
++  // static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\n";
++  // return (*p != '\0' ? *(p ++) : -1);
++  AM_UART_RX_T rx;
++  ioe_read(AM_UART_RX, &rx);
++  return (rx.data != 0xff ? rx.data : -1);
+ }
+ 
+ const struct rt_uart_ops _uart_ops = {
+-- 
+2.34.1
+

@@ -1,0 +1,50 @@
+From 104573f69fd3b027b90350c9ef46f6dad4deffb0 Mon Sep 17 00:00:00 2001
+From: 2023k8009929022-LiuYaoqing <liuyaoqing23@mails.ucas.ac.cn>
+Date: Sun, 5 Jul 2026 15:19:47 +0800
+Subject: [PATCH 4/4] npc: let makefile choose the correct ld file, let
+ rtthread run a set of command at the beginning
+
+---
+ bsp/abstract-machine/Makefile   | 6 ++++++
+ bsp/abstract-machine/src/uart.c | 7 +++++--
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/bsp/abstract-machine/Makefile b/bsp/abstract-machine/Makefile
+index 8d70f310b..362300d23 100644
+--- a/bsp/abstract-machine/Makefile
++++ b/bsp/abstract-machine/Makefile
+@@ -8,7 +8,13 @@ NAME = rtthread
+ SRCS = $(shell find src -name "*.c")
+ CFLAGS += -DHAVE_CCONFIG_H -D__RTTHREAD__
+ CFLAGS += -Wno-nonnull-compare
++
++ifeq ($(ARCH),riscv32e-ysyxsoc) # select different .ld
+ LDFLAGS += -T extra.ld
++else
++LDFLAGS += -T extra-nosoc.ld
++endif
++
+ -include $(FILE_MK)
+ -include $(AM_APPS_MK)
+ include $(AM_HOME)/Makefile
+diff --git a/bsp/abstract-machine/src/uart.c b/bsp/abstract-machine/src/uart.c
+index 9bd307e83..5f549e566 100644
+--- a/bsp/abstract-machine/src/uart.c
++++ b/bsp/abstract-machine/src/uart.c
+@@ -37,8 +37,11 @@ static int _uart_putc(struct rt_serial_device *serial, char c) {
+ }
+ 
+ static int _uart_getc(struct rt_serial_device *serial) {
+-  // static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\n";
+-  // return (*p != '\0' ? *(p ++) : -1);
++  static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\n";
++  if (*p != '\0') {
++    return *(p ++);
++  }
++  
+   AM_UART_RX_T rx;
+   ioe_read(AM_UART_RX, &rx);
+   return (rx.data != 0xff ? rx.data : -1);
+-- 
+2.34.1
+

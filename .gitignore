@@ -10,7 +10,7 @@
 !README.md
 !.gitignore
 !init.sh
-!/patch/*
+!/patch/*/*
 /fceux-am
 /nvboard
 /am-kernels

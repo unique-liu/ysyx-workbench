@@ -1,0 +1,110 @@
+From 9d48fe444a4995a62d293109db72e9df5c5013db Mon Sep 17 00:00:00 2001
+From: 2023k8009929022-LiuYaoqing <liuyaoqing23@mails.ucas.ac.cn>
+Date: Fri, 5 Jun 2026 16:12:33 +0800
+Subject: [PATCH 1/4] npc: finish RT-Thread and run it
+
+---
+ bsp/abstract-machine/src/context.c | 70 ++++++++++++++++++++++++++++--
+ 1 file changed, 66 insertions(+), 4 deletions(-)
+
+diff --git a/bsp/abstract-machine/src/context.c b/bsp/abstract-machine/src/context.c
+index ee38829ae..442a2491b 100644
+--- a/bsp/abstract-machine/src/context.c
++++ b/bsp/abstract-machine/src/context.c
+@@ -2,8 +2,25 @@
+ #include <klib.h>
+ #include <rtthread.h>
+ 
++typedef struct {
++  void *tentry;
++  void *parameter;
++  void *texit;
++} warper_arg_t;
++rt_ubase_t from_useless = 0;//this will never be used
++// void print_context(Context *ctx);
++
+ static Context* ev_handler(Event e, Context *c) {
+   switch (e.event) {
++    case EVENT_YIELD: 
++      
++      // print_context(c);
++
++      *(uintptr_t*)(c->gpr[6]) = (uintptr_t)c; // t1 = current context address, for debugging
++
++      c = *(Context**)(c->gpr[5]);// t0 = next context address
++      // print_context(c);
++      break;
+     default: printf("Unhandled event ID = %d\n", e.event); assert(0);
+   }
+   return c;
+@@ -14,18 +31,63 @@ void __am_cte_init() {
+ }
+ 
+ void rt_hw_context_switch_to(rt_ubase_t to) {
+-  assert(0);
++  printf("to= 0x%08x &to= 0x%08x\n *to= 0x%08x\n",to,&to,*((rt_ubase_t*)to));
++  asm volatile(
++    "mv t0, %0;"
++    "mv t1, %1;"
++#ifdef __riscv_e
++    "li a5, -1;"
++#else
++    "li a7, -1;"
++#endif
++    "ecall;" 
++    : 
++    : "r"(to), "r"(&from_useless));
+ }
+ 
+ void rt_hw_context_switch(rt_ubase_t from, rt_ubase_t to) {
+-  assert(0);
++  asm volatile(
++    "mv t0, %0;"
++    "mv t1, %1;"
++#ifdef __riscv_e
++    "li a5, -1;"
++#else
++    "li a7, -1;"
++#endif
++    "ecall;" 
++    : 
++    : "r"(to), "r"(from));
+ }
+ 
+ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t to, struct rt_thread *to_thread) {
+   assert(0);
+ }
+ 
+-rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_addr, void *texit) {
++void rt_hw_warper(warper_arg_t *warper_arg){
++  ((void (*)(void*))warper_arg->tentry)(warper_arg->parameter);
++  ((void (*)())warper_arg->texit)();
++  printf("never reach there\n");
+   assert(0);
+-  return NULL;
++}
++
++rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_addr, void *texit) {
++  //make sure the stack is aligned with sizeof(uintptr_t)
++  stack_addr = (rt_uint8_t *)RT_ALIGN_DOWN((rt_ubase_t)stack_addr, sizeof(rt_ubase_t));
++
++  //place warper_arg_t on the top of stack
++  warper_arg_t *warper_arg = (warper_arg_t *)(stack_addr - sizeof(warper_arg_t));
++  warper_arg->tentry = tentry;
++  warper_arg->parameter = parameter;
++  warper_arg->texit = texit;
++
++  //get the new stack top address
++  stack_addr -= sizeof(warper_arg_t);
++
++  //prepare area for kcontext
++  Area stack;
++  stack.end = stack_addr;
++  stack.start = stack_addr - sizeof(Context);//it is useless, because upper level would deal with space arragement
++  
++  rt_uint8_t * ret = (rt_uint8_t *)kcontext(stack, (void (*)(void*))rt_hw_warper, warper_arg);
++  return ret;
+ }
+-- 
+2.34.1
+
