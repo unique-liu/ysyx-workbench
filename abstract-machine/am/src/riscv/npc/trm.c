@@ -33,7 +33,7 @@ void halt(int code) {
 }
 
 void _trm_init() {
-  print_myid();
+  // print_myid();
   int ret = main(mainargs);
   halt(ret);
 }

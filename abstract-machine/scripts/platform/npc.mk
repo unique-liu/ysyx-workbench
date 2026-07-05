@@ -12,7 +12,7 @@ CFLAGS    += -fdata-sections -ffunction-sections
 LDSCRIPTS += $(AM_HOME)/scripts/linker.ld
 LDFLAGS   += --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
 LDFLAGS   += --gc-sections -e _start
-NPCFLAGS  += -b --trace=off --trace_clock=55000000 --diff_on=on --time=100000000000 --report=on
+NPCFLAGS  += -b --trace=off --trace_clock=55000000 --diff_on=on --time=100000000000 --report=off
 
 MAINARGS_MAX_LEN = 64
 MAINARGS_PLACEHOLDER = the_insert-arg_rule_in_Makefile_will_insert_mainargs_here

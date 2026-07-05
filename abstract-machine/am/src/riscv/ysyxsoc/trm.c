@@ -2,7 +2,7 @@
 #include <klib-macros.h>
 #include <klib.h>
 #include "../riscv.h"
-// #define __RTTHREAD__
+#define __RTTHREAD__
 extern char _heap_start;
 extern char _text_ma_start,_text_ma_end,_text_sa_start,_text_sa_end;
 extern char _bootloader_ma_start,_bootloader_ma_end,_bootloader_sa_start,_bootloader_sa_end;
@@ -111,8 +111,10 @@ void second_loader() {
 // __attribute__((section(".bootloader")))
 void _trm_init() {
   putch('\n');
+  
   //print mvendorid and marchid 
   print_myid();
+
   // print load info
   // print_loadinfo();
   
